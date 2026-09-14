@@ -1,0 +1,2148 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TTK Misafirhane Bilgi Sistemi — Web Prototip</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.4/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        ttk:   { 50:'#eef4fb', 100:'#d9e6f6', 200:'#b3cdec', 300:'#7ea9dc',
+                 400:'#4a81c6', 500:'#2a61a8', 600:'#1d4b87', 700:'#173c6d',
+                 800:'#122f56', 900:'#0d2340' },
+        kagit: '#f4f6f9'
+      },
+      fontFamily: {
+        sans: ['Segoe UI','Inter','Roboto','Helvetica Neue','Arial','sans-serif'],
+        mono: ['Consolas','SF Mono','Menlo','monospace']
+      },
+      fontSize: {
+        '2xs': ['10px','13px'],
+        'xs':  ['11px','15px'],
+        'sm':  ['12px','17px'],
+        'base':['13px','19px']
+      }
+    }
+  }
+}
+</script>
+<style>
+  html { font-size: 16px; }
+  body { background:#f4f6f9; color:#16202e; -webkit-font-smoothing:antialiased; }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings:'tnum'; }
+  table.veri { border-collapse: separate; border-spacing: 0; }
+  table.veri thead th {
+    position: sticky; top: 0; z-index: 10;
+    background: #eef2f7; color:#173c6d; font-weight:600;
+    text-align:left; white-space:nowrap;
+    padding: 6px 8px; border-bottom:1px solid #cbd5e1; font-size:11px;
+    letter-spacing:.02em; text-transform:uppercase;
+  }
+  table.veri tbody td { padding: 4px 8px; border-bottom:1px solid #eef1f5; white-space:nowrap; font-size:12px; }
+  table.veri tbody tr:hover { background:#f8fafc; }
+  table.veri tbody tr.secili { background:#dbeafe !important; box-shadow: inset 3px 0 0 #1d4b87; }
+  .kaydir::-webkit-scrollbar { width:10px; height:10px; }
+  .kaydir::-webkit-scrollbar-thumb { background:#c3ccd8; border-radius:5px; border:2px solid #f4f6f9; }
+  .kaydir::-webkit-scrollbar-track { background:transparent; }
+  .yatak-hucre { transition: transform .08s ease, box-shadow .08s ease; }
+  .yatak-hucre:hover { transform: translateY(-1px); box-shadow:0 2px 6px rgba(13,35,64,.18); }
+  .surukle-hedef { outline:2px dashed #1d4b87; outline-offset:1px; background:#dbeafe !important; }
+  .yukleniyor { display:flex; align-items:center; justify-content:center; height:100vh;
+                font:14px Segoe UI, sans-serif; color:#173c6d; }
+  @keyframes bel { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+  .bel { animation: bel .16s ease-out; }
+</style>
+</head>
+<body>
+<div id="kok"><div class="yukleniyor">TTKNET · Misafirhane Bilgi Sistemi yükleniyor…</div></div>
+<script>
+  // Kurum ağı CDN adreslerini engelliyorsa boş ekran yerine açıklama göster
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      if (window.React && window.ReactDOM && window.Babel) return;
+      var eksik = [!window.React && 'React', !window.Babel && 'Babel', !window.tailwind && 'Tailwind'].filter(Boolean);
+      document.getElementById('kok').innerHTML =
+        '<div class="yukleniyor"><div style="max-width:620px;text-align:left;line-height:1.6">' +
+        '<b>Prototip açılamadı — gerekli kütüphaneler yüklenemedi (' + eksik.join(', ') + ').</b><br><br>' +
+        'Bu tek dosyalık prototip React, Tailwind ve Babel dosyalarını internetten (cdnjs.cloudflare.com ve ' +
+        'cdn.tailwindcss.com) yükler. Kurum ağı bu adresleri engelliyorsa ekran açılmaz.<br><br>' +
+        'Çözüm: bu iki adrese erişim izni verin ya da kütüphaneleri yerel bir klasöre indirip dosyanın ' +
+        'başındaki &lt;script&gt; adreslerini o dosyalara yönlendirin.</div></div>';
+    }, 8000);
+  });
+</script>
+<script type="text/babel" data-presets="react">
+const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment } = React;
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1) SABİTLER VE YARDIMCILAR
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const GUN_MS = 86400000;
+const SISTEM_TARIHI_BASLANGIC = '2026-09-14';   // MSFH ekranlarındaki 14/09/2026
+
+const D    = s => new Date(s + 'T00:00:00Z');
+const iso  = dt => dt.toISOString().slice(0, 10);
+const ekle = (s, n) => iso(new Date(D(s).getTime() + n * GUN_MS));
+const tr   = s => { if (!s) return ''; const [y, m, d] = s.split('-'); return `${d}.${m}.${y}`; };
+const fark = (a, b) => Math.round((D(b) - D(a)) / GUN_MS);
+const HG   = ['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
+const hg   = s => HG[D(s).getUTCDay()];
+const haftaSonu = s => [0, 6].includes(D(s).getUTCDay());
+const AY   = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const ayAdi = s => AY[parseInt(s.slice(5, 7), 10) - 1];
+const para = n => (n == null ? '' : Math.round(n).toLocaleString('tr-TR') + ' ₺');
+const aralik = (b, s) => { const r = []; for (let t = b; t < s; t = ekle(t, 1)) r.push(t); return r; };
+
+/* Deterministik rastgele — demo her açılışta aynı veriyi üretsin */
+function rng(seed) {
+  return function () {
+    seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const sec = (r, dizi) => dizi[Math.floor(r() * dizi.length)];
+const tamsayi = (r, a, b) => a + Math.floor(r() * (b - a + 1));
+
+/* ── Alan sözlükleri (Oracle Forms terminolojisi birebir korunur) ───────── */
+
+const TESISLER = [
+  { kod:'YAYLA',    ad:'Yayla Konağı',          sehir:'Zonguldak', kats:3, tek:5,  cift:16, uclu:5,  carpan:1.10 },
+  { kod:'ANKARA',   ad:'Ankara Misafirhanesi',  sehir:'Ankara',    kats:5, tek:10, cift:20, uclu:10, carpan:1.00 },
+  { kod:'AMASRA',   ad:'Amasra Misafirhanesi',  sehir:'Bartın',    kats:4, tek:8,  cift:16, uclu:7,  carpan:0.95 },
+  { kod:'ARMUTCUK', ad:'Armutçuk Misafirhanesi',sehir:'Ereğli',    kats:3, tek:5,  cift:12, uclu:6,  carpan:0.85 },
+];
+
+const ODEME_TURU = {
+  KRT: 'Kredi Kartı',
+  NKT: 'Nakit',
+  MSD: 'Maaştan Kesinti',
+  BOS: 'Bedelsiz (Protokol)',
+};
+
+const STATULER = [
+  { kod:'TALEP',             ad:'Talep',             renk:'bg-slate-100 text-slate-700 border-slate-300' },
+  { kod:'PESINAT_BEKLENIYOR',ad:'Peşinat Bekleniyor',kisa:'Peşinat Bkl.',renk:'bg-amber-100 text-amber-800 border-amber-300' },
+  { kod:'ONAYLI',            ad:'Onaylı',            renk:'bg-emerald-100 text-emerald-800 border-emerald-300' },
+  { kod:'KONAKLIYOR',        ad:'Konaklıyor',        renk:'bg-ttk-100 text-ttk-700 border-ttk-300' },
+  { kod:'CIKIS',             ad:'Çıkış',             renk:'bg-violet-100 text-violet-700 border-violet-300' },
+  { kod:'IPTAL',             ad:'İptal',             renk:'bg-rose-100 text-rose-700 border-rose-300' },
+];
+const statuAd  = k => (STATULER.find(s => s.kod === k) || {}).ad || k;
+const statuKisa= k => { const x = STATULER.find(s => s.kod === k) || {}; return x.kisa || x.ad || k; };
+const statuRenk= k => (STATULER.find(s => s.kod === k) || {}).renk || 'bg-slate-100 text-slate-600 border-slate-300';
+
+const YATAK_DURUM = {
+  BOS:            { ad:'Boş',            kutu:'bg-white border-slate-300 text-slate-500',      nokta:'bg-slate-300' },
+  DOLU:           { ad:'Dolu',           kutu:'bg-ttk-600 border-ttk-700 text-white',          nokta:'bg-ttk-600' },
+  REZERVE:        { ad:'Rezerve',        kutu:'bg-amber-300 border-amber-500 text-amber-950',  nokta:'bg-amber-400' },
+  CIKIS_BEKLIYOR: { ad:'Çıkış Bekliyor', kutu:'bg-orange-500 border-orange-600 text-white',    nokta:'bg-orange-500' },
+  TEMIZLIK:       { ad:'Temizlik',       kutu:'bg-violet-200 border-violet-400 text-violet-900',nokta:'bg-violet-300' },
+};
+
+/* Yerleştirme parametreleri */
+const TEMIZLIK_GUN = 1;   // çıkış günü yatak temizlik için bloke
+
+/* Varsayılan peşinat kuralları — tesis bazında düzenlenebilir (Ekran 3) */
+const VARSAYILAN_PESINAT_KURALI = () => ({
+  kurumMisafirindePesinatAranmasin: true,
+  sahisOran: 30,          // yatak bedelinin %'si
+  sahisAsgariTutar: 750,
+  odemeSuresiGun: 7,      // talep tarihinden itibaren
+  gelistenOnceEnGecGun: 2 // gelişten en geç kaç gün önce tahsil edilmeli
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2) SAHTE VERİ ÜRETECİ  (gerçek veri kullanılmaz)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const ERKEK_AD = ['Ahmet','Mehmet','Mustafa','Ali','Hüseyin','Hasan','İbrahim','Osman','Yusuf','Murat','Ömer','Emre','Kemal','Fatih','Selim','Burak','Volkan','Serkan','Tolga','Cem','Barış','Ertuğrul','Sinan','Levent','Onur','Kadir','Hakan','Uğur','Erdem','Yunus','Batuhan','Görkem','Berkay','Rafet','Bülent','Şenol','Cengiz','Nurettin','Turgut','Sedat'];
+const KADIN_AD = ['Ayşe','Fatma','Emine','Hatice','Zeynep','Elif','Meryem','Şerife','Sultan','Hanife','Gülsün','Nazlı','Sümra','Zeliha','Dilşad','Esra','Gonca','Ümran','Selma','Feza','Azra','Firdevs','Ülkü','Aysel','Zuhal','Emel','Berna','Şeyma','Neslihan','Pınar','Duygu','Yasemin','Melike','Sevgi','Hülya','Nilüfer','Gamze','Özlem','Burcu','Ebru'];
+const SOYAD = ['Yılmaz','Kaya','Demir','Şahin','Çelik','Yıldız','Yıldırım','Öztürk','Aydın','Özdemir','Arslan','Doğan','Kılıç','Aslan','Çetin','Kara','Koç','Kurt','Özkan','Şimşek','Polat','Korkmaz','Çakır','Erdoğan','Karaca','Bozkurt','Gürpınar','Aygün','Çokal','Gürbüz','Ersoy','Türkyaşar','Esendeniz','Altun','Vural','Kahveci','Küllü','Güven','Taşten','Baysal','Altan','Açıkalın','Avcı','Eker','Gedikoğlu','Demiroğlu','Akgün','Tangut','Hekimhan','Çebi','Gökmen','Sarıoğlu','Uzun','Balcı','Toprak'];
+
+const BIRIMLER = ['Genel Müdürlük','Bilgi İşlem Şube Müd.','Karadon TİM','Kozlu TİM','Üzülmez TİM','Amasra TİM','Armutçuk TİM','Makine İkmal Daire Bşk.','Maden Makinaları Fab.','Muhasebe Daire Bşk.','İnsan Kaynakları Daire Bşk.','Etüt Proje Daire Bşk.','Satınalma Daire Bşk.','İş Sağlığı ve Güvenliği'];
+const KURUMLAR  = ['TTK Genel Müdürlüğü','Enerji ve Tabii Kaynaklar Bakanlığı','MTA Genel Müdürlüğü','TKİ Genel Müdürlüğü','EÜAŞ','Maden ve Petrol İşleri Gn. Md.','Zonguldak Bülent Ecevit Ünv.','Sayıştay Başkanlığı','Hazine ve Maliye Bakanlığı','TÜBİTAK MAM'];
+const ACIKLAMALAR = ['Denetim heyeti','Eğitim programı','Teknik inceziyaret','Kurul toplantısı','Saha ziyareti','İhale komisyonu','Bakım ekibi','Misafir öğretim üyesi','Aile ziyareti','Yıllık izin','Tek kişilik talep','Protokol misafiri','Kongre katılımcısı','Stajyer grubu','Sendika toplantısı'];
+const GELIS_NEDENI = ['Görevli','Eğitim','Denetim','İzin','Misafir','Toplantı','Staj'];
+
+function tcUret(r) {           // 11 haneli sahte numara (gerçek doğrulama algoritmasına uymaz)
+  let s = String(tamsayi(r, 1, 9));
+  for (let i = 0; i < 10; i++) s += String(tamsayi(r, 0, 9));
+  return s;
+}
+const sicilUret = r => String(tamsayi(r, 10000, 99999));
+const telUret   = r => '5' + tamsayi(r, 30, 55) + ' ' + tamsayi(r, 100, 999) + ' ' + tamsayi(r, 1000, 9999);
+
+function odalariUret(r) {
+  const odalar = [], yataklar = [];
+  let yid = 1;
+  for (const t of TESISLER) {
+    const tipler = [
+      ...Array(t.tek).fill('TEK'),
+      ...Array(t.cift).fill('CIFT'),
+      ...Array(t.uclu).fill('UCLU'),
+    ];
+    for (let i = tipler.length - 1; i > 0; i--) {          // katlara karışık dağıt
+      const j = Math.floor(r() * (i + 1));
+      [tipler[i], tipler[j]] = [tipler[j], tipler[i]];
+    }
+    // katlara dengeli dağıt: her kat için oda no = kat*10 + sıra
+    const odaSayisi = tipler.length;
+    const katBasi = Math.ceil(odaSayisi / t.kats);
+    // tek kişilik odaların bir kısmı protokol odası olsun
+    let protokolKalan = 3;
+    tipler.forEach((tip, i) => {
+      const kat = Math.floor(i / katBasi) + 1;
+      const sira = (i % katBasi) + 1;
+      const oda_no = kat * 10 + sira;
+      const protokol = tip === 'TEK' && protokolKalan-- > 0;
+      const yatakSayisi = tip === 'TEK' ? 1 : tip === 'CIFT' ? 2 : 3;
+      const taban = tip === 'TEK' ? 900 : tip === 'CIFT' ? 750 : 600;
+      const yatak_fiyati = Math.round(taban * t.carpan / 50) * 50;
+      odalar.push({ id: t.kod + '-' + oda_no, tesis: t.kod, oda_no, kat, tip, yatakSayisi, protokol, yatak_fiyati });
+      for (let y = 1; y <= yatakSayisi; y++) {
+        yataklar.push({
+          id: t.kod + '-' + oda_no + '-' + y,
+          odaId: t.kod + '-' + oda_no,
+          tesis: t.kod, oda_no, yatak_no: y, tip, protokol, kat, yatak_fiyati,
+        });
+      }
+      yid++;
+    });
+  }
+  return { odalar, yataklar };
+}
+
+/* ── Doluluk indeksi ────────────────────────────────────────────────────────
+   dolu[yatakId|tarih]     -> o gece yatağı işgal eden kayıt
+   temizlik[yatakId|tarih] -> çıkış sonrası temizlik bloğu (TEMIZLIK_GUN)     */
+function dolulukKur(rezler) {
+  const dolu = new Map(), temizlik = new Map();
+  for (const rz of rezler) {
+    if (rz.statu === 'IPTAL') continue;
+    for (const g of rz.misafirler) {
+      if (!g.yatakId) continue;
+      for (const t of aralik(rz.gelis_tarihi, rz.cikis_tarihi)) dolu.set(g.yatakId + '|' + t, { rez: rz, misafir: g });
+      for (let k = 0; k < TEMIZLIK_GUN; k++) temizlik.set(g.yatakId + '|' + ekle(rz.cikis_tarihi, k), { rez: rz });
+    }
+  }
+  return { dolu, temizlik };
+}
+
+/* Yatak, [gelis, cikis) gecelerinde tamamen boş mu? (temizlik bloğu dahil) */
+function yatakMusait(yatakId, gelis, cikis, dolu, temizlik, golge) {
+  for (const t of aralik(gelis, cikis)) {
+    const k = yatakId + '|' + t;
+    if (dolu.has(k) || temizlik.has(k)) return false;
+    if (golge && golge.has(k)) return false;
+  }
+  return true;
+}
+
+/* Odada o tarih aralığında konaklayan diğer misafirlerin cinsiyetleri */
+function odaCinsiyetleri(odaId, gelis, cikis, yataklar, dolu, golge) {
+  const set = new Set();
+  for (const y of yataklar) {
+    if (y.odaId !== odaId) continue;
+    for (const t of aralik(gelis, cikis)) {
+      const d = dolu.get(y.id + '|' + t);
+      if (d && d.misafir && d.misafir.cinsiyet) set.add(d.misafir.cinsiyet);
+      const g = golge && golge.get(y.id + '|' + t);
+      if (g && g.cinsiyet) set.add(g.cinsiyet);
+    }
+  }
+  return set;
+}
+
+/* ── Rezervasyon üretimi ───────────────────────────────────────────────── */
+function rezervasyonlariUret(r, yataklar, odalar, bugun) {
+  const bas = ekle(bugun, -90), son = ekle(bugun, 90);
+  const rezler = [];
+  const dolu = new Map(), temizlik = new Map();
+  const kural = VARSAYILAN_PESINAT_KURALI();
+  let sayac = 1;
+
+  const agirlikli = (tablo) => {                 // [[deger, agirlik], ...]
+    const top = tablo.reduce((a, x) => a + x[1], 0);
+    let p = r() * top;
+    for (const [d, w] of tablo) { p -= w; if (p <= 0) return d; }
+    return tablo[tablo.length - 1][0];
+  };
+
+  const yatakUygula = (rz) => {                  // üretilen kaydı doluluk indeksine işle
+    for (const g of rz.misafirler) {
+      if (!g.yatakId) continue;
+      for (const t of aralik(rz.gelis_tarihi, rz.cikis_tarihi)) dolu.set(g.yatakId + '|' + t, { rez: rz, misafir: g });
+      for (let k = 0; k < TEMIZLIK_GUN; k++) temizlik.set(g.yatakId + '|' + ekle(rz.cikis_tarihi, k), { rez: rz });
+    }
+  };
+
+  for (let gun = bas; gun < son; gun = ekle(gun, 1)) {
+    for (const t of TESISLER) {
+      const tesisYatak = yataklar.filter(y => y.tesis === t.kod);
+      const taban = tesisYatak.length / 9.2;                      // kapasiteye orantılı talep
+      const mevsim = haftaSonu(gun) ? 0.6 : 1.15;
+      const adet = Math.max(0, Math.round(taban * mevsim * (0.7 + r() * 0.8)));
+
+      for (let i = 0; i < adet; i++) {
+        const kisi_sayisi = agirlikli([[1, 55], [2, 25], [3, 12], [4, 8]]);
+        const gun_sayisi  = agirlikli([[1, 10], [2, 17], [3, 19], [4, 16], [5, 14], [6, 10], [7, 8], [10, 4], [14, 2]]);
+        const gelis_tarihi = gun;
+        const cikis_tarihi = ekle(gun, gun_sayisi);
+        const rezerv_tarihi = ekle(gun, -tamsayi(r, 1, 25));
+        const kurum_sahis = r() < 0.70 ? 'KURUM' : 'SAHIS';
+        const protokol = r() < 0.05;
+        const aile = kisi_sayisi > 1 && r() < 0.45;
+        const gelis_nedeni = kurum_sahis === 'KURUM' ? sec(r, GELIS_NEDENI) : sec(r, ['Misafir', 'İzin']);
+
+        // Misafirler
+        const grupCinsiyet = r() < 0.72 ? 'E' : 'K';
+        const soyad = sec(r, SOYAD);
+        const misafirler = [];
+        for (let m = 0; m < kisi_sayisi; m++) {
+          const cinsiyet = aile ? (m === 0 ? grupCinsiyet : (r() < 0.5 ? 'E' : 'K')) : grupCinsiyet;
+          const ad = cinsiyet === 'E' ? sec(r, ERKEK_AD) : sec(r, KADIN_AD);
+          misafirler.push({
+            tc_kimlik_no: tcUret(r),
+            adi_soyadi: (ad + ' ' + (aile ? soyad : sec(r, SOYAD))).toLocaleUpperCase('tr-TR'),
+            cinsiyet,
+            sicil_no: kurum_sahis === 'KURUM' ? sicilUret(r) : '',
+            gorev_sevk_no: kurum_sahis === 'KURUM' && ['Görevli','Denetim','Toplantı'].includes(gelis_nedeni)
+                            ? String(tamsayi(r, 100000, 999999)) : '',
+            harcirah_miktari: kurum_sahis === 'KURUM' ? tamsayi(r, 8, 24) * 50 : 0,
+            birim: kurum_sahis === 'KURUM' ? sec(r, BIRIMLER) : '',
+            yatakId: null, oda_no: null, yatak_no: null,
+          });
+        }
+
+        const rz = {
+          id: 'R' + String(sayac).padStart(5, '0'),
+          rez_no: 'MSF-' + gun.slice(0, 4) + '-' + String(sayac).padStart(5, '0'),
+          tesis: t.kod,
+          ad_soyad: misafirler[0].adi_soyadi + (kisi_sayisi > 1 ? (aile ? ' ve Ailesi' : ' ve Ark.') : ''),
+          rezerv_tarihi, aciklama: sec(r, ACIKLAMALAR), tel_no: telUret(r),
+          kisi_sayisi, gun_sayisi, gelis_tarihi, cikis_tarihi,
+          kurum_sahis,
+          odeyecek: kurum_sahis === 'KURUM' ? sec(r, KURUMLAR) : misafirler[0].adi_soyadi,
+          odeme_turu: protokol ? 'BOS' : (kurum_sahis === 'KURUM' ? sec(r, ['MSD','KRT','NKT']) : sec(r, ['KRT','NKT'])),
+          gelis_nedeni, protokol, aile,
+          plaka_no: r() < 0.3 ? (tamsayi(r, 1, 81) + ' ' + sec(r, ['AB','KC','ZG','TK','MR']) + ' ' + tamsayi(r, 100, 999)) : '',
+          kayit_yapan: 'TTK7719',
+          misafirler,
+          statu: 'TALEP',
+          uzatma: false, onceki_cikis_tarihi: null,
+          pesinat_tutari: 0, pesinat_son_odeme_tarihi: null, tahsil_edilen: 0,
+          makbuz_no: null, hareketler: [],
+        };
+        sayac++;
+
+        // ── Statü ve yerleşim kararı
+        const gelecek = fark(bugun, gelis_tarihi) > 0;
+        const iptalMi = r() < 0.07;
+        let yerlesecek = true;
+
+        if (iptalMi) { rz.statu = 'IPTAL'; yerlesecek = false; }
+        else if (!gelecek && fark(cikis_tarihi, bugun) >= 0) rz.statu = 'CIKIS';
+        else if (!gelecek) rz.statu = 'KONAKLIYOR';
+        else {
+          const uzaklik = fark(bugun, gelis_tarihi);
+          let onayOrani = uzaklik <= 10 ? 0.88 : uzaklik <= 25 ? 0.78 : uzaklik <= 50 ? 0.62 : 0.45;
+          if (kurum_sahis === 'SAHIS') onayOrani *= 0.6;   // şahsi misafirde peşinat beklemesi olağan
+          const p = r();
+          if (p < onayOrani)      { rz.statu = 'ONAYLI'; }
+          else if (kurum_sahis === 'SAHIS' && p < onayOrani + 0.20) { rz.statu = 'PESINAT_BEKLENIYOR'; }
+          else                    { rz.statu = 'TALEP'; }
+          if (rz.statu !== 'ONAYLI') yerlesecek = false;   // yerleştirme işi Ekran 2'ye kalsın
+        }
+
+        // ── Yerleştirme (üretim aşaması, motorun kendisiyle)
+        if (yerlesecek) {
+          const sonuc = yerlestirmeMotoru([rz], yataklar, odalar, dolu, temizlik, { });
+          if (sonuc.oneriler.length) {
+            const o = sonuc.oneriler[0];
+            o.atamalar.forEach(a => {
+              const g = rz.misafirler[a.misafirIndex];
+              g.yatakId = a.yatakId; g.oda_no = a.oda_no; g.yatak_no = a.yatak_no;
+            });
+            yatakUygula(rz);
+          } else {
+            // kapasite dolu — talep olarak beklemede kalsın
+            rz.statu = gelecek ? 'TALEP' : 'IPTAL';
+          }
+        }
+
+        // ── Uzatma senaryosu
+        if (rz.statu === 'KONAKLIYOR' && r() < 0.15) {
+          rz.uzatma = true;
+          rz.onceki_cikis_tarihi = rz.cikis_tarihi;
+          const ekGun = tamsayi(r, 1, 3);
+          const yeniCikis = ekle(rz.cikis_tarihi, ekGun);
+          const hepsiMusait = rz.misafirler.every(g =>
+            !g.yatakId || yatakMusait(g.yatakId, rz.cikis_tarihi, yeniCikis, dolu, temizlik));
+          if (hepsiMusait) {
+            // önceki temizlik bloğunu kaldır, süreyi uzat
+            for (const g of rz.misafirler) {
+              if (!g.yatakId) continue;
+              for (let k = 0; k < TEMIZLIK_GUN; k++) temizlik.delete(g.yatakId + '|' + ekle(rz.cikis_tarihi, k));
+            }
+            rz.cikis_tarihi = yeniCikis;
+            rz.gun_sayisi += ekGun;
+            yatakUygula(rz);
+          } else { rz.uzatma = false; rz.onceki_cikis_tarihi = null; }
+        }
+
+        // ── Peşinat alanları
+        pesinatHesapla(rz, odalar, kural);
+        if (['ONAYLI','KONAKLIYOR','CIKIS'].includes(rz.statu)) {
+          rz.tahsil_edilen = rz.pesinat_tutari;
+          if (rz.pesinat_tutari > 0) rz.makbuz_no = String(tamsayi(r, 1000, 9999));
+        } else if (rz.statu === 'PESINAT_BEKLENIYOR') {
+          rz.tahsil_edilen = r() < 0.2 ? Math.round(rz.pesinat_tutari * 0.5 / 50) * 50 : 0;
+        }
+        rz.hareketler.push({ tarih: rz.rezerv_tarihi, metin: 'Rezervasyon talebi alındı', kullanici: 'TTK7719' });
+        if (rz.statu === 'IPTAL') rz.hareketler.push({ tarih: ekle(rz.rezerv_tarihi, 2), metin: 'Talep iptal edildi', kullanici: 'TTK7719' });
+
+        rezler.push(rz);
+      }
+    }
+  }
+  return rezler;
+}
+
+/* Yatak bedeli ve peşinat tutarını (kurala göre) hesapla */
+function yatakBedeli(rz, odalar) {
+  let toplam = 0;
+  for (const g of rz.misafirler) {
+    if (g.oda_no != null) {
+      const oda = odalar.find(o => o.tesis === rz.tesis && o.oda_no === g.oda_no);
+      toplam += (oda ? oda.yatak_fiyati : 750) * rz.gun_sayisi;
+    } else {
+      const ort = odalar.filter(o => o.tesis === rz.tesis).reduce((a, o) => a + o.yatak_fiyati, 0) /
+                  Math.max(1, odalar.filter(o => o.tesis === rz.tesis).length);
+      toplam += Math.round(ort / 50) * 50 * rz.gun_sayisi;
+    }
+  }
+  return toplam;
+}
+
+function pesinatHesapla(rz, odalar, kural) {
+  const bedel = yatakBedeli(rz, odalar);
+  rz.yatak_bedeli = bedel;
+  if (rz.odeme_turu === 'BOS' || (rz.kurum_sahis === 'KURUM' && kural.kurumMisafirindePesinatAranmasin)) {
+    rz.pesinat_tutari = 0;
+    rz.pesinat_son_odeme_tarihi = null;
+  } else {
+    rz.pesinat_tutari = Math.max(kural.sahisAsgariTutar, Math.round(bedel * kural.sahisOran / 100 / 50) * 50);
+    const a = ekle(rz.rezerv_tarihi, kural.odemeSuresiGun);
+    const b = ekle(rz.gelis_tarihi, -kural.gelistenOnceEnGecGun);
+    rz.pesinat_son_odeme_tarihi = a < b ? a : b;
+    if (rz.pesinat_son_odeme_tarihi < rz.rezerv_tarihi) rz.pesinat_son_odeme_tarihi = rz.rezerv_tarihi;
+  }
+  rz.pesinattan_kalan = Math.max(0, rz.pesinat_tutari - (rz.tahsil_edilen || 0));
+  return rz;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3) OTOMATİK YERLEŞTİRME MOTORU
+   Kısıt denetimi + ağırlıklı skorlama + tek seviyeli geri alma.
+   Çıktı öneridir; gerçek doluluk ancak kullanıcı onayı ile değişir.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const SKOR = {
+  TEK_ODA:            100,  // grubun tamamı tek odada
+  KAPASITE_TAM:        40,  // oda kapasitesi grup büyüklüğüne birebir uyuyor
+  BOS_YATAK_CEZASI:   -18,  // odada atıl kalan her yatak
+  ODA_DOLDURMA:        25,  // oda zaten aynı cinsiyetle kısmen dolu (parçalanma azalır)
+  PROTOKOL_UYUM:       35,  // protokol misafiri protokol odasında
+  PROTOKOL_ISRAF:     -25,  // protokol odası normal misafire veriliyor
+  SIKI_PAKET:          12,  // seçilen yatak, aralığın hemen öncesi/sonrasında da kullanılıyor
+  KISA_BOSLUK_CEZASI: -14,  // aralığın kenarında 1 gecelik kullanılamaz boşluk kalıyor
+  ALT_KAT:              4,  // kat başına (düşük kat tercih)
+  BOLUNME_CEZASI:     -60,  // grup birden fazla odaya bölündü
+  FARKLI_KAT_CEZASI:  -30,  // bölünen grup farklı katlara dağıldı
+};
+
+/* Talep öncelik sırası: protokol > kurum > peşinatı alınmış > yakın geliş > büyük grup */
+function oncelikSirala(talepler) {
+  return [...talepler].sort((a, b) => {
+    if (a.protokol !== b.protokol) return a.protokol ? -1 : 1;
+    const ak = a.kurum_sahis === 'KURUM', bk = b.kurum_sahis === 'KURUM';
+    if (ak !== bk) return ak ? -1 : 1;
+    const ao = a.statu === 'ONAYLI' || (a.tahsil_edilen > 0), bo = b.statu === 'ONAYLI' || (b.tahsil_edilen > 0);
+    if (ao !== bo) return ao ? -1 : 1;
+    if (a.gelis_tarihi !== b.gelis_tarihi) return a.gelis_tarihi < b.gelis_tarihi ? -1 : 1;
+    if (a.kisi_sayisi !== b.kisi_sayisi) return b.kisi_sayisi - a.kisi_sayisi;
+    return a.rezerv_tarihi < b.rezerv_tarihi ? -1 : 1;
+  });
+}
+
+/* Talebi konaklama gruplarına ayır: aile → tek grup, değilse cinsiyete göre */
+function taleptenGruplar(rz) {
+  const idx = rz.misafirler.map((g, i) => i);
+  if (rz.aile) return [{ karma: true, indexler: idx, cinsiyet: null }];
+  const E = idx.filter(i => rz.misafirler[i].cinsiyet === 'E');
+  const K = idx.filter(i => rz.misafirler[i].cinsiyet === 'K');
+  const out = [];
+  if (E.length) out.push({ karma: false, indexler: E, cinsiyet: 'E' });
+  if (K.length) out.push({ karma: false, indexler: K, cinsiyet: 'K' });
+  return out;
+}
+
+function hucreDurumu(yatakId, t, dolu, temizlik, golge) {
+  const k = yatakId + '|' + t;
+  if (dolu.has(k)) return 'DOLU';
+  if (temizlik.has(k)) return 'TEMIZLIK';
+  if (golge && golge.has(k)) return 'ONERI';
+  return null;
+}
+
+/* Bir grubun tek odaya yerleşme adaylarını üret ve skorla */
+function odaAdaylari(rz, grup, ctx) {
+  const { yataklar, odalar, dolu, temizlik, golge } = ctx;
+  const n = grup.indexler.length;
+  const gelis = rz.gelis_tarihi, cikis = rz.cikis_tarihi;
+  const adaylar = [];
+  const elendi = { kapasite: 0, cinsiyet: 0, protokol: 0, temizlik: 0, karma: 0 };
+
+  for (const oda of odalar) {
+    if (oda.tesis !== rz.tesis) continue;
+    if (oda.protokol && !rz.protokol) { elendi.protokol++; continue; }
+
+    const odaYataklari = yataklar.filter(y => y.odaId === oda.id);
+    const bos = [], engelTemizlik = [];
+    for (const y of odaYataklari) {
+      let uygun = true, temizlikEngeli = false;
+      for (const t of aralik(gelis, cikis)) {
+        const d = hucreDurumu(y.id, t, dolu, temizlik, golge);
+        if (d) { uygun = false; if (d === 'TEMIZLIK') temizlikEngeli = true; break; }
+      }
+      if (uygun) bos.push(y); else if (temizlikEngeli) engelTemizlik.push(y);
+    }
+    if (bos.length < n) {
+      if (engelTemizlik.length && bos.length + engelTemizlik.length >= n) elendi.temizlik++;
+      else elendi.kapasite++;
+      continue;
+    }
+
+    // Cinsiyet kısıtı
+    const mevcut = odaCinsiyetleri(oda.id, gelis, cikis, yataklar, dolu, golge);
+    const odaTamamenBos = bos.length === odaYataklari.length && mevcut.size === 0;
+    if (grup.karma) {
+      if (!odaTamamenBos) { elendi.karma++; continue; }        // aile/karma grup yalnız boş odaya
+    } else if (mevcut.size > 0 && !(mevcut.size === 1 && mevcut.has(grup.cinsiyet))) {
+      elendi.cinsiyet++; continue;
+    }
+
+    // ── Skorlama
+    let skor = SKOR.TEK_ODA;
+    const notlar = [];
+    if (oda.yatakSayisi === n) { skor += SKOR.KAPASITE_TAM; notlar.push('Oda kapasitesi talebe birebir uyuyor'); }
+    const atil = oda.yatakSayisi - n - (odaYataklari.length - bos.length);
+    if (atil > 0) skor += SKOR.BOS_YATAK_CEZASI * atil;
+    if (!odaTamamenBos && !grup.karma && mevcut.has(grup.cinsiyet)) {
+      skor += SKOR.ODA_DOLDURMA; notlar.push('Oda aynı cinsiyetle kısmen dolu, parçalanma artmıyor');
+    }
+    if (rz.protokol) { skor += oda.protokol ? SKOR.PROTOKOL_UYUM : 0; if (oda.protokol) notlar.push('Protokol odası'); }
+    else if (oda.protokol) skor += SKOR.PROTOKOL_ISRAF;
+
+    // Komşu gecelerde sıkı paketleme / kısa boşluk cezası
+    const secilen = bos.slice(0, n);
+    for (const y of secilen) {
+      const onceki = hucreDurumu(y.id, ekle(gelis, -1), dolu, temizlik, golge);
+      const sonraki = hucreDurumu(y.id, cikis, dolu, temizlik, golge);
+      if (onceki) skor += SKOR.SIKI_PAKET;
+      if (sonraki) skor += SKOR.SIKI_PAKET;
+      const ikiOnce = hucreDurumu(y.id, ekle(gelis, -2), dolu, temizlik, golge);
+      if (!onceki && ikiOnce) skor += SKOR.KISA_BOSLUK_CEZASI;   // arada 1 gecelik satılamaz boşluk
+    }
+    skor += SKOR.ALT_KAT * (6 - oda.kat);
+    if (rz.gun_sayisi >= 5 && oda.kat <= 2) { skor += 6; notlar.push('Uzun konaklama için alt kat'); }
+
+    adaylar.push({ oda, yataklar: secilen, skor: Math.round(skor), notlar });
+  }
+  adaylar.sort((a, b) => b.skor - a.skor);
+  return { adaylar, elendi };
+}
+
+/* Tesiste belirli gecelerde toplam boş yatak — gerekçe metni için */
+function geceBazliBosluk(rz, ctx) {
+  const { yataklar, dolu, temizlik, golge } = ctx;
+  const tesisYatak = yataklar.filter(y => y.tesis === rz.tesis);
+  const satir = [];
+  for (const t of aralik(rz.gelis_tarihi, rz.cikis_tarihi)) {
+    let bos = 0;
+    for (const y of tesisYatak) if (!hucreDurumu(y.id, t, dolu, temizlik, golge)) bos++;
+    satir.push({ tarih: t, bos });
+  }
+  return satir;
+}
+
+/* Yerleştirilemeyen talep için insan okunur gerekçe */
+function gerekceUret(rz, grup, elendi, ctx, enIyiOdaKapasitesi, bolmeDenendi) {
+  const geceler = geceBazliBosluk(rz, ctx);
+  const sifir = geceler.filter(g => g.bos === 0);
+  const araligiYaz = `${tr(rz.gelis_tarihi)} – ${tr(rz.cikis_tarihi)}`;
+  const n = grup.indexler.length;
+
+  if (sifir.length) {
+    return `${araligiYaz} arası uygun yatak yok — ${sifir.map(g => tr(g.tarih)).slice(0, 3).join(', ')} ` +
+           `gece${sifir.length > 1 ? 'lerinde' : 'sinde'} tesiste hiç boş yatak bulunmuyor.`;
+  }
+  if (elendi.cinsiyet > 0 && elendi.kapasite === 0) {
+    return `${araligiYaz} arası boş yatak var ancak ${elendi.cinsiyet} oda karma konaklama kısıtı nedeniyle ` +
+           `kullanılamıyor (odalarda farklı cinsiyette misafir konaklıyor).`;
+  }
+  if (grup.karma && elendi.karma > 0) {
+    return `${araligiYaz} arası aile/birlikte kalma talebi için tamamen boş ${n} yataklı oda bulunamadı ` +
+           `(${elendi.karma} oda kısmen dolu olduğu için karma konaklamaya kapalı).`;
+  }
+  if (elendi.temizlik > 0 && elendi.kapasite === 0) {
+    return `${araligiYaz} arası yataklar çıkış-giriş temizlik boşluğu (${TEMIZLIK_GUN} gün) nedeniyle ` +
+           `aynı gün tahsis edilemiyor.`;
+  }
+  if (n > 1) {
+    const enAz = geceler.reduce((a, g) => Math.min(a, g.bos), 99);
+    return `${n} kişilik grup için ${araligiYaz} arası ardışık gecelerde aynı odada ${n} boş yatak bulunamadı ` +
+           `(aynı odada en fazla ${enIyiOdaKapasitesi} yatak müsait; tesis genelinde en dar gecede ${enAz} boş yatak var)` +
+           (bolmeDenendi ? '; grup ayrı odalara bölünerek de tamamlanamadı.' : '.');
+  }
+  const enAz = geceler.reduce((a, g) => Math.min(a, g.bos), 99);
+  return `${araligiYaz} arası uygun tek kişilik yatak yok (en dar gecede ${enAz} boş yatak, hiçbiri kısıtlara uymuyor).`;
+}
+
+/* Tek bir talebi yerleştirmeyi dene */
+function talebiDene(rz, ctx) {
+  const gruplar = taleptenGruplar(rz);
+  const atamalar = [];
+  const notlar = [];
+  let toplamSkor = 0;
+  const gecici = [];   // bu talep için gölgeye yazılan hücreler
+
+  const golgeYaz = (yatakId, cinsiyet) => {
+    for (const t of aralik(rz.gelis_tarihi, rz.cikis_tarihi)) {
+      const k = yatakId + '|' + t;
+      ctx.golge.set(k, { rezId: rz.id, cinsiyet }); gecici.push(k);
+    }
+    for (let i = 0; i < TEMIZLIK_GUN; i++) {
+      const k = yatakId + '|' + ekle(rz.cikis_tarihi, i);
+      if (!ctx.golge.has(k)) { ctx.golge.set(k, { rezId: rz.id, cinsiyet: null, temizlik: true }); gecici.push(k); }
+    }
+  };
+  const geriAl = () => { gecici.forEach(k => ctx.golge.delete(k)); gecici.length = 0; };
+
+  for (const grup of gruplar) {
+    const { adaylar, elendi } = odaAdaylari(rz, grup, ctx);
+    if (adaylar.length) {
+      const en = adaylar[0];
+      toplamSkor += en.skor;
+      notlar.push(...en.notlar);
+      grup.indexler.forEach((mi, k) => {
+        const y = en.yataklar[k];
+        atamalar.push({ misafirIndex: mi, yatakId: y.id, oda_no: y.oda_no, yatak_no: y.yatak_no, tesis: y.tesis });
+        golgeYaz(y.id, rz.misafirler[mi].cinsiyet);
+      });
+      continue;
+    }
+    // Tek odaya sığmadı → grubu bölmeyi dene (aile/birlikte kalma talebinde bölme yok)
+    if (grup.karma || grup.indexler.length === 1) {
+      const enIyi = enBosOdaKapasitesi(rz, ctx);
+      geriAl();
+      return { ok: false, gerekce: gerekceUret(rz, grup, elendi, ctx, enIyi) };
+    }
+    const bolme = grubuBol(rz, grup, ctx, golgeYaz);
+    if (!bolme.ok) {
+      const enIyi = enBosOdaKapasitesi(rz, ctx);
+      geriAl();
+      return { ok: false, gerekce: gerekceUret(rz, grup, elendi, ctx, enIyi, true) };
+    }
+    atamalar.push(...bolme.atamalar);
+    toplamSkor += bolme.skor;
+    notlar.push(bolme.not);
+  }
+  return { ok: true, atamalar, skor: Math.round(toplamSkor), notlar: [...new Set(notlar)], temizle: geriAl };
+}
+
+/* Bir odada aynı aralıkta müsait en yüksek yatak sayısı (gerekçe metni için) */
+function enBosOdaKapasitesi(rz, ctx) {
+  const { yataklar, odalar, dolu, temizlik, golge } = ctx;
+  let en = 0;
+  for (const oda of odalar) {
+    if (oda.tesis !== rz.tesis) continue;
+    let bos = 0;
+    for (const y of yataklar.filter(y => y.odaId === oda.id)) {
+      if (yatakMusait(y.id, rz.gelis_tarihi, rz.cikis_tarihi, dolu, temizlik, golge)) bos++;
+    }
+    if (bos > en) en = bos;
+  }
+  return en;
+}
+
+/* Grup tek odaya sığmıyorsa: aynı katta, mümkün olan en az sayıda odaya böl */
+function grubuBol(rz, grup, ctx, golgeYaz) {
+  const { yataklar, odalar, dolu, temizlik, golge } = ctx;
+  const kalan = [...grup.indexler];
+  const atamalar = [];
+  let skor = SKOR.BOLUNME_CEZASI;
+  const kullanilanKatlar = new Set();
+
+  while (kalan.length) {
+    const alt = { karma: false, cinsiyet: grup.cinsiyet, indexler: kalan.slice(0, 1) };
+    // mümkün olan en büyük parçayı yerleştir
+    let yerlesti = false;
+    for (let boy = Math.min(kalan.length, 3); boy >= 1; boy--) {
+      alt.indexler = kalan.slice(0, boy);
+      const { adaylar } = odaAdaylari(rz, alt, ctx);
+      if (!adaylar.length) continue;
+      // aynı kata toplanmayı tercih et
+      adaylar.sort((a, b) => {
+        const ak = kullanilanKatlar.size && !kullanilanKatlar.has(a.oda.kat) ? SKOR.FARKLI_KAT_CEZASI : 0;
+        const bk = kullanilanKatlar.size && !kullanilanKatlar.has(b.oda.kat) ? SKOR.FARKLI_KAT_CEZASI : 0;
+        return (b.skor + bk) - (a.skor + ak);
+      });
+      const en = adaylar[0];
+      alt.indexler.forEach((mi, k) => {
+        const y = en.yataklar[k];
+        atamalar.push({ misafirIndex: mi, yatakId: y.id, oda_no: y.oda_no, yatak_no: y.yatak_no, tesis: y.tesis });
+        golgeYaz(y.id, rz.misafirler[mi].cinsiyet);
+      });
+      kullanilanKatlar.add(en.oda.kat);
+      skor += en.skor / 2;
+      kalan.splice(0, boy);
+      yerlesti = true;
+      break;
+    }
+    if (!yerlesti) return { ok: false };
+  }
+  const katMetni = kullanilanKatlar.size > 1 ? ` (${kullanilanKatlar.size} farklı kat)` : ' (aynı kat)';
+  return { ok: true, atamalar, skor, not: `Grup ${new Set(atamalar.map(a => a.oda_no)).size} odaya bölündü${katMetni}` };
+}
+
+/* ── Motorun giriş noktası ──────────────────────────────────────────────── */
+function yerlestirmeMotoru(talepler, yataklar, odalar, dolu, temizlik, secenekler = {}) {
+  const ctx = { yataklar, odalar, dolu, temizlik, golge: new Map() };
+  const oneriler = [], basarisiz = [];
+  const sirali = oncelikSirala(talepler);
+  const golgeIz = new Map();   // rezId -> yazılan hücre anahtarları
+
+  const izle = (rezId, fn) => {
+    const once = new Set(ctx.golge.keys());
+    const sonuc = fn();
+    const yeni = [...ctx.golge.keys()].filter(k => !once.has(k));
+    if (sonuc.ok) golgeIz.set(rezId, yeni);
+    return sonuc;
+  };
+
+  for (const rz of sirali) {
+    let sonuc = izle(rz.id, () => talebiDene(rz, ctx));
+
+    // ── Tek seviyeli geri alma: yüksek öncelikli talep yerleşemediyse,
+    //    bu turda yerleşmiş daha düşük öncelikli ve tarihi çakışan bir öneriyi
+    //    geri al, tekrar dene; geri alınanı sonra yeniden yerleştirmeye çalış.
+    if (!sonuc.ok && secenekler.geriAlma !== false) {
+      const cakisanlar = oneriler.filter(o =>
+        o.rez.tesis === rz.tesis &&
+        o.rez.gelis_tarihi < rz.cikis_tarihi && rz.gelis_tarihi < o.rez.cikis_tarihi &&
+        oncelikSirala([rz, o.rez])[0].id === rz.id);
+      for (const kurban of cakisanlar.slice(-2)) {
+        (golgeIz.get(kurban.rez.id) || []).forEach(k => ctx.golge.delete(k));
+        const tekrar = izle(rz.id, () => talebiDene(rz, ctx));
+        if (tekrar.ok) {
+          sonuc = tekrar;
+          const yeniden = izle(kurban.rez.id, () => talebiDene(kurban.rez, ctx));
+          if (yeniden.ok) {
+            kurban.atamalar = yeniden.atamalar; kurban.skor = yeniden.skor;
+            kurban.notlar = [...yeniden.notlar, 'Öncelikli talep nedeniyle oda değişti'];
+          } else {
+            oneriler.splice(oneriler.indexOf(kurban), 1);
+            basarisiz.push({ rez: kurban.rez, gerekce: `Daha yüksek öncelikli ${rz.rez_no} talebi nedeniyle yeri ` +
+              `değiştirildi ve alternatif bulunamadı: ${yeniden.gerekce}` });
+          }
+          break;
+        } else {
+          // geri almayı iptal et: kurbanı yerine koy
+          izle(kurban.rez.id, () => talebiDene(kurban.rez, ctx));
+        }
+      }
+    }
+
+    if (sonuc.ok) oneriler.push({ rez: rz, atamalar: sonuc.atamalar, skor: sonuc.skor, notlar: sonuc.notlar });
+    else basarisiz.push({ rez: rz, gerekce: sonuc.gerekce });
+  }
+  return { oneriler, basarisiz };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4) UYGULAMA DURUMU (bellek içi — harici backend yok)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+function baslangicDurumu() {
+  const r = rng(20260914);
+  const { odalar, yataklar } = odalariUret(r);
+  const rezervasyonlar = rezervasyonlariUret(r, yataklar, odalar, SISTEM_TARIHI_BASLANGIC);
+  const kurallar = {};
+  TESISLER.forEach(t => kurallar[t.kod] = VARSAYILAN_PESINAT_KURALI());
+  return {
+    bugun: SISTEM_TARIHI_BASLANGIC,
+    tesis: 'ANKARA',
+    ekran: 'PANO',
+    odalar, yataklar, rezervasyonlar, kurallar,
+    gunluk: [{ tarih: SISTEM_TARIHI_BASLANGIC, metin: `Demo veri üretildi: ${odalar.length} oda / ${yataklar.length} yatak / ${rezervasyonlar.length} rezervasyon kaydı`, tip: 'bilgi' }],
+  };
+}
+
+function guncelle(liste, id, fn) { return liste.map(x => x.id === id ? fn({ ...x }) : x); }
+
+function indirgeyici(s, a) {
+  switch (a.tip) {
+
+    case 'TESIS': return { ...s, tesis: a.tesis };
+    case 'EKRAN': return { ...s, ekran: a.ekran };
+
+    /* Motor önerisini gerçek yerleşime çevir */
+    case 'ONERI_UYGULA': {
+      let rezler = s.rezervasyonlar;
+      const kayit = [];
+      for (const o of a.oneriler) {
+        rezler = guncelle(rezler, o.rez.id, rz => {
+          rz.misafirler = rz.misafirler.map((g, i) => {
+            const at = o.atamalar.find(x => x.misafirIndex === i);
+            return at ? { ...g, yatakId: at.yatakId, oda_no: at.oda_no, yatak_no: at.yatak_no } : { ...g };
+          });
+          if (rz.statu === 'TALEP') {
+            const kural = s.kurallar[rz.tesis];
+            rz.statu = (rz.pesinat_tutari > 0 && rz.tahsil_edilen < rz.pesinat_tutari) ? 'PESINAT_BEKLENIYOR' : 'ONAYLI';
+          }
+          rz.hareketler = [...rz.hareketler, {
+            tarih: s.bugun, kullanici: 'TTK7719',
+            metin: `Otomatik yerleştirme onaylandı → ${[...new Set(o.atamalar.map(x => 'Oda ' + x.oda_no + '/' + x.yatak_no))].join(', ')}`
+          }];
+          return rz;
+        });
+        kayit.push(`${o.rez.rez_no} — ${o.rez.ad_soyad}: ${[...new Set(o.atamalar.map(x => x.oda_no))].map(o2 => 'Oda ' + o2).join(', ')}`);
+      }
+      return { ...s, rezervasyonlar: rezler,
+        gunluk: [{ tarih: s.bugun, tip: 'basari', metin: `${a.oneriler.length} talep yerleştirildi: ${kayit.slice(0, 3).join(' · ')}${kayit.length > 3 ? ' …' : ''}` }, ...s.gunluk] };
+    }
+
+    /* Sürükle-bırak / manuel atama */
+    case 'MANUEL_ATA': {
+      const { rezId, misafirIndex, yatak } = a;
+      const rezler = guncelle(s.rezervasyonlar, rezId, rz => {
+        rz.misafirler = rz.misafirler.map((g, i) => i === misafirIndex
+          ? { ...g, yatakId: yatak.id, oda_no: yatak.oda_no, yatak_no: yatak.yatak_no } : { ...g });
+        if (rz.statu === 'TALEP' && rz.misafirler.every(g => g.yatakId)) {
+          rz.statu = (rz.pesinat_tutari > 0 && rz.tahsil_edilen < rz.pesinat_tutari) ? 'PESINAT_BEKLENIYOR' : 'ONAYLI';
+        }
+        rz.hareketler = [...rz.hareketler, { tarih: s.bugun, kullanici: 'TTK7719',
+          metin: `Manuel yerleştirme: ${rz.misafirler[misafirIndex].adi_soyadi} → Oda ${yatak.oda_no} / Yatak ${yatak.yatak_no}` }];
+        return rz;
+      });
+      const kyt = rezler.find(x => x.id === rezId);
+      return { ...s, rezervasyonlar: rezler, gunluk: [{ tarih: s.bugun, tip: 'basari',
+        metin: `${kyt.rez_no} — ${kyt.misafirler[misafirIndex].adi_soyadi} manuel olarak Oda ${yatak.oda_no} / Yatak ${yatak.yatak_no} yatağına yerleştirildi` }, ...s.gunluk] };
+    }
+
+    case 'ATAMA_KALDIR': {
+      const rezler = guncelle(s.rezervasyonlar, a.rezId, rz => {
+        rz.misafirler = rz.misafirler.map((g, i) =>
+          (a.misafirIndex == null || i === a.misafirIndex) ? { ...g, yatakId: null, oda_no: null, yatak_no: null } : { ...g });
+        rz.hareketler = [...rz.hareketler, { tarih: s.bugun, kullanici: 'TTK7719', metin: 'Yatak tahsisi kaldırıldı' }];
+        return rz;
+      });
+      const kyt2 = rezler.find(x => x.id === a.rezId);
+      return { ...s, rezervasyonlar: rezler, gunluk: [{ tarih: s.bugun, tip: 'bilgi',
+        metin: `${kyt2.rez_no} — yatak tahsisi kaldırıldı, yatak serbest bırakıldı` }, ...s.gunluk] };
+    }
+
+    /* Peşinat tahsilatı (yalnız statü/kayıt seviyesinde — muhasebe entegrasyonu yok) */
+    case 'TAHSILAT': {
+      const rezler = guncelle(s.rezervasyonlar, a.rezId, rz => {
+        rz.tahsil_edilen = Math.min(rz.pesinat_tutari, (rz.tahsil_edilen || 0) + a.tutar);
+        rz.pesinattan_kalan = Math.max(0, rz.pesinat_tutari - rz.tahsil_edilen);
+        rz.makbuz_no = rz.makbuz_no || String(1000 + Math.floor(Math.random() * 9000));
+        if (rz.pesinattan_kalan === 0 && ['TALEP','PESINAT_BEKLENIYOR'].includes(rz.statu)) rz.statu = 'ONAYLI';
+        rz.hareketler = [...rz.hareketler, { tarih: s.bugun, kullanici: 'TTK7719',
+          metin: `Peşinat tahsilatı ${para(a.tutar)} (Makbuz No ${rz.makbuz_no})` }];
+        return rz;
+      });
+      const kayit = rezler.find(x => x.id === a.rezId);
+      return { ...s, rezervasyonlar: rezler, gunluk: [{ tarih: s.bugun, tip: 'basari',
+        metin: `${kayit.rez_no} — ${kayit.ad_soyad}: ${para(a.tutar)} peşinat tahsil edildi, statü ${statuAd(kayit.statu)}` }, ...s.gunluk] };
+    }
+
+    case 'STATU': {
+      const rezler = guncelle(s.rezervasyonlar, a.rezId, rz => {
+        const eski = rz.statu;
+        rz.statu = a.statu;
+        if (a.statu === 'IPTAL') rz.misafirler = rz.misafirler.map(g => ({ ...g, yatakId: null, oda_no: null, yatak_no: null }));
+        rz.hareketler = [...rz.hareketler, { tarih: s.bugun, kullanici: 'TTK7719',
+          metin: `Statü değişikliği: ${statuAd(eski)} → ${statuAd(a.statu)}${a.statu === 'IPTAL' ? ' (yatak tahsisi serbest bırakıldı)' : ''}` }];
+        return rz;
+      });
+      const kyt3 = rezler.find(x => x.id === a.rezId);
+      return { ...s, rezervasyonlar: rezler, gunluk: [{ tarih: s.bugun, tip: a.statu === 'IPTAL' ? 'uyari' : 'bilgi',
+        metin: `${kyt3.rez_no} — ${kyt3.ad_soyad}: statü ${statuAd(a.statu)} olarak güncellendi` }, ...s.gunluk] };
+    }
+
+    case 'KURAL': {
+      const kurallar = { ...s.kurallar, [a.tesis]: { ...s.kurallar[a.tesis], [a.alan]: a.deger } };
+      // kural değişince ilgili tesisin peşinat tutarları yeniden hesaplanır
+      const rezler = s.rezervasyonlar.map(rz => {
+        if (rz.tesis !== a.tesis || ['CIKIS','IPTAL'].includes(rz.statu)) return rz;
+        const k = { ...rz };
+        pesinatHesapla(k, s.odalar, kurallar[a.tesis]);
+        if (k.pesinat_tutari === 0 && k.statu === 'PESINAT_BEKLENIYOR') k.statu = 'ONAYLI';
+        if (k.pesinat_tutari > k.tahsil_edilen && k.statu === 'ONAYLI' && fark(s.bugun, k.gelis_tarihi) > 0) k.statu = 'PESINAT_BEKLENIYOR';
+        return k;
+      });
+      return { ...s, kurallar, rezervasyonlar: rezler,
+        gunluk: [{ tarih: s.bugun, tip: 'bilgi', metin: `${TESISLER.find(t => t.kod === a.tesis).ad} peşinat kuralı güncellendi — etkilenen kayıtlar yeniden hesaplandı` }, ...s.gunluk] };
+    }
+
+    /* Süresi dolan talepleri iptale düşür, yatakları serbest bırak */
+    case 'SURE_KONTROL': {
+      const hedefGun = a.gun || s.bugun;
+      const dusen = [];
+      const rezler = s.rezervasyonlar.map(rz => {
+        if (rz.statu !== 'PESINAT_BEKLENIYOR') return rz;
+        if (!rz.pesinat_son_odeme_tarihi || rz.pesinat_son_odeme_tarihi >= hedefGun) return rz;
+        if (rz.tahsil_edilen >= rz.pesinat_tutari) return rz;
+        dusen.push(rz.rez_no + ' — ' + rz.ad_soyad);
+        return { ...rz, statu: 'IPTAL',
+          misafirler: rz.misafirler.map(g => ({ ...g, yatakId: null, oda_no: null, yatak_no: null })),
+          hareketler: [...rz.hareketler, { tarih: hedefGun, kullanici: 'SİSTEM',
+            metin: `Peşinat son ödeme tarihi (${tr(rz.pesinat_son_odeme_tarihi)}) geçtiği için otomatik iptal edildi; yatak tahsisi serbest bırakıldı` }] };
+      });
+      return { ...s, rezervasyonlar: rezler, gunluk: dusen.length
+        ? [{ tarih: hedefGun, tip: 'uyari', metin: `Süre aşımı: ${dusen.length} talep otomatik iptal edildi (${dusen.slice(0, 2).join(' · ')}${dusen.length > 2 ? ' …' : ''})` }, ...s.gunluk]
+        : [{ tarih: hedefGun, tip: 'bilgi', metin: 'Süre kontrolü çalıştı — iptale düşen talep yok' }, ...s.gunluk] };
+    }
+
+    /* Demo için sistem tarihini ilerlet ve statü kurallarını uygula */
+    case 'GUN_ILERLET': {
+      const yeni = ekle(s.bugun, a.adet || 1);
+      const olaylar = [];
+      let rezler = s.rezervasyonlar.map(rz => {
+        let k = rz;
+        if (k.statu === 'PESINAT_BEKLENIYOR' && k.pesinat_son_odeme_tarihi &&
+            k.pesinat_son_odeme_tarihi < yeni && k.tahsil_edilen < k.pesinat_tutari) {
+          olaylar.push(`${k.rez_no} süre aşımından iptal`);
+          k = { ...k, statu: 'IPTAL', misafirler: k.misafirler.map(g => ({ ...g, yatakId: null, oda_no: null, yatak_no: null })),
+                hareketler: [...k.hareketler, { tarih: yeni, kullanici: 'SİSTEM', metin: 'Peşinat süresi doldu — otomatik iptal, yatak serbest' }] };
+        }
+        if (k.statu === 'ONAYLI' && k.gelis_tarihi <= yeni && k.cikis_tarihi > yeni) {
+          olaylar.push(`${k.rez_no} girişi yapıldı`);
+          k = { ...k, statu: 'KONAKLIYOR', hareketler: [...k.hareketler, { tarih: yeni, kullanici: 'SİSTEM', metin: 'Giriş kaydı açıldı' }] };
+        }
+        if (k.statu === 'KONAKLIYOR' && k.cikis_tarihi <= yeni) {
+          olaylar.push(`${k.rez_no} çıkışı yapıldı`);
+          k = { ...k, statu: 'CIKIS', hareketler: [...k.hareketler, { tarih: yeni, kullanici: 'SİSTEM', metin: 'Çıkış kaydı kapatıldı' }] };
+        }
+        return k;
+      });
+      return { ...s, bugun: yeni, rezervasyonlar: rezler,
+        gunluk: [{ tarih: yeni, tip: olaylar.length ? 'basari' : 'bilgi',
+          metin: `Sistem tarihi ${tr(yeni)} oldu — ${olaylar.length} otomatik statü değişikliği${olaylar.length ? ': ' + olaylar.slice(0, 3).join(', ') + (olaylar.length > 3 ? ' …' : '') : ''}` }, ...s.gunluk] };
+    }
+
+    case 'GUNLUK': return { ...s, gunluk: [{ tarih: s.bugun, tip: a.gunlukTip || 'bilgi', metin: a.metin }, ...s.gunluk] };
+
+    default: return s;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5) ORTAK ARAYÜZ PARÇALARI
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const Rozet = ({ children, sinif = '', baslik }) => (
+  <span title={baslik} className={`inline-flex items-center gap-1 px-1.5 py-[1px] rounded border text-2xs font-semibold leading-4 ${sinif}`}>{children}</span>
+);
+
+const StatuRozet = ({ kod, kisa }) => <Rozet sinif={statuRenk(kod)} baslik={statuAd(kod)}>{kisa ? statuKisa(kod) : statuAd(kod)}</Rozet>;
+
+const Buton = ({ tur = 'ikincil', className = '', ...p }) => {
+  const t = {
+    birincil: 'bg-ttk-600 hover:bg-ttk-700 text-white border-ttk-700',
+    ikincil:  'bg-white hover:bg-slate-50 text-ttk-700 border-slate-300',
+    tehlike:  'bg-white hover:bg-rose-50 text-rose-700 border-rose-300',
+    basari:   'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700',
+    sessiz:   'bg-transparent hover:bg-slate-100 text-slate-600 border-transparent',
+  }[tur];
+  return <button {...p} className={`px-2.5 py-1 rounded border text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${t} ${className}`} />;
+};
+
+const Kart = ({ baslik, sag, children, className = '', govdeSinif = 'p-3' }) => (
+  <section className={`bg-white border border-slate-200 rounded shadow-sm ${className}`}>
+    {(baslik || sag) && (
+      <header className="flex items-center justify-between gap-3 px-3 py-2 border-b border-slate-200 bg-slate-50/70 rounded-t">
+        <h2 className="text-xs font-bold text-ttk-800 uppercase tracking-wide">{baslik}</h2>
+        <div className="flex items-center gap-2">{sag}</div>
+      </header>
+    )}
+    <div className={govdeSinif}>{children}</div>
+  </section>
+);
+
+const Kpi = ({ etiket, deger, alt, renk = 'text-ttk-700', ikon }) => (
+  <div className="bg-white border border-slate-200 rounded px-3 py-2 flex-1 min-w-[132px]">
+    <div className="text-2xs uppercase tracking-wide text-slate-500 font-semibold">{etiket}</div>
+    <div className={`num text-2xl font-bold leading-7 ${renk}`}>{deger}</div>
+    {alt && <div className="text-2xs text-slate-500 num">{alt}</div>}
+  </div>
+);
+
+function TarihGirdi({ deger, onChange, className = '' }) {
+  const [metin, setMetin] = useState(tr(deger));
+  useEffect(() => setMetin(tr(deger)), [deger]);
+  const uygula = () => {
+    const p = metin.trim().replace(/[\/\-\s]/g, '.').match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if (!p) { setMetin(tr(deger)); return; }
+    const s = `${p[3]}-${p[2].padStart(2, '0')}-${p[1].padStart(2, '0')}`;
+    const d = new Date(s + 'T00:00:00Z');
+    if (isNaN(d.getTime()) || iso(d) !== s) { setMetin(tr(deger)); return; }
+    onChange(s);
+  };
+  return (
+    <input value={metin} placeholder="GG.AA.YYYY" title="GG.AA.YYYY · ↑ / ↓ tuşlarıyla gün değiştirir"
+      onChange={e => setMetin(e.target.value)} onBlur={uygula}
+      onKeyDown={e => {
+        if (e.key === 'Enter') uygula();
+        if (e.key === 'ArrowUp')   { e.preventDefault(); onChange(ekle(deger, 1)); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); onChange(ekle(deger, -1)); }
+      }}
+      className={`num w-[86px] text-center border border-slate-300 rounded px-1.5 py-0.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-ttk-400 ${className}`} />
+  );
+}
+
+const Modal = ({ baslik, genislik = 'max-w-5xl', kapat, children, altlik }) => (
+  <div className="fixed inset-0 z-50 bg-ttk-900/40 flex items-start justify-center p-6 overflow-auto" onMouseDown={e => { if (e.target === e.currentTarget) kapat(); }}>
+    <div className={`bg-white rounded shadow-2xl w-full ${genislik} bel`} onMouseDown={e => e.stopPropagation()}>
+      <header className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 bg-ttk-700 text-white rounded-t">
+        <h3 className="text-sm font-bold">{baslik}</h3>
+        <button onClick={kapat} className="text-white/80 hover:text-white text-lg leading-none px-1">×</button>
+      </header>
+      <div className="p-4 max-h-[68vh] overflow-auto kaydir">{children}</div>
+      {altlik && <footer className="px-4 py-2.5 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2 rounded-b">{altlik}</footer>}
+    </div>
+  </div>
+);
+
+const Cubuk = ({ oran, renk = 'bg-ttk-500' }) => (
+  <div className="h-1.5 w-full bg-slate-200 rounded overflow-hidden">
+    <div className={`h-full ${renk}`} style={{ width: Math.min(100, Math.max(0, oran)) + '%' }} />
+  </div>
+);
+
+const BosDurum = ({ metin }) => (
+  <div className="text-center text-slate-400 text-xs py-8 border border-dashed border-slate-300 rounded">{metin}</div>
+);
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6) EKRAN 1 — DOLULUK PANOSU
+   ══════════════════════════════════════════════════════════════════════════ */
+
+function gunIstatistikleri(tesisKod, gunler, yataklar, rezler, dolu, temizlik) {
+  const tesisYatak = yataklar.filter(y => y.tesis === tesisKod);
+  const giris = {}, cikis = {};
+  for (const rz of rezler) {
+    if (rz.tesis !== tesisKod || rz.statu === 'IPTAL') continue;
+    const yerlesik = rz.misafirler.filter(g => g.yatakId).length;
+    if (!yerlesik) continue;
+    giris[rz.gelis_tarihi] = (giris[rz.gelis_tarihi] || 0) + yerlesik;
+    cikis[rz.cikis_tarihi] = (cikis[rz.cikis_tarihi] || 0) + yerlesik;
+  }
+  return gunler.map(t => {
+    let d = 0, tz = 0;
+    for (const y of tesisYatak) {
+      if (dolu.has(y.id + '|' + t)) d++;
+      else if (temizlik.has(y.id + '|' + t)) tz++;
+    }
+    const kapasite = tesisYatak.length;
+    return { tarih: t, kapasite, dolu: d, temizlik: tz, bos: kapasite - d - tz,
+             giris: giris[t] || 0, cikis: cikis[t] || 0, oran: kapasite ? Math.round(d / kapasite * 100) : 0 };
+  });
+}
+
+function yatakDurumu(y, t, dolu, temizlik) {
+  const d = dolu.get(y.id + '|' + t);
+  if (d) {
+    if (d.rez.statu === 'ONAYLI') return { durum: 'REZERVE', kayit: d };
+    if (d.rez.cikis_tarihi === ekle(t, 1)) return { durum: 'CIKIS_BEKLIYOR', kayit: d };
+    return { durum: 'DOLU', kayit: d };
+  }
+  if (temizlik.has(y.id + '|' + t)) return { durum: 'TEMIZLIK', kayit: temizlik.get(y.id + '|' + t) };
+  return { durum: 'BOS', kayit: null };
+}
+
+function DolulukPanosu({ s, gonder, dolu, temizlik }) {
+  const [seritBas, setSeritBas] = useState(s.bugun);
+  const [haritaTarihi, setHaritaTarihi] = useState(s.bugun);
+  const [aralikBas, setAralikBas] = useState(s.bugun);
+  const [aralikSon, setAralikSon] = useState(ekle(s.bugun, 3));
+  const [detay, setDetay] = useState(null);
+
+  useEffect(() => { setSeritBas(s.bugun); setHaritaTarihi(s.bugun); setAralikBas(s.bugun); setAralikSon(ekle(s.bugun, 3)); }, [s.bugun]);
+
+  const gunler = useMemo(() => Array.from({ length: 30 }, (_, i) => ekle(seritBas, i)), [seritBas]);
+  const ist = useMemo(() => gunIstatistikleri(s.tesis, gunler, s.yataklar, s.rezervasyonlar, dolu, temizlik),
+    [s.tesis, gunler, s.yataklar, s.rezervasyonlar, dolu, temizlik]);
+
+  const tesisYatak = useMemo(() => s.yataklar.filter(y => y.tesis === s.tesis), [s.yataklar, s.tesis]);
+  const tesisOda   = useMemo(() => s.odalar.filter(o => o.tesis === s.tesis), [s.odalar, s.tesis]);
+
+  const bugunIst = ist.find(x => x.tarih === haritaTarihi) ||
+    gunIstatistikleri(s.tesis, [haritaTarihi], s.yataklar, s.rezervasyonlar, dolu, temizlik)[0];
+
+  /* Seçili aralık için kalan yatak analizi */
+  const aralikAnaliz = useMemo(() => {
+    if (!aralikBas || !aralikSon || aralikSon <= aralikBas) return null;
+    const gs = aralik(aralikBas, aralikSon);
+    const satir = gunIstatistikleri(s.tesis, gs, s.yataklar, s.rezervasyonlar, dolu, temizlik);
+    const garanti = satir.reduce((a, x) => Math.min(a, x.bos), Infinity);
+    const ort = Math.round(satir.reduce((a, x) => a + x.bos, 0) / satir.length);
+    const enDar = satir.reduce((a, x) => (x.bos < a.bos ? x : a), satir[0]);
+    const tekKisilik = (() => {              // aralığın tamamında müsait tek kişilik oda yatağı
+      let n = 0;
+      for (const y of tesisYatak) if (y.tip === 'TEK' && yatakMusait(y.id, aralikBas, aralikSon, dolu, temizlik)) n++;
+      return n;
+    })();
+    const kesintisiz = tesisYatak.filter(y => yatakMusait(y.id, aralikBas, aralikSon, dolu, temizlik)).length;
+    return { gece: gs.length, garanti, ort, enDar, kesintisiz, tekKisilik, satir };
+  }, [aralikBas, aralikSon, s.tesis, s.yataklar, s.rezervasyonlar, dolu, temizlik, tesisYatak]);
+
+  const katlar = useMemo(() => {
+    const m = new Map();
+    tesisOda.forEach(o => { if (!m.has(o.kat)) m.set(o.kat, []); m.get(o.kat).push(o); });
+    return [...m.entries()].sort((a, b) => a[0] - b[0]);
+  }, [tesisOda]);
+
+  const tesisOzet = useMemo(() => TESISLER.map(t => {
+    const x = gunIstatistikleri(t.kod, [s.bugun], s.yataklar, s.rezervasyonlar, dolu, temizlik)[0];
+    return { ...t, ...x };
+  }), [s.bugun, s.yataklar, s.rezervasyonlar, dolu, temizlik]);
+
+  return (
+    <div className="space-y-3">
+      {/* KPI şeridi */}
+      <div className="flex gap-2 flex-wrap">
+        <Kpi etiket="Dolu Yatak" deger={bugunIst.dolu} alt={`${bugunIst.kapasite} yatak kapasite`} />
+        <Kpi etiket="Boş Yatak" deger={bugunIst.bos} alt={`%${100 - bugunIst.oran} boşluk`} renk="text-emerald-700" />
+        <Kpi etiket="Giriş Yapacak" deger={bugunIst.giris} alt={tr(haritaTarihi)} renk="text-sky-700" />
+        <Kpi etiket="Çıkış Yapacak" deger={bugunIst.cikis} alt={tr(haritaTarihi)} renk="text-orange-600" />
+        <Kpi etiket="Temizlikte" deger={bugunIst.temizlik} alt={`${TEMIZLIK_GUN} gün blok`} renk="text-violet-700" />
+        <Kpi etiket="Doluluk" deger={'%' + bugunIst.oran} alt={ayAdi(haritaTarihi) + ' ' + haritaTarihi.slice(0, 4)} />
+        <div className="bg-white border border-slate-200 rounded px-3 py-2 min-w-[300px]">
+          <div className="text-2xs uppercase tracking-wide text-slate-500 font-semibold mb-1">Tesis Karşılaştırma ({tr(s.bugun)})</div>
+          <table className="w-full text-2xs num">
+            <tbody>
+              {tesisOzet.map(t => (
+                <tr key={t.kod} className={t.kod === s.tesis ? 'font-bold text-ttk-800' : 'text-slate-600'}>
+                  <td className="pr-2">{t.ad}</td>
+                  <td className="pr-2 text-right">{t.dolu}/{t.kapasite}</td>
+                  <td className="w-20"><Cubuk oran={t.oran} renk={t.oran > 90 ? 'bg-rose-500' : t.oran > 70 ? 'bg-amber-500' : 'bg-ttk-500'} /></td>
+                  <td className="pl-2 text-right w-9">%{t.oran}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 30 günlük takvim şeridi */}
+      <Kart baslik="30 Günlük Doluluk Takvimi"
+        sag={<>
+          <Buton tur="sessiz" onClick={() => setSeritBas(ekle(seritBas, -30))}>◀ Önceki 30 gün</Buton>
+          <Buton tur="sessiz" onClick={() => setSeritBas(s.bugun)}>Bugün</Buton>
+          <Buton tur="sessiz" onClick={() => setSeritBas(ekle(seritBas, 30))}>Sonraki 30 gün ▶</Buton>
+        </>}
+        govdeSinif="p-2 overflow-x-auto kaydir">
+        <div className="flex gap-[2px] min-w-[1360px]">
+          {ist.map(g => {
+            const secili = g.tarih >= aralikBas && g.tarih < aralikSon;
+            const bugunMu = g.tarih === s.bugun;
+            const aktif = g.tarih === haritaTarihi;
+            return (
+              <button key={g.tarih} onClick={() => setHaritaTarihi(g.tarih)}
+                onDoubleClick={() => { setAralikBas(g.tarih); setAralikSon(ekle(g.tarih, 1)); }}
+                title={`${tr(g.tarih)} — Dolu ${g.dolu}, Boş ${g.bos}, Giriş ${g.giris}, Çıkış ${g.cikis}\n(çift tık: aralığı bu güne al)`}
+                className={`flex-1 min-w-[42px] rounded border px-1 pt-1 pb-1.5 text-center transition-colors
+                  ${aktif ? 'border-ttk-600 ring-1 ring-ttk-400' : 'border-slate-200'}
+                  ${secili ? 'bg-ttk-50' : haftaSonu(g.tarih) ? 'bg-slate-50' : 'bg-white'} hover:bg-ttk-50`}>
+                <div className={`text-2xs font-bold num ${bugunMu ? 'text-rose-600' : 'text-ttk-800'}`}>{g.tarih.slice(8)}.{g.tarih.slice(5, 7)}</div>
+                <div className="text-[9px] text-slate-400 leading-3">{hg(g.tarih)}</div>
+                <div className="my-1 h-14 flex items-end justify-center bg-slate-100 rounded-sm overflow-hidden">
+                  <div className={`w-full ${g.oran >= 95 ? 'bg-rose-500' : g.oran >= 80 ? 'bg-amber-500' : g.oran >= 50 ? 'bg-ttk-500' : 'bg-ttk-300'}`}
+                       style={{ height: Math.max(3, g.oran) + '%' }} />
+                </div>
+                <div className="num text-2xs font-semibold text-ttk-700 leading-3">{g.dolu}</div>
+                <div className="num text-[9px] text-emerald-700 leading-3">{g.bos} boş</div>
+                <div className="num text-[9px] leading-3">
+                  <span className="text-sky-600">▲{g.giris}</span> <span className="text-orange-600">▼{g.cikis}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-3 mt-2 px-1 text-2xs text-slate-500">
+          <span className="flex items-center gap-1"><i className="w-3 h-2 inline-block bg-ttk-500 rounded-sm" /> dolu yatak oranı</span>
+          <span className="flex items-center gap-1"><i className="w-3 h-2 inline-block bg-amber-500 rounded-sm" /> %80+</span>
+          <span className="flex items-center gap-1"><i className="w-3 h-2 inline-block bg-rose-500 rounded-sm" /> %95+</span>
+          <span className="text-sky-600">▲ giriş</span><span className="text-orange-600">▼ çıkış</span>
+          <span className="ml-auto">Sütuna tıklayın: oda/yatak haritası o güne gelir · çift tıklayın: tarih aralığı başlar</span>
+        </div>
+      </Kart>
+
+      <div className="grid grid-cols-12 gap-3">
+        {/* Aralık analizi */}
+        <Kart className="col-span-3" baslik="Seçili Tarih Aralığı — Kalan Yatak">
+          <div className="flex items-center gap-1.5 mb-3">
+            <TarihGirdi deger={aralikBas} onChange={setAralikBas} />
+            <span className="text-slate-400 text-xs">→</span>
+            <TarihGirdi deger={aralikSon} onChange={setAralikSon} />
+          </div>
+          {!aralikAnaliz ? <BosDurum metin="Geçerli bir tarih aralığı seçiniz" /> : (
+            <div className="space-y-2">
+              <div className="bg-emerald-50 border border-emerald-200 rounded p-2">
+                <div className="text-2xs uppercase font-semibold text-emerald-800">Garanti Kalan Yatak</div>
+                <div className="num text-3xl font-bold text-emerald-700 leading-9">{aralikAnaliz.garanti}</div>
+                <div className="text-2xs text-emerald-800">
+                  {aralikAnaliz.gece} gecenin tamamında en az bu kadar boş yatak var
+                  <br />(en dar gece: {tr(aralikAnaliz.enDar.tarih)} — {aralikAnaliz.enDar.bos} boş)
+                </div>
+              </div>
+              <dl className="text-xs divide-y divide-slate-100">
+                {[['Kesintisiz aynı yatakta müsait', aralikAnaliz.kesintisiz + ' yatak'],
+                  ['Bunlardan tek kişilik odada', aralikAnaliz.tekKisilik + ' yatak'],
+                  ['Ortalama boş yatak / gece', aralikAnaliz.ort],
+                  ['Gece sayısı', aralikAnaliz.gece]].map(([k, v]) => (
+                  <div key={k} className="flex justify-between py-1"><dt className="text-slate-500">{k}</dt><dd className="num font-semibold text-ttk-800">{v}</dd></div>
+                ))}
+              </dl>
+              <div className="pt-1">
+                <div className="text-2xs uppercase font-semibold text-slate-500 mb-1">Gece bazında boş yatak</div>
+                <div className="space-y-[2px] max-h-40 overflow-auto kaydir pr-1">
+                  {aralikAnaliz.satir.map(g => (
+                    <div key={g.tarih} className="flex items-center gap-1.5 text-2xs num">
+                      <span className="w-16 text-slate-500">{tr(g.tarih)}</span>
+                      <div className="flex-1"><Cubuk oran={g.kapasite ? g.bos / g.kapasite * 100 : 0} renk="bg-emerald-500" /></div>
+                      <span className="w-6 text-right font-semibold text-emerald-700">{g.bos}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </Kart>
+
+        {/* Oda / yatak haritası */}
+        <Kart className="col-span-9" baslik={`Oda / Yatak Haritası — ${tr(haritaTarihi)}`}
+          sag={<>
+            <div className="flex items-center gap-2 mr-2 text-2xs">
+              {Object.entries(YATAK_DURUM).map(([k, v]) => (
+                <span key={k} className="flex items-center gap-1 text-slate-600">
+                  <i className={`w-2.5 h-2.5 rounded-sm inline-block ${v.nokta}`} />{v.ad}
+                </span>
+              ))}
+            </div>
+            <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, -1))}>◀</Buton>
+            <TarihGirdi deger={haritaTarihi} onChange={setHaritaTarihi} />
+            <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, 1))}>▶</Buton>
+          </>}>
+          <div className="space-y-3 max-h-[460px] overflow-auto kaydir pr-1">
+            {katlar.map(([kat, odalar]) => (
+              <div key={kat}>
+                <div className="text-2xs font-bold text-slate-500 uppercase tracking-wide mb-1">{kat}. Kat · {odalar.length} oda</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {odalar.map(o => {
+                    const ys = tesisYatak.filter(y => y.odaId === o.id);
+                    return (
+                      <div key={o.id} className="border border-slate-200 rounded bg-slate-50/60 px-1.5 py-1 w-[104px]">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="num text-xs font-bold text-ttk-800">Oda {o.oda_no}</span>
+                          {o.protokol && <Rozet sinif="bg-violet-100 text-violet-700 border-violet-300" baslik="Protokol odası">P</Rozet>}
+                        </div>
+                        <div className="flex gap-1">
+                          {ys.map(y => {
+                            const { durum, kayit } = yatakDurumu(y, haritaTarihi, dolu, temizlik);
+                            const v = YATAK_DURUM[durum];
+                            return (
+                              <button key={y.id} onClick={() => setDetay({ yatak: y, tarih: haritaTarihi, durum, kayit })}
+                                title={`Oda ${y.oda_no} / Yatak ${y.yatak_no} — ${v.ad}${kayit && kayit.misafir ? '\n' + kayit.misafir.adi_soyadi : ''}`}
+                                className={`yatak-hucre flex-1 h-9 rounded border text-2xs font-bold ${v.kutu}`}>
+                                {y.yatak_no}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="num text-[9px] text-slate-400 mt-0.5">{para(o.yatak_fiyati)}/gece</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Kart>
+      </div>
+
+      {detay && (
+        <Modal baslik={`Yatak Detayı — Oda ${detay.yatak.oda_no} / Yatak ${detay.yatak.yatak_no} · ${tr(detay.tarih)}`} genislik="max-w-2xl" kapat={() => setDetay(null)}>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Rozet sinif={YATAK_DURUM[detay.durum].kutu}>{YATAK_DURUM[detay.durum].ad}</Rozet>
+              <span className="text-xs text-slate-500">{detay.yatak.tip === 'TEK' ? 'Tek kişilik' : detay.yatak.tip === 'CIFT' ? 'İki kişilik' : 'Üç kişilik'} oda · {para(detay.yatak.yatak_fiyati)}/gece</span>
+            </div>
+            {detay.kayit && detay.kayit.rez ? <RezervasyonOzet rz={detay.kayit.rez} misafir={detay.kayit.misafir} /> :
+              <BosDurum metin="Bu tarihte yatağa ait kayıt yok." />}
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function RezervasyonOzet({ rz, misafir }) {
+  const satir = (k, v) => <div className="flex justify-between gap-4 py-1 border-b border-slate-100"><span className="text-slate-500">{k}</span><span className="num font-semibold text-ttk-900 text-right">{v}</span></div>;
+  return (
+    <div className="text-xs grid grid-cols-2 gap-x-6">
+      <div>
+        {satir('Rez. No', rz.rez_no)}
+        {satir('Rezerv Eden', rz.ad_soyad)}
+        {satir('Tc Kimlik No', misafir ? misafir.tc_kimlik_no : rz.misafirler[0].tc_kimlik_no)}
+        {satir('Adı Soyadı', misafir ? misafir.adi_soyadi : rz.misafirler[0].adi_soyadi)}
+        {satir('Sicil No', (misafir || rz.misafirler[0]).sicil_no || '—')}
+        {satir('Geliş Tarihi', tr(rz.gelis_tarihi))}
+        {satir('Çıkış Tarihi', tr(rz.cikis_tarihi) + (rz.uzatma ? ` (uzatıldı, önceki ${tr(rz.onceki_cikis_tarihi)})` : ''))}
+        {satir('Kaldığı Gün', rz.gun_sayisi)}
+      </div>
+      <div>
+        {satir('Kurum-Şahıs', rz.kurum_sahis === 'KURUM' ? 'Kurum' : 'Şahıs')}
+        {satir('Ödeyecek', rz.odeyecek)}
+        {satir('Ödeme Türü', ODEME_TURU[rz.odeme_turu])}
+        {satir('Geliş Nedeni', rz.gelis_nedeni)}
+        {satir('Görev Sevk No', (misafir || rz.misafirler[0]).gorev_sevk_no || '—')}
+        {satir('Harcırah Miktarı', (misafir || rz.misafirler[0]).harcirah_miktari ? para((misafir || rz.misafirler[0]).harcirah_miktari) : '—')}
+        {satir('Peşinat / Kalan', rz.pesinat_tutari ? `${para(rz.tahsil_edilen)} / ${para(Math.max(0, rz.pesinat_tutari - rz.tahsil_edilen))}` : 'Peşinat aranmıyor')}
+        {satir('Statü', statuAd(rz.statu))}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   7) EKRAN 2 — REZERVASYON VE OTOMATİK YERLEŞTİRME
+   ══════════════════════════════════════════════════════════════════════════ */
+
+function RezervasyonEkrani({ s, gonder, dolu, temizlik }) {
+  const [secili, setSecili] = useState(null);
+  const [filtreBas, setFiltreBas] = useState(s.bugun);
+  const [filtreSon, setFiltreSon] = useState(ekle(s.bugun, 21));
+  const [statuFiltre, setStatuFiltre] = useState('BEKLEYEN');
+  const [arama, setArama] = useState('');
+  const [oneri, setOneri] = useState(null);
+  const [onaylanan, setOnaylanan] = useState({});
+  const [uyari, setUyari] = useState(null);
+  const [surukleHedef, setSurukleHedef] = useState(null);
+  const [seciliMisafir, setSeciliMisafir] = useState(null);
+  const [haritaTarihi, setHaritaTarihi] = useState(s.bugun);
+
+  useEffect(() => { setFiltreBas(s.bugun); setFiltreSon(ekle(s.bugun, 21)); setHaritaTarihi(s.bugun); }, [s.bugun]);
+  useEffect(() => { if (!uyari) return; const t = setTimeout(() => setUyari(null), 4000); return () => clearTimeout(t); }, [uyari]);
+
+  const talepler = useMemo(() => s.rezervasyonlar.filter(rz => {
+    if (rz.tesis !== s.tesis) return false;
+    if (rz.gelis_tarihi < filtreBas || rz.gelis_tarihi > filtreSon) return false;
+    if (statuFiltre === 'BEKLEYEN' && !['TALEP', 'PESINAT_BEKLENIYOR'].includes(rz.statu)) return false;
+    if (statuFiltre === 'YERLESMEMIS' && rz.misafirler.every(g => g.yatakId)) return false;
+    if (!['HEPSI', 'BEKLEYEN', 'YERLESMEMIS'].includes(statuFiltre) && rz.statu !== statuFiltre) return false;
+    if (statuFiltre === 'HEPSI' && rz.statu === 'IPTAL') return false;
+    if (arama) {
+      const q = arama.toLocaleLowerCase('tr-TR');
+      const havuz = (rz.ad_soyad + ' ' + rz.rez_no + ' ' + rz.aciklama + ' ' +
+        rz.misafirler.map(g => g.adi_soyadi + ' ' + g.tc_kimlik_no).join(' ')).toLocaleLowerCase('tr-TR');
+      if (!havuz.includes(q)) return false;
+    }
+    return true;
+  }).sort((a, b) => a.gelis_tarihi < b.gelis_tarihi ? -1 : a.gelis_tarihi > b.gelis_tarihi ? 1 : (a.rez_no < b.rez_no ? -1 : 1)),
+    [s.rezervasyonlar, s.tesis, filtreBas, filtreSon, statuFiltre, arama]);
+
+  const seciliRez = secili ? s.rezervasyonlar.find(r => r.id === secili) : null;
+  useEffect(() => { if (seciliRez) setHaritaTarihi(seciliRez.gelis_tarihi); setSeciliMisafir(null); }, [secili]);
+
+  const tesisYatak = useMemo(() => s.yataklar.filter(y => y.tesis === s.tesis), [s.yataklar, s.tesis]);
+  const tesisOda = useMemo(() => s.odalar.filter(o => o.tesis === s.tesis), [s.odalar, s.tesis]);
+  const katlar = useMemo(() => {
+    const m = new Map();
+    tesisOda.forEach(o => { if (!m.has(o.kat)) m.set(o.kat, []); m.get(o.kat).push(o); });
+    return [...m.entries()].sort((a, b) => a[0] - b[0]);
+  }, [tesisOda]);
+
+  /* Seçili talebin tarih aralığı için yatak müsaitliği (canlı bağ) */
+  const musaitlik = useMemo(() => {
+    if (!seciliRez) return null;
+    const haric = new Set([seciliRez.id]);
+    const { dolu: d2, temizlik: t2 } = dolulukKur(s.rezervasyonlar.filter(r => !haric.has(r.id)));
+    const geceler = aralik(seciliRez.gelis_tarihi, seciliRez.cikis_tarihi);
+    const harita = new Map();
+    let tamSayi = 0;
+    for (const y of tesisYatak) {
+      let engel = 0;
+      for (const t of geceler) if (hucreDurumu(y.id, t, d2, t2)) engel++;
+      harita.set(y.id, { tam: engel === 0, engel, gece: geceler.length });
+      if (!engel) tamSayi++;
+    }
+    return { harita, dolu: d2, temizlik: t2, gece: geceler.length, tamSayi };
+  }, [seciliRez, s.rezervasyonlar, tesisYatak]);
+
+  const yerlesmemisSayi = talepler.filter(rz => rz.misafirler.some(g => !g.yatakId)).length;
+
+  /* ── Motoru çalıştır */
+  const otomatikYerlestir = () => {
+    const hedef = talepler.filter(rz => rz.misafirler.some(g => !g.yatakId) && !['IPTAL', 'CIKIS'].includes(rz.statu));
+    if (!hedef.length) { setUyari({ tip: 'bilgi', metin: 'Seçili filtrede yerleştirilecek talep bulunmuyor.' }); return; }
+    const haricSet = new Set(hedef.map(r => r.id));
+    const { dolu: d2, temizlik: t2 } = dolulukKur(s.rezervasyonlar.filter(r => !haricSet.has(r.id)));
+    const t0 = performance.now();
+    const sonuc = yerlestirmeMotoru(hedef, s.yataklar, s.odalar, d2, t2, {});
+    sonuc.sure = Math.round(performance.now() - t0);
+    setOneri(sonuc);
+    const isaret = {};
+    sonuc.oneriler.forEach(o => isaret[o.rez.id] = true);
+    setOnaylanan(isaret);
+  };
+
+  const onayla = () => {
+    const secilenler = oneri.oneriler.filter(o => onaylanan[o.rez.id]);
+    if (secilenler.length) gonder({ tip: 'ONERI_UYGULA', oneriler: secilenler });
+    setOneri(null);
+  };
+
+  /* ── Yerleştirme (sürükle-bırak ve tıklama ortak yolu) */
+  const yerlestir = (yatak, veri) => {
+    const rz = s.rezervasyonlar.find(r => r.id === veri.rezId);
+    if (!rz) return;
+    const haric = new Set([rz.id]);
+    const { dolu: d2, temizlik: t2 } = dolulukKur(s.rezervasyonlar.filter(r => !haric.has(r.id)));
+    if (!yatakMusait(yatak.id, rz.gelis_tarihi, rz.cikis_tarihi, d2, t2)) {
+      setUyari({ tip: 'hata', metin: `Oda ${yatak.oda_no} / Yatak ${yatak.yatak_no} — ${tr(rz.gelis_tarihi)} – ${tr(rz.cikis_tarihi)} aralığında müsait değil (dolu veya temizlik bloğunda).` });
+      return;
+    }
+    const oda = tesisOda.find(o => o.id === yatak.odaId);
+    const cins = odaCinsiyetleri(yatak.odaId, rz.gelis_tarihi, rz.cikis_tarihi, tesisYatak, d2);
+    const misafirCins = rz.misafirler[veri.misafirIndex].cinsiyet;
+    if (!rz.aile && cins.size && !cins.has(misafirCins)) {
+      setUyari({ tip: 'hata', metin: `Oda ${yatak.oda_no} karma konaklamaya kapalı — odada ${[...cins].map(c => c === 'E' ? 'erkek' : 'kadın').join('/')} misafir var.` });
+      return;
+    }
+    if (oda && oda.protokol && !rz.protokol) {
+      setUyari({ tip: 'uyari', metin: `Oda ${yatak.oda_no} protokol odasıdır; yine de tahsis edildi.` });
+    }
+    gonder({ tip: 'MANUEL_ATA', rezId: rz.id, misafirIndex: veri.misafirIndex, yatak });
+    setSeciliMisafir(null);
+  };
+
+  const birak = (yatak) => (e) => {
+    e.preventDefault(); setSurukleHedef(null);
+    let veri; try { veri = JSON.parse(e.dataTransfer.getData('text/plain')); } catch (_) { return; }
+    yerlestir(yatak, veri);
+  };
+
+  /* Tıklayarak yerleştirme: önce misafir kartı, sonra yatak */
+  const yatagaTikla = (yatak) => {
+    if (!seciliRez) return;
+    const i = seciliMisafir != null ? seciliMisafir : seciliRez.misafirler.findIndex(g => !g.yatakId);
+    if (i < 0) { setUyari({ tip: 'bilgi', metin: 'Bu talepteki tüm misafirler yerleştirilmiş. Önce bir misafir kartına tıklayın.' }); return; }
+    yerlestir(yatak, { rezId: seciliRez.id, misafirIndex: i });
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Araç çubuğu */}
+      <div className="bg-white border border-slate-200 rounded px-3 py-2 flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <span className="text-2xs uppercase font-semibold text-slate-500">Geliş Tarihi</span>
+          <TarihGirdi deger={filtreBas} onChange={setFiltreBas} />
+          <span className="text-slate-400 text-xs">/</span>
+          <TarihGirdi deger={filtreSon} onChange={setFiltreSon} />
+        </div>
+        <select value={statuFiltre} onChange={e => setStatuFiltre(e.target.value)}
+          className="border border-slate-300 rounded px-1.5 py-1 text-xs bg-white">
+          <option value="BEKLEYEN">Bekleyen talepler (Talep + Peşinat Bekleniyor)</option>
+          <option value="YERLESMEMIS">Yatağı olmayan tüm kayıtlar</option>
+          <option value="HEPSI">Tüm kayıtlar (iptal hariç)</option>
+          {STATULER.map(x => <option key={x.kod} value={x.kod}>{x.ad}</option>)}
+        </select>
+        <input value={arama} onChange={e => setArama(e.target.value)} placeholder="Ad soyad / Tc kimlik / Rez. no ara…"
+          className="border border-slate-300 rounded px-2 py-1 text-xs w-56" />
+        <div className="text-xs text-slate-500 num">
+          <b className="text-ttk-800">{talepler.length}</b> kayıt · yerleştirilmemiş <b className="text-rose-600">{yerlesmemisSayi}</b>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <Buton tur="birincil" onClick={otomatikYerlestir}>⚙ Otomatik Yerleştir</Buton>
+        </div>
+      </div>
+
+      {uyari && (
+        <div className={`px-3 py-2 rounded border text-xs bel ${uyari.tip === 'hata' ? 'bg-rose-50 border-rose-300 text-rose-800'
+          : uyari.tip === 'uyari' ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-ttk-50 border-ttk-200 text-ttk-800'}`}>
+          {uyari.metin}
+        </div>
+      )}
+
+      <div className="grid grid-cols-12 gap-3">
+        {/* Sol: talep listesi */}
+        <Kart className="col-span-6" baslik="Rezervasyon Talepleri" govdeSinif="p-0"
+          sag={<span className="text-2xs text-slate-500">satıra tıklayın → sağdaki doluluk o talebe göre hesaplanır</span>}>
+          <div className="max-h-[330px] overflow-auto kaydir">
+            <table className="veri w-full">
+              <thead><tr>
+                <th>Adı Soyadı</th><th>Rezerv Tarihi</th><th>Geliş / Çıkış</th><th className="text-center">Kişi</th>
+                <th className="text-center">Gün</th><th>Oda No</th><th>Statü</th><th>Açıklama</th>
+              </tr></thead>
+              <tbody>
+                {talepler.map(rz => {
+                  const odalar = [...new Set(rz.misafirler.filter(g => g.oda_no).map(g => g.oda_no))];
+                  const eksik = rz.misafirler.some(g => !g.yatakId);
+                  return (
+                    <tr key={rz.id} onClick={() => setSecili(rz.id)}
+                      className={`cursor-pointer ${secili === rz.id ? 'secili' : ''} ${eksik ? 'bg-rose-50/40' : ''}`}>
+                      <td className="max-w-[170px] truncate font-semibold text-ttk-900" title={rz.ad_soyad}>
+                        {rz.protokol && <span title="Protokol" className="text-violet-600 mr-1">★</span>}{rz.ad_soyad}
+                      </td>
+                      <td className="num text-slate-500">{tr(rz.rezerv_tarihi)}</td>
+                      <td className="num">{tr(rz.gelis_tarihi)} – {tr(rz.cikis_tarihi)}</td>
+                      <td className="num text-center">{rz.kisi_sayisi}{rz.aile && <span title="Aile / birlikte kalma talebi" className="text-amber-600 ml-0.5">⚭</span>}</td>
+                      <td className="num text-center">{rz.gun_sayisi}</td>
+                      <td className="num">{odalar.length ? odalar.join(', ') : <span className="text-rose-600 font-semibold">—</span>}</td>
+                      <td><StatuRozet kod={rz.statu} kisa /></td>
+                      <td className="max-w-[140px] truncate text-slate-500" title={rz.aciklama}>{rz.aciklama}</td>
+                    </tr>
+                  );
+                })}
+                {!talepler.length && <tr><td colSpan="8" className="text-center text-slate-400 py-6">Filtreye uyan talep yok.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </Kart>
+
+        {/* Sağ: seçili talep ve müsaitlik */}
+        <Kart className="col-span-6" baslik={seciliRez ? `Seçili Talep — ${seciliRez.rez_no}` : 'Seçili Talep'} govdeSinif="p-3"
+          sag={seciliRez && <>
+            <Buton tur="tehlike" onClick={() => gonder({ tip: 'ATAMA_KALDIR', rezId: seciliRez.id })}>Tahsisi Kaldır</Buton>
+            <Buton onClick={() => {
+              const haric = new Set([seciliRez.id]);
+              const { dolu: d2, temizlik: t2 } = dolulukKur(s.rezervasyonlar.filter(r => !haric.has(r.id)));
+              const sonuc = yerlestirmeMotoru([seciliRez], s.yataklar, s.odalar, d2, t2, {});
+              setOneri(sonuc); setOnaylanan(sonuc.oneriler.length ? { [seciliRez.id]: true } : {});
+            }}>Bu Talebi Yerleştir</Buton>
+          </>}>
+          {!seciliRez ? <BosDurum metin="Soldaki listeden bir talep seçiniz." /> : (
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                {[['Geliş / Çıkış', `${tr(seciliRez.gelis_tarihi)} – ${tr(seciliRez.cikis_tarihi)} (${seciliRez.gun_sayisi} gün)`],
+                  ['Kurum-Şahıs', seciliRez.kurum_sahis === 'KURUM' ? 'Kurum · ' + seciliRez.odeyecek : 'Şahıs'],
+                  ['Ödeme Türü', ODEME_TURU[seciliRez.odeme_turu]],
+                  ['Peşinat / Kalan', seciliRez.pesinat_tutari ? `${para(seciliRez.tahsil_edilen)} / ${para(Math.max(0, seciliRez.pesinat_tutari - seciliRez.tahsil_edilen))}` : 'Aranmıyor'],
+                  ['Tel No', seciliRez.tel_no], ['Açıklama', seciliRez.aciklama],
+                  ['Talep Özelliği', [seciliRez.protokol && 'Protokol', seciliRez.aile && 'Aile/birlikte', seciliRez.uzatma && 'Uzatma'].filter(Boolean).join(' · ') || '—'],
+                  ['Statü', statuAd(seciliRez.statu)]].map(([k, v]) => (
+                  <div key={k} className="bg-slate-50 border border-slate-200 rounded px-2 py-1">
+                    <div className="text-2xs uppercase text-slate-500 font-semibold">{k}</div>
+                    <div className="num text-ttk-900 truncate" title={v}>{v}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <div className="text-2xs uppercase font-semibold text-slate-500 mb-1">
+                  Misafirler — kartı aşağıdaki yatağın üzerine sürükleyin <b>veya</b> karta tıklayıp ardından bir yatağa tıklayın
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {seciliRez.misafirler.map((g, i) => (
+                    <div key={i} draggable
+                      onDragStart={e => { setSeciliMisafir(i); e.dataTransfer.setData('text/plain', JSON.stringify({ rezId: seciliRez.id, misafirIndex: i })); }}
+                      onClick={() => setSeciliMisafir(seciliMisafir === i ? null : i)}
+                      title="Sürükleyip yatağa bırakın veya tıklayıp ardından bir yatağa tıklayın"
+                      className={`cursor-grab active:cursor-grabbing border rounded px-2 py-1 text-xs flex items-center gap-2
+                        ${seciliMisafir === i ? 'ring-2 ring-ttk-500 ' : ''}
+                        ${g.yatakId ? 'bg-emerald-50 border-emerald-300' : 'bg-amber-50 border-amber-300'}`}>
+                      <span className={`w-4 h-4 rounded-full text-2xs font-bold flex items-center justify-center text-white ${g.cinsiyet === 'E' ? 'bg-sky-600' : 'bg-pink-600'}`}>{g.cinsiyet}</span>
+                      <span className="font-semibold text-ttk-900">{g.adi_soyadi}</span>
+                      <span className="num text-slate-500">{g.tc_kimlik_no}</span>
+                      <span className="num font-semibold">{g.oda_no ? `Oda ${g.oda_no}/${g.yatak_no}` : 'yerleşmedi'}</span>
+                      {g.yatakId && <button title="Tahsisi kaldır" onClick={() => gonder({ tip: 'ATAMA_KALDIR', rezId: seciliRez.id, misafirIndex: i })}
+                        className="text-rose-500 hover:text-rose-700 font-bold px-1">×</button>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </Kart>
+      </div>
+
+      {/* Doluluk haritası — seçili talebe göre canlı */}
+      <Kart baslik={seciliRez
+          ? `Oda / Yatak Doluluğu — ${tr(seciliRez.gelis_tarihi)} – ${tr(seciliRez.cikis_tarihi)} aralığında kesintisiz müsaitlik`
+          : `Oda / Yatak Doluluğu — ${tr(haritaTarihi)}`}
+        sag={!seciliRez && <>
+          <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, -1))}>◀</Buton>
+          <TarihGirdi deger={haritaTarihi} onChange={setHaritaTarihi} />
+          <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, 1))}>▶</Buton>
+        </>}>
+        {seciliRez && musaitlik && (
+          <div className={`mb-2 px-2 py-1.5 rounded border text-2xs flex items-center gap-3
+            ${musaitlik.tamSayi ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
+            <span><b className="num">{musaitlik.tamSayi}</b> yatak {musaitlik.gece} gecenin tamamında kesintisiz müsait</span>
+            <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-sm border border-emerald-400 bg-white inline-block" /> kesintisiz müsait</span>
+            <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-sm border border-amber-300 bg-amber-50 inline-block" /> kısmen dolu (bölünme gerekir)</span>
+            <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-sm border border-slate-300 bg-slate-200 inline-block" /> tüm gecelerde dolu</span>
+            <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-sm bg-emerald-600 inline-block" /> bu talebe tahsisli</span>
+            {!musaitlik.tamSayi && <span className="ml-auto font-semibold">Bu aralıkta kesintisiz yatak yok — talebi bölmek veya tarihi değiştirmek gerekir.</span>}
+          </div>
+        )}
+        <div className="space-y-3 max-h-[420px] overflow-auto kaydir pr-1">
+          {katlar.map(([kat, odalar]) => (
+            <div key={kat}>
+              <div className="text-2xs font-bold text-slate-500 uppercase tracking-wide mb-1">{kat}. Kat</div>
+              <div className="flex flex-wrap gap-1.5">
+                {odalar.map(o => {
+                  const ys = tesisYatak.filter(y => y.odaId === o.id);
+                  return (
+                    <div key={o.id} className="border border-slate-200 rounded bg-slate-50/60 px-1.5 py-1 w-[104px]">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="num text-xs font-bold text-ttk-800">Oda {o.oda_no}</span>
+                        {o.protokol && <Rozet sinif="bg-violet-100 text-violet-700 border-violet-300">P</Rozet>}
+                      </div>
+                      <div className="flex gap-1">
+                        {ys.map(y => {
+                          let sinif, baslik, musait = false;
+                          if (seciliRez && musaitlik) {
+                            const m = musaitlik.harita.get(y.id) || { tam: false, engel: 0, gece: 0 };
+                            musait = m.tam;
+                            const kismi = !m.tam && m.engel < m.gece;
+                            const bende = seciliRez.misafirler.find(g => g.yatakId === y.id);
+                            sinif = bende ? 'bg-emerald-600 border-emerald-700 text-white'
+                              : m.tam ? 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-50'
+                              : kismi ? 'bg-amber-50 border-amber-300 text-amber-700'
+                              : 'bg-slate-200 border-slate-300 text-slate-400';
+                            baslik = bende ? `${bende.adi_soyadi} — bu talebe tahsis edildi`
+                              : m.tam ? 'Seçili tarih aralığında kesintisiz müsait — misafir kartını buraya sürükleyin'
+                              : `Kesintisiz müsait değil — ${m.gece} gecenin ${m.engel} tanesinde dolu/temizlikte`;
+                          } else {
+                            const { durum, kayit } = yatakDurumu(y, haritaTarihi, dolu, temizlik);
+                            sinif = YATAK_DURUM[durum].kutu;
+                            baslik = `${YATAK_DURUM[durum].ad}${kayit && kayit.misafir ? ' — ' + kayit.misafir.adi_soyadi : ''}`;
+                          }
+                          const hedefMi = surukleHedef === y.id;
+                          return (
+                            <div key={y.id} title={baslik} onClick={() => yatagaTikla(y)}
+                              onDragOver={e => { if (seciliRez) { e.preventDefault(); setSurukleHedef(y.id); } }}
+                              onDragLeave={() => setSurukleHedef(null)}
+                              onDrop={birak(y)}
+                              className={`yatak-hucre flex-1 h-9 rounded border text-2xs font-bold flex items-center justify-center
+                                ${seciliRez ? 'cursor-pointer' : ''} ${sinif} ${hedefMi ? 'surukle-hedef' : ''}`}>
+                              {y.yatak_no}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Kart>
+
+      {oneri && (
+        <Modal baslik="Otomatik Yerleştirme Önerisi — Kullanıcı Onayı Bekliyor" genislik="max-w-6xl" kapat={() => setOneri(null)}
+          altlik={<>
+            <span className="text-xs text-slate-500 mr-auto num">
+              {oneri.oneriler.length} öneri · {oneri.basarisiz.length} yerleştirilemeyen · {oneri.sure != null ? oneri.sure + ' ms' : ''}
+            </span>
+            <Buton onClick={() => setOnaylanan(Object.fromEntries(oneri.oneriler.map(o => [o.rez.id, true])))}>Tümünü Seç</Buton>
+            <Buton onClick={() => setOnaylanan({})}>Seçimi Temizle</Buton>
+            <Buton tur="sessiz" onClick={() => setOneri(null)}>Vazgeç</Buton>
+            <Buton tur="basari" onClick={onayla} disabled={!Object.values(onaylanan).some(Boolean)}>
+              Seçilenleri Onayla ve Yerleştir
+            </Buton>
+          </>}>
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-xs font-bold text-emerald-700 uppercase mb-1">Önerilen Yerleşimler ({oneri.oneriler.length})</h4>
+              {!oneri.oneriler.length ? <BosDurum metin="Öneri üretilemedi." /> : (
+                <table className="veri w-full">
+                  <thead><tr>
+                    <th className="w-8"></th><th>Rez. No</th><th>Adı Soyadı</th><th>Geliş / Çıkış</th>
+                    <th className="text-center">Kişi</th><th>Önerilen Oda / Yatak</th><th className="text-center">Skor</th><th>Gerekçe / Not</th>
+                  </tr></thead>
+                  <tbody>
+                    {oneri.oneriler.map(o => (
+                      <tr key={o.rez.id} className={onaylanan[o.rez.id] ? 'bg-emerald-50/60' : ''}>
+                        <td><input type="checkbox" checked={!!onaylanan[o.rez.id]}
+                          onChange={e => setOnaylanan(x => ({ ...x, [o.rez.id]: e.target.checked }))} /></td>
+                        <td className="num">{o.rez.rez_no}</td>
+                        <td className="font-semibold text-ttk-900">{o.rez.protokol && <span className="text-violet-600 mr-1">★</span>}{o.rez.ad_soyad}</td>
+                        <td className="num">{tr(o.rez.gelis_tarihi)} – {tr(o.rez.cikis_tarihi)}</td>
+                        <td className="num text-center">{o.rez.kisi_sayisi}</td>
+                        <td className="num font-semibold text-ttk-700">
+                          {o.atamalar.map(a => `${a.oda_no}/${a.yatak_no}`).join(', ')}
+                        </td>
+                        <td className="num text-center">{o.skor}</td>
+                        <td className="text-slate-600 max-w-[380px] truncate" title={o.notlar.join(' · ')}>{o.notlar.join(' · ') || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-rose-700 uppercase mb-1">Yerleştirilemeyen Talepler ({oneri.basarisiz.length})</h4>
+              {!oneri.basarisiz.length ? <div className="text-xs text-slate-500">Tüm talepler yerleştirildi.</div> : (
+                <table className="veri w-full">
+                  <thead><tr><th>Rez. No</th><th>Adı Soyadı</th><th>Geliş / Çıkış</th><th className="text-center">Kişi</th><th>Gerekçe</th></tr></thead>
+                  <tbody>
+                    {oneri.basarisiz.map(b => (
+                      <tr key={b.rez.id}>
+                        <td className="num">{b.rez.rez_no}</td>
+                        <td className="font-semibold text-ttk-900">{b.rez.ad_soyad}</td>
+                        <td className="num">{tr(b.rez.gelis_tarihi)} – {tr(b.rez.cikis_tarihi)}</td>
+                        <td className="num text-center">{b.rez.kisi_sayisi}</td>
+                        <td className="text-rose-700 whitespace-normal">{b.gerekce}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   8) EKRAN 3 — PEŞİNAT VE REZERVASYON STATÜSÜ
+   ══════════════════════════════════════════════════════════════════════════ */
+
+function PesinatEkrani({ s, gonder }) {
+  const [statuFiltre, setStatuFiltre] = useState('HEPSI');
+  const [arama, setArama] = useState('');
+  const [tahsilat, setTahsilat] = useState(null);
+  const [detay, setDetay] = useState(null);
+  const [sadeceSuresiDolan, setSadeceSuresiDolan] = useState(false);
+  const kural = s.kurallar[s.tesis];
+
+  const suresiDoldu = rz => rz.statu === 'PESINAT_BEKLENIYOR' && rz.pesinat_son_odeme_tarihi &&
+    rz.pesinat_son_odeme_tarihi < s.bugun && rz.tahsil_edilen < rz.pesinat_tutari;
+
+  const kayitlar = useMemo(() => s.rezervasyonlar.filter(rz => {
+    if (rz.tesis !== s.tesis) return false;
+    if (rz.cikis_tarihi < ekle(s.bugun, -30)) return false;     // ekranı yakın dönemle sınırla
+    if (statuFiltre !== 'HEPSI' && rz.statu !== statuFiltre) return false;
+    if (sadeceSuresiDolan && !suresiDoldu(rz)) return false;
+    if (arama) {
+      const q = arama.toLocaleLowerCase('tr-TR');
+      if (!(rz.ad_soyad + ' ' + rz.rez_no + ' ' + (rz.makbuz_no || '')).toLocaleLowerCase('tr-TR').includes(q)) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    const acik = rz => ['TALEP', 'PESINAT_BEKLENIYOR', 'ONAYLI', 'KONAKLIYOR'].includes(rz.statu);
+    if (acik(a) !== acik(b)) return acik(a) ? -1 : 1;              // açık kayıtlar üstte
+    if (acik(a)) return a.gelis_tarihi < b.gelis_tarihi ? -1 : 1;  // yaklaşan tarih önce
+    return a.gelis_tarihi > b.gelis_tarihi ? -1 : 1;               // kapananlarda en yeni önce
+  }), [s.rezervasyonlar, s.tesis, statuFiltre, arama, sadeceSuresiDolan, s.bugun]);
+
+  const sayim = useMemo(() => {
+    const m = {};
+    STATULER.forEach(x => m[x.kod] = 0);
+    s.rezervasyonlar.forEach(rz => { if (rz.tesis === s.tesis && rz.cikis_tarihi >= ekle(s.bugun, -30)) m[rz.statu]++; });
+    return m;
+  }, [s.rezervasyonlar, s.tesis, s.bugun]);
+
+  const suresiDolanlar = useMemo(() => s.rezervasyonlar.filter(rz => rz.tesis === s.tesis && suresiDoldu(rz)), [s.rezervasyonlar, s.tesis, s.bugun]);
+
+  const toplam = useMemo(() => kayitlar.reduce((a, rz) => ({
+    pesinat: a.pesinat + rz.pesinat_tutari,
+    tahsil: a.tahsil + (rz.tahsil_edilen || 0),
+    kalan: a.kalan + Math.max(0, rz.pesinat_tutari - (rz.tahsil_edilen || 0)),
+    bedel: a.bedel + (rz.yatak_bedeli || 0),
+  }), { pesinat: 0, tahsil: 0, kalan: 0, bedel: 0 }), [kayitlar]);
+
+  const kuralGuncelle = (alan, deger) => gonder({ tip: 'KURAL', tesis: s.tesis, alan, deger });
+
+  return (
+    <div className="space-y-3">
+      {/* Statü akışı */}
+      <Kart baslik="Rezervasyon Statü Akışı" govdeSinif="p-3"
+        sag={<span className="text-2xs text-slate-500">kutulara tıklayarak listeyi filtreleyin</span>}>
+        <div className="flex items-stretch gap-1">
+          {STATULER.map((x, i) => (
+            <Fragment key={x.kod}>
+              <button onClick={() => setStatuFiltre(statuFiltre === x.kod ? 'HEPSI' : x.kod)}
+                className={`flex-1 rounded border px-2 py-2 text-left transition-all ${x.renk}
+                  ${statuFiltre === x.kod ? 'ring-2 ring-ttk-500 shadow' : 'opacity-90 hover:opacity-100'}`}>
+                <div className="text-2xs font-bold uppercase tracking-wide">{x.ad}</div>
+                <div className="num text-2xl font-bold leading-7">{sayim[x.kod]}</div>
+                <div className="text-2xs opacity-80">
+                  {x.kod === 'TALEP' && 'yer/peşinat kararı bekliyor'}
+                  {x.kod === 'PESINAT_BEKLENIYOR' && 'son ödeme tarihi işliyor'}
+                  {x.kod === 'ONAYLI' && 'yatak tahsisli, giriş bekliyor'}
+                  {x.kod === 'KONAKLIYOR' && 'giriş yapıldı'}
+                  {x.kod === 'CIKIS' && 'kayıt kapandı'}
+                  {x.kod === 'IPTAL' && 'yatak serbest'}
+                </div>
+              </button>
+              {i < STATULER.length - 1 && <div className="flex items-center text-slate-300 text-lg">›</div>}
+            </Fragment>
+          ))}
+        </div>
+      </Kart>
+
+      <div className="grid grid-cols-12 gap-3">
+        {/* Peşinat kuralları */}
+        <Kart className="col-span-4" baslik={`Peşinat Kuralı — ${TESISLER.find(t => t.kod === s.tesis).ad}`}>
+          <div className="space-y-3 text-xs">
+            <label className="flex items-start gap-2 p-2 bg-emerald-50 border border-emerald-200 rounded cursor-pointer">
+              <input type="checkbox" className="mt-0.5" checked={kural.kurumMisafirindePesinatAranmasin}
+                onChange={e => kuralGuncelle('kurumMisafirindePesinatAranmasin', e.target.checked)} />
+              <span>
+                <b>Kurum misafirinde peşinat aranmasın</b>
+                <span className="block text-2xs text-slate-600">Kurum-Şahıs alanı «Kurum» olan kayıtlarda peşinat tutarı 0 kabul edilir, talep doğrudan Onaylı statüsüne geçer.</span>
+              </span>
+            </label>
+            {[['sahisOran', 'Şahsi misafir peşinat oranı (%)', 0, 100, 5],
+              ['sahisAsgariTutar', 'Asgari peşinat tutarı (₺)', 0, 10000, 250],
+              ['odemeSuresiGun', 'Ödeme süresi (talepten itibaren gün)', 1, 30, 1],
+              ['gelistenOnceEnGecGun', 'Gelişten en geç kaç gün önce', 0, 15, 1]].map(([alan, etiket, min, max, adim]) => (
+              <div key={alan}>
+                <div className="flex justify-between mb-0.5">
+                  <span className="text-slate-600">{etiket}</span>
+                  <span className="num font-bold text-ttk-800">{kural[alan]}</span>
+                </div>
+                <input type="range" min={min} max={max} step={adim} value={kural[alan]}
+                  onChange={e => kuralGuncelle(alan, Number(e.target.value))} className="w-full accent-ttk-600" />
+              </div>
+            ))}
+            <div className="text-2xs text-slate-500 border-t border-slate-200 pt-2">
+              Son ödeme tarihi = <b>min</b>(rezerv tarihi + {kural.odemeSuresiGun} gün, geliş tarihi − {kural.gelistenOnceEnGecGun} gün).
+              Kural değişikliği bu tesisin açık kayıtlarında peşinat tutarlarını yeniden hesaplar.
+            </div>
+          </div>
+        </Kart>
+
+        {/* Süre kontrolü + özet */}
+        <div className="col-span-8">
+          <div className="flex gap-2 flex-wrap">
+            <Kpi etiket="Toplam Yatak Bedeli" deger={para(toplam.bedel)} alt={`${kayitlar.length} kayıt`} />
+            <Kpi etiket="Peşinat Tutarı" deger={para(toplam.pesinat)} />
+            <Kpi etiket="Tahsil Edilen" deger={para(toplam.tahsil)} renk="text-emerald-700" />
+            <Kpi etiket="Peşinattan Kalan" deger={para(toplam.kalan)} renk="text-rose-700" />
+            <div className={`flex-1 min-w-[300px] border rounded px-3 py-2 ${suresiDolanlar.length ? 'bg-rose-50 border-rose-300' : 'bg-white border-slate-200'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xs uppercase tracking-wide font-semibold text-slate-500">Süresi Dolan Talepler</div>
+                  <div className={`num text-2xl font-bold leading-7 ${suresiDolanlar.length ? 'text-rose-700' : 'text-slate-400'}`}>{suresiDolanlar.length}</div>
+                  <div className="text-2xs text-slate-600">Peşinat son ödeme tarihi {tr(s.bugun)} itibarıyla geçmiş</div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Buton tur="tehlike" disabled={!suresiDolanlar.length} onClick={() => gonder({ tip: 'SURE_KONTROL' })}>
+                    Süresi Dolanları İptal Et
+                  </Buton>
+                  <Buton tur="sessiz" onClick={() => setSadeceSuresiDolan(x => !x)}>
+                    {sadeceSuresiDolan ? 'Tümünü göster' : 'Listede süz'}
+                  </Buton>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <Kart baslik="Peşinat ve Statü Takibi" govdeSinif="p-0"
+            sag={<>
+              <input value={arama} onChange={e => setArama(e.target.value)} placeholder="Ad soyad / Rez. no / Makbuz no…"
+                className="border border-slate-300 rounded px-2 py-0.5 text-xs w-52" />
+              <select value={statuFiltre} onChange={e => setStatuFiltre(e.target.value)} className="border border-slate-300 rounded px-1.5 py-0.5 text-xs bg-white">
+                <option value="HEPSI">Tüm statüler</option>
+                {STATULER.map(x => <option key={x.kod} value={x.kod}>{x.ad}</option>)}
+              </select>
+            </>}>
+            <div className="max-h-[400px] overflow-auto kaydir">
+              <table className="veri w-full">
+                <thead><tr>
+                  <th title="Rezervasyon No">Rez. No</th><th>Adı Soyadı</th><th>Geliş / Çıkış</th><th>Kurum-Şahıs</th><th title="Ödeme Türü">Öd. Türü</th>
+                  <th className="text-right" title="Yatak Bedeli">Bedel</th><th className="text-right">Peşinat</th><th title="Peşinat son ödeme tarihi">Son Ödeme</th>
+                  <th className="text-right" title="Tahsil Edilen">Tahsil</th><th className="text-right" title="Peşinattan Kalan">Kalan</th><th title="Makbuz No">Makbuz</th><th>Statü</th><th>İşlem</th>
+                </tr></thead>
+                <tbody>
+                  {kayitlar.map(rz => {
+                    const kalan = Math.max(0, rz.pesinat_tutari - (rz.tahsil_edilen || 0));
+                    const gecti = suresiDoldu(rz);
+                    return (
+                      <tr key={rz.id} className={gecti ? 'bg-rose-50/60' : ''}>
+                        <td className="num" title={rz.rez_no}>{rz.rez_no.slice(4)}</td>
+                        <td className="font-semibold text-ttk-900 max-w-[150px] truncate" title={rz.ad_soyad}>
+                          {rz.protokol && <span className="text-violet-600 mr-1">★</span>}{rz.ad_soyad}
+                        </td>
+                        <td className="num" title={`${tr(rz.gelis_tarihi)} – ${tr(rz.cikis_tarihi)}`}>
+                          {tr(rz.gelis_tarihi).slice(0, 6)} – {tr(rz.cikis_tarihi)}
+                        </td>
+                        <td>{rz.kurum_sahis === 'KURUM' ? <Rozet sinif="bg-ttk-50 text-ttk-700 border-ttk-200">Kurum</Rozet>
+                                                       : <Rozet sinif="bg-slate-100 text-slate-700 border-slate-300">Şahıs</Rozet>}</td>
+                        <td className="text-slate-600">{rz.odeme_turu}</td>
+                        <td className="num text-right">{para(rz.yatak_bedeli)}</td>
+                        <td className="num text-right font-semibold">{rz.pesinat_tutari ? para(rz.pesinat_tutari) : <span className="text-slate-400">aranmıyor</span>}</td>
+                        <td className={`num ${gecti ? 'text-rose-700 font-bold' : 'text-slate-600'}`}>
+                          {rz.pesinat_son_odeme_tarihi ? tr(rz.pesinat_son_odeme_tarihi) : '—'}{gecti && ' ⚠'}
+                        </td>
+                        <td className="num text-right text-emerald-700">{rz.tahsil_edilen ? para(rz.tahsil_edilen) : '—'}</td>
+                        <td className={`num text-right ${kalan ? 'text-rose-700 font-semibold' : 'text-slate-400'}`}>{kalan ? para(kalan) : '—'}</td>
+                        <td className="num text-slate-500">{rz.makbuz_no || '—'}</td>
+                        <td><StatuRozet kod={rz.statu} /></td>
+                        <td>
+                          <div className="flex gap-1">
+                            {kalan > 0 && !['IPTAL', 'CIKIS'].includes(rz.statu) &&
+                              <Buton tur="basari" className="!py-0.5" onClick={() => setTahsilat({ rz, tutar: kalan })}>Tahsilat</Buton>}
+                            {!['IPTAL', 'CIKIS'].includes(rz.statu) &&
+                              <Buton tur="tehlike" className="!py-0.5" onClick={() => gonder({ tip: 'STATU', rezId: rz.id, statu: 'IPTAL' })}>İptal</Buton>}
+                            <Buton tur="sessiz" className="!py-0.5" title="Kayıt detayı ve hareketler" onClick={() => setDetay(rz)}>Detay</Buton>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {!kayitlar.length && <tr><td colSpan="13" className="text-center text-slate-400 py-6">Filtreye uyan kayıt yok.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+      </Kart>
+
+      {tahsilat && (
+        <Modal baslik={`Peşinat Tahsilatı — ${tahsilat.rz.rez_no}`} genislik="max-w-md" kapat={() => setTahsilat(null)}
+          altlik={<>
+            <Buton tur="sessiz" onClick={() => setTahsilat(null)}>Vazgeç</Buton>
+            <Buton tur="basari" onClick={() => { gonder({ tip: 'TAHSILAT', rezId: tahsilat.rz.id, tutar: Number(tahsilat.tutar) || 0 }); setTahsilat(null); }}>
+              Tahsilatı Kaydet
+            </Buton>
+          </>}>
+          <div className="text-xs space-y-2">
+            <div className="bg-amber-50 border border-amber-200 rounded p-2 text-2xs text-amber-900">
+              Bu prototipte tahsilat yalnızca <b>statü ve kayıt seviyesinde</b> modellenir; gerçek ödeme veya muhasebe entegrasyonu yapılmaz.
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><span className="text-slate-500">Rezerv Eden</span><div className="font-semibold">{tahsilat.rz.ad_soyad}</div></div>
+              <div><span className="text-slate-500">Kurum-Şahıs</span><div className="font-semibold">{tahsilat.rz.kurum_sahis === 'KURUM' ? 'Kurum' : 'Şahıs'}</div></div>
+              <div><span className="text-slate-500">Peşinat Tutarı</span><div className="num font-semibold">{para(tahsilat.rz.pesinat_tutari)}</div></div>
+              <div><span className="text-slate-500">Son Ödeme Tarihi</span><div className="num font-semibold">{tr(tahsilat.rz.pesinat_son_odeme_tarihi)}</div></div>
+            </div>
+            <label className="block">
+              <span className="text-slate-500">Tahsil edilen tutar (₺)</span>
+              <input type="number" value={tahsilat.tutar} onChange={e => setTahsilat({ ...tahsilat, tutar: e.target.value })}
+                className="num w-full border border-slate-300 rounded px-2 py-1 mt-0.5" />
+            </label>
+            <div className="text-2xs text-slate-500">Tutar tamamlandığında statü otomatik olarak «Onaylı» olur.</div>
+          </div>
+        </Modal>
+      )}
+
+      {detay && (
+        <Modal baslik={`Rezervasyon Detayı — ${detay.rez_no}`} genislik="max-w-3xl" kapat={() => setDetay(null)}>
+          <div className="space-y-3">
+            <RezervasyonOzet rz={detay} />
+            <div>
+              <h4 className="text-xs font-bold text-ttk-800 uppercase mb-1">Misafirler</h4>
+              <table className="veri w-full">
+                <thead><tr><th>Tc Kimlik No</th><th>Adı Soyadı</th><th>C.</th><th>Sicil No</th><th>Görev Sevk No</th><th className="text-right">Harcırah Miktarı</th><th>Oda / Yatak No</th></tr></thead>
+                <tbody>
+                  {detay.misafirler.map((g, i) => (
+                    <tr key={i}>
+                      <td className="num">{g.tc_kimlik_no}</td><td className="font-semibold">{g.adi_soyadi}</td>
+                      <td>{g.cinsiyet}</td><td className="num">{g.sicil_no || '—'}</td><td className="num">{g.gorev_sevk_no || '—'}</td>
+                      <td className="num text-right">{g.harcirah_miktari ? para(g.harcirah_miktari) : '—'}</td>
+                      <td className="num">{g.oda_no ? `${g.oda_no} / ${g.yatak_no}` : <span className="text-rose-600">tahsis yok</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-ttk-800 uppercase mb-1">Kayıt Hareketleri</h4>
+              <ul className="text-xs space-y-1">
+                {detay.hareketler.map((h, i) => (
+                  <li key={i} className="flex gap-2 border-b border-slate-100 pb-1">
+                    <span className="num text-slate-500 w-20">{tr(h.tarih)}</span>
+                    <span className="flex-1">{h.metin}</span>
+                    <span className="text-slate-400 num">{h.kullanici}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   9) KABUK VE UYGULAMA
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const EKRANLAR = [
+  { kod: 'PANO',        ad: 'Doluluk Panosu',                form: 'MSFH-W01' },
+  { kod: 'REZERVASYON', ad: 'Rezervasyon ve Yerleştirme',    form: 'MSFH-W02' },
+  { kod: 'PESINAT',     ad: 'Peşinat ve Rezervasyon Statüsü',form: 'MSFH-W03' },
+];
+
+function Uygulama() {
+  const [s, gonder] = useReducer(indirgeyici, null, baslangicDurumu);
+  const [gunlukAcik, setGunlukAcik] = useState(false);
+  const [bilgiAcik, setBilgiAcik] = useState(false);
+
+  const { dolu, temizlik } = useMemo(() => dolulukKur(s.rezervasyonlar), [s.rezervasyonlar]);
+  const aktif = EKRANLAR.find(e => e.kod === s.ekran);
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* Üst bant */}
+      <header className="bg-ttk-800 text-white">
+        <div className="px-4 py-2 flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-white text-ttk-800 flex items-center justify-center font-black text-xs">TTK</div>
+            <div className="leading-tight">
+              <div className="font-bold text-sm tracking-wide">TÜRKİYE TAŞKÖMÜRÜ KURUMU</div>
+              <div className="text-2xs text-ttk-200">TTKNET · Misafirhane Bilgi Sistemi — Web Prototipi</div>
+            </div>
+          </div>
+          <div className="ml-auto flex items-center gap-3 text-xs">
+            <span className="px-2 py-1 rounded bg-amber-400 text-amber-950 font-bold text-2xs">DEMO · SAHTE VERİ</span>
+            <Buton tur="sessiz" className="!text-ttk-100 hover:!bg-ttk-700" onClick={() => setBilgiAcik(true)}>Nasıl çalışır?</Buton>
+            <div className="flex items-center gap-1.5 bg-ttk-700 rounded px-2 py-1">
+              <span className="text-ttk-200 text-2xs uppercase">Sistem Tarihi</span>
+              <span className="num font-bold">{tr(s.bugun)}</span>
+              <button title="1 gün ilerlet" onClick={() => gonder({ tip: 'GUN_ILERLET', adet: 1 })} className="px-1.5 hover:bg-ttk-600 rounded font-bold">+1</button>
+              <button title="7 gün ilerlet" onClick={() => gonder({ tip: 'GUN_ILERLET', adet: 7 })} className="px-1.5 hover:bg-ttk-600 rounded font-bold">+7</button>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-6 h-6 rounded-full bg-ttk-600 flex items-center justify-center text-2xs font-bold">TT</span>
+              <span className="num">TTK7719</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tesis seçimi — MSFH ana ekranındaki misafirhane menüsünün karşılığı */}
+        <div className="px-4 pb-2 flex items-center gap-2">
+          <span className="text-2xs uppercase tracking-wide text-ttk-200 font-semibold mr-1">Misafirhane</span>
+          {TESISLER.map(t => (
+            <button key={t.kod} onClick={() => gonder({ tip: 'TESIS', tesis: t.kod })}
+              className={`px-3 py-1 rounded text-xs font-semibold border transition-colors
+                ${s.tesis === t.kod ? 'bg-white text-ttk-800 border-white' : 'bg-ttk-700/60 text-ttk-100 border-ttk-600 hover:bg-ttk-700'}`}>
+              {t.ad}<span className="text-2xs opacity-70 ml-1">{t.sehir}</span>
+            </button>
+          ))}
+        </div>
+      </header>
+
+      {/* Sekmeler */}
+      <nav className="bg-white border-b border-slate-200 px-4 flex items-end gap-1">
+        {EKRANLAR.map(e => (
+          <button key={e.kod} onClick={() => gonder({ tip: 'EKRAN', ekran: e.kod })}
+            className={`px-4 py-2 text-xs font-semibold border-b-2 -mb-px transition-colors
+              ${s.ekran === e.kod ? 'border-ttk-600 text-ttk-800' : 'border-transparent text-slate-500 hover:text-ttk-700'}`}>
+            {e.ad}<span className="num text-2xs text-slate-400 ml-1.5">{e.form}</span>
+          </button>
+        ))}
+        <div className="ml-auto text-2xs text-slate-400 py-2 num">
+          {s.odalar.filter(o => o.tesis === s.tesis).length} oda · {s.yataklar.filter(y => y.tesis === s.tesis).length} yatak ·
+          toplam {s.rezervasyonlar.length} rezervasyon kaydı
+        </div>
+      </nav>
+
+      <main className="flex-1 p-3">
+        {s.ekran === 'PANO'        && <DolulukPanosu     s={s} gonder={gonder} dolu={dolu} temizlik={temizlik} />}
+        {s.ekran === 'REZERVASYON' && <RezervasyonEkrani s={s} gonder={gonder} dolu={dolu} temizlik={temizlik} />}
+        {s.ekran === 'PESINAT'     && <PesinatEkrani     s={s} gonder={gonder} />}
+      </main>
+
+      {/* Alt bant — Oracle Forms durum çubuğunun karşılığı */}
+      <footer className="bg-slate-200 border-t border-slate-300 px-3 py-1 flex items-center gap-4 text-2xs text-slate-600">
+        <span className="num font-semibold">TTK7719</span>
+        <span className="num">{aktif.form}</span>
+        <span className="num">{tr(s.bugun)}</span>
+        <button onClick={() => setGunlukAcik(true)} className="flex-1 text-left truncate hover:text-ttk-700">
+          <b className="mr-1">İşlem günlüğü:</b>{s.gunluk[0] ? s.gunluk[0].metin : '—'}
+        </button>
+        <span className="num">Kayıt: {s.rezervasyonlar.length}</span>
+      </footer>
+
+      {gunlukAcik && (
+        <Modal baslik="İşlem Günlüğü" genislik="max-w-3xl" kapat={() => setGunlukAcik(false)}>
+          <ul className="text-xs space-y-1">
+            {s.gunluk.map((g, i) => (
+              <li key={i} className={`flex gap-2 px-2 py-1 rounded border
+                ${g.tip === 'uyari' ? 'bg-amber-50 border-amber-200' : g.tip === 'basari' ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
+                <span className="num text-slate-500 w-20 shrink-0">{tr(g.tarih)}</span>
+                <span className="flex-1">{g.metin}</span>
+              </li>
+            ))}
+          </ul>
+        </Modal>
+      )}
+
+      {bilgiAcik && (
+        <Modal baslik="Prototip Hakkında ve Otomatik Yerleştirme Mantığı" genislik="max-w-3xl" kapat={() => setBilgiAcik(false)}>
+          <div className="text-xs space-y-3 leading-relaxed">
+            <div className="bg-amber-50 border border-amber-200 rounded p-2">
+              Bu uygulama mevcut TTKNET / Oracle Forms sistemine <b>hiç dokunmadan</b>, onun yanında çalışacak şekilde
+              hazırlanmış bir <b>demo prototiptir</b>. Tüm veriler bellekte üretilmiştir; gerçek misafir verisi kullanılmaz,
+              Tc kimlik numaraları 11 haneli sahte numaralardır. Gerçek ödeme veya muhasebe entegrasyonu yoktur.
+            </div>
+            <div>
+              <h4 className="font-bold text-ttk-800 uppercase text-2xs mb-1">Otomatik yerleştirme nasıl çalışır?</h4>
+              <ol className="list-decimal ml-4 space-y-1">
+                <li><b>Öncelik sırası:</b> protokol → kurum misafiri → peşinatı tahsil edilmiş → geliş tarihi yakın → kalabalık grup.</li>
+                <li><b>Gruplama:</b> aile / birlikte kalma talebi tek grup sayılır; değilse talep cinsiyete göre alt gruplara ayrılır.</li>
+                <li><b>Kısıt denetimi:</b> yatak, geliş–çıkış arasındaki <i>her gecede</i> boş olmalı; çıkış sonrası {TEMIZLIK_GUN} günlük
+                    temizlik boşluğu bloklanır; karma oda kısıtı ve protokol odası kuralı uygulanır.</li>
+                <li><b>Skorlama:</b> grubun tek odada kalması (+{SKOR.TEK_ODA}), kapasite uyumu (+{SKOR.KAPASITE_TAM}),
+                    odayı aynı cinsiyetle doldurma (+{SKOR.ODA_DOLDURMA}), protokol uyumu (+{SKOR.PROTOKOL_UYUM}),
+                    ardışık gecelerde sıkı paketleme (+{SKOR.SIKI_PAKET}); atıl yatak ({SKOR.BOS_YATAK_CEZASI}/yatak),
+                    1 gecelik satılamaz boşluk ({SKOR.KISA_BOSLUK_CEZASI}) ve grup bölünmesi ({SKOR.BOLUNME_CEZASI}) cezalandırılır.</li>
+                <li><b>Geri alma:</b> yüksek öncelikli bir talep yerleşemezse, aynı turda yerleşmiş düşük öncelikli ve tarihi
+                    çakışan bir öneri geri alınıp yeniden denenir (tek seviyeli backtracking).</li>
+                <li><b>Öneri:</b> sonuç doğrudan uygulanmaz; onay ekranına düşer. Onaylanmayan öneri doluluğu değiştirmez.
+                    Yerleştirilemeyen her talep için okunabilir gerekçe üretilir.</li>
+              </ol>
+            </div>
+            <div>
+              <h4 className="font-bold text-ttk-800 uppercase text-2xs mb-1">Statü akışı</h4>
+              <p>Talep → Peşinat Bekleniyor → Onaylı → Konaklıyor → Çıkış (her aşamadan İptal mümkün).
+                 Kurum misafirinde peşinat aranmaması tesis bazında açılıp kapatılabilir. Peşinat son ödeme tarihi geçen talep
+                 otomatik olarak İptal statüsüne düşer ve yatağı serbest bırakır — üst bantdaki «+1 / +7 gün» düğmeleriyle
+                 bu kuralı canlı olarak görebilirsiniz.</p>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('kok')).render(<Uygulama />);
+</script>
+</body>
+</html>
