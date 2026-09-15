@@ -8,6 +8,24 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [1.2.0] — 15.09.2026
+### Eklendi
+- **Giriş ekranı**: TTKNET «Bağlantı» penceresinin karşılığı — YBS kullanıcı adı ve şifre,
+  hatalı giriş ve pasif kullanıcı denetimi, rol farklarını denemek için demo hesap listesi.
+- **Rol tabanlı yetkilendirme**: Admin (sistem yöneticisi), Misafirhane Müdürü,
+  Resepsiyon Görevlisi ve Muhasebe Görevlisi rolleri; 12 ayrı yetki kodu.
+- **Kullanıcı ve Yetki Yönetimi ekranı (MSFH-W04, yalnız Admin)**: kullanıcı listesi,
+  rol değiştirme, misafirhane yetkisi atama, aktif/pasif yapma, yeni kullanıcı tanımlama,
+  rol × yetki matrisi.
+- Misafirhane kapsamı: kullanıcı yalnız yetkili olduğu misafirhaneleri görür ve seçebilir.
+- Üst bantta kullanıcı kimliği, rol rozeti ve «Çıkış»; alt bantta oturum açan kullanıcının kodu.
+- Kayıt hareketleri ve işlem günlüğü artık oturum açan kullanıcının kodunu yazıyor.
+
+### Değişti
+- Yetkisi olmayan sekmeler gizleniyor; yetkisiz düğmeler pasif ve gerekçeli ipucu gösteriyor
+  (ör. «Bu işlem için yetkiniz yok — Resepsiyon Görevlisi rolü Peşinat tahsilatı girme iznine sahip değil»).
+- «Nasıl çalışır?» penceresine roller ve yetkilendirme bölümü eklendi.
+
 ## [1.1.1] — 15.09.2026
 ### Eklendi
 - Sürüm takibi: `CHANGELOG.md`, uygulama içinde sürüm numarası ve sürüm tarihi gösterimi.

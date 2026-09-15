@@ -310,15 +310,82 @@ END MSFH_PKG_REZERVASYON;
 
 ## 6. Yetkilendirme
 
-| Rol | Yetki |
-|---|---|
-| `MSFH_GORUNTULE` | Pano ve listeleri okuma |
-| `MSFH_REZERVASYON` | Talep açma, yerleştirme, tahsis değiştirme |
-| `MSFH_TAHSILAT` | Peşinat tahsilatı, makbuz no girişi |
-| `MSFH_YONETICI` | Peşinat kuralı değiştirme, toplu iptal |
+Prototipte dört rol vardır. Yetki, TTKNET kullanıcı kodu (ör. TTK7719) ile
+misafirhane kodu çiftine bağlanır; kullanıcı yalnız yetkili olduğu misafirhaneleri
+görür. **Prototipteki denetim yalnız arayüz seviyesindedir; kurulumda aynı denetim
+sunucuda (API ve PL/SQL paketlerinde) tekrarlanmalıdır.**
 
-Yetki, mevcut TTKNET kullanıcı kodu (ör. TTK7719) ve misafirhane kodu çiftine
-bağlanmalıdır; bir kullanıcı yalnız yetkili olduğu tesisleri görmelidir.
+### 6.1 Roller
+
+| Rol kodu | Ad | Kapsam |
+|---|---|---|
+| `ADMIN` | Sistem Yöneticisi (Bilgi İşlem) | Tüm misafirhaneler, tüm işlemler, kullanıcı ve yetki yönetimi |
+| `YONETICI` | Misafirhane Müdürü | Sorumlu olduğu misafirhanelerde tüm rezervasyon, yerleştirme, iptal, peşinat kuralı ve tahsilat işlemleri |
+| `RESEPSIYON` | Resepsiyon Görevlisi | Kayıt açma, yatak tahsisi, giriş-çıkış. Tahsilat giremez, kural değiştiremez, kayıt iptal edemez |
+| `MUHASEBE` | Muhasebe Görevlisi | Peşinat tahsilatı, makbuz işlemleri, süresi dolan taleplerin iptali. Yatak tahsisi yapamaz, kayıt açamaz |
+
+### 6.2 Yetki kodları ve rol matrisi
+
+| Yetki kodu | Açıklama | Admin | Müdür | Resepsiyon | Muhasebe |
+|---|---|:-:|:-:|:-:|:-:|
+| `pano.goruntule` | Doluluk panosunu görüntüleme | ✓ | ✓ | ✓ | ✓ |
+| `rezervasyon.goruntule` | Rezervasyon listesini görüntüleme | ✓ | ✓ | ✓ | ✓ |
+| `pesinat.goruntule` | Peşinat / tahsilat ekranını görüntüleme | ✓ | ✓ | ✓ | ✓ |
+| `rezervasyon.olustur` | Yeni rezervasyon / kayıt açma | ✓ | ✓ | ✓ | — |
+| `rezervasyon.yerlestir` | Yatak tahsisi (otomatik ve manuel) | ✓ | ✓ | ✓ | — |
+| `rezervasyon.tahsis_kaldir` | Yatak tahsisini kaldırma | ✓ | ✓ | ✓ | — |
+| `rezervasyon.iptal` | Rezervasyon iptali | ✓ | ✓ | — | — |
+| `pesinat.tahsilat` | Peşinat tahsilatı girme | ✓ | ✓ | — | ✓ |
+| `pesinat.kural` | Peşinat kuralını değiştirme | ✓ | ✓ | — | — |
+| `pesinat.toplu_iptal` | Süresi dolanları toplu iptal | ✓ | ✓ | — | ✓ |
+| `sistem.tarih` | Sistem tarihini ilerletme (demo aracı) | ✓ | ✓ | — | — |
+| `sistem.kullanici` | Kullanıcı ve yetki yönetimi | ✓ | — | — | — |
+
+### 6.3 Tablolar
+
+**MSFH_KULLANICI**
+
+| Alan | Tip | Açıklama |
+|---|---|---|
+| `KULLANICI_KODU` | VARCHAR2(20) PK | TTKNET/YBS kullanıcı kodu (ör. TTK7719) |
+| `ADI_SOYADI` | VARCHAR2(100) | |
+| `UNVAN` | VARCHAR2(80) | |
+| `ROL_KODU` | VARCHAR2(20) FK | ADMIN / YONETICI / RESEPSIYON / MUHASEBE |
+| `AKTIF_MI` | CHAR(1) | Pasif kullanıcı oturum açamaz |
+| `SON_GIRIS` | DATE | |
+
+**MSFH_KULLANICI_TESIS** — kullanıcı × misafirhane yetkisi
+(`KULLANICI_KODU`, `MISAFIRHANE_KODU`). Tüm tesis yetkisi için satır yerine
+`TUMU_MU = 'E'` alanı da kullanılabilir.
+
+**MSFH_ROL_YETKI** — rol × yetki eşleşmesi (`ROL_KODU`, `YETKI_KODU`).
+Prototipte sabit olan matris burada tutulur, böylece yetkiler kod değişikliği
+olmadan düzenlenebilir.
+
+### 6.4 API uçları
+
+```http
+POST /oturum/giris        { "kullaniciKodu":"TTK7719", "sifre":"…" }
+→ 200 { "token":"…", "kullanici": { "kod":"TTK7719", "ad":"…", "unvan":"…",
+        "rol":"ADMIN", "tesisler":"*", "yetkiler":["pano.goruntule", …] } }
+→ 401 { "hata":"KIMLIK_DOGRULAMA", "mesaj":"Kullanıcı adı veya şifre hatalı" }
+→ 403 { "hata":"KULLANICI_PASIF", "mesaj":"Bu kullanıcı pasif durumda" }
+
+POST /oturum/cikis
+GET  /oturum/ben                      // yenilemede yetkileri tazelemek için
+
+GET    /kullanicilar                  // sistem.kullanici yetkisi gerekir
+POST   /kullanicilar
+PATCH  /kullanicilar/{kod}            { "rol":"MUHASEBE", "aktif":false,
+                                        "tesisler":["ANKARA","YAYLA"] }
+GET    /roller                        // rol × yetki matrisi
+```
+
+Kimlik doğrulama gerçek kurulumda TTKNET/YBS oturumu (LDAP veya mevcut kullanıcı
+tablosu) üzerinden yapılmalı; şifre prototipteki gibi istemcide tutulmamalıdır.
+Her API çağrısında sunucu hem **yetki kodunu** hem de kaydın **misafirhane
+kodunu** kullanıcının kapsamına göre doğrulamalıdır; yetkisiz istek `403
+YETKI_YOK` döner.
 
 ## 7. Geçiş notları
 
