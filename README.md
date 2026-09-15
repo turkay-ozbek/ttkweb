@@ -39,16 +39,30 @@ ekranındadır; ayrıntısı [`docs/api-sozlesmesi.md`](docs/api-sozlesmesi.md) 
 > Kimlik doğrulama prototipte yalnız tarayıcıda çalışır ve şifreler dosyada açık
 > yazılıdır. Kurulumda TTKNET/YBS oturumu ve **sunucu taraflı** yetki denetimi kullanılır.
 
-## Ekranlar
+## Sayfalar
 
-| Kod | Ekran | İçerik |
+Uygulama ana menüden açılan sekiz odaklı sayfadan oluşur; her sayfa tek bir işi yapar.
+
+| Kod | Sayfa | İçerik |
 |---|---|---|
-| MSFH-W01 | **Doluluk Panosu** | 30 günlük doluluk takvimi (dolu/boş yatak, giriş, çıkış), oda/yatak haritası (her yatakta misafir adı), **Yatak Listesi** görünümü (hangi odada kaç numaralı yatakta kim yatıyor), seçili tarih aralığı için kalan yatak analizi, dört tesisin karşılaştırması |
-| MSFH-W02 | **Rezervasyon ve Yerleştirme** | Talep listesi ile oda/yatak doluluğu tek ekranda ve canlı bağlı; **otomatik yerleştirme** önerisi ve onay akışı, **manuel yerleştirme penceresi** (misafir başına oda/yatak seçimi, odadaki mevcut misafirler görünür), sürükle-bırak veya tıklayarak yerleştirme, konaklanacak gecelerin tek tek incelenebildiği harita, yerleştirilemeyen talepler için gerekçe |
-| MSFH-W04 | **Kullanıcı ve Yetki Yönetimi** (yalnız Admin) | Kullanıcı listesi, rol ve misafirhane yetkisi atama, aktif/pasif yapma, yeni kullanıcı tanımlama, rol × yetki matrisi |
-| MSFH-W03 | **Peşinat / Tahsilat ve Statü** | Dönem (zaman) filtresi ve iş listeleri (tahsilat bekleyen, süresi dolan, bugün giriş/çıkış), statü akışı, satır başındaki **₺ Tahsilat Al** düğmesiyle tek tıkla tahsilat, tesis bazında peşinat kuralı, süresi dolan taleplerin toplu iptali |
+| MSFH-W01 | **Bugünkü Durum** | Dolu/boş yatak, giriş-çıkış, temizlik sayıları; misafirhane karşılaştırması; bugünün işleri ve son işlemler |
+| MSFH-W02 | **Doluluk Takvimi** | 30 günlük doluluk şeridi, seçili tarih aralığında garanti kalan yatak ve gece bazında boşluk |
+| MSFH-W03 | **Oda ve Yatak Durumu** | Oda kartlarında hangi yatakta kimin kaldığı (isimli/kompakt); talep seçiliyken yerleştirme modu (sürükle-bırak veya tıklayarak) |
+| MSFH-W04 | **Yatak Listesi** | Oda ve yatak numarasına göre misafir tablosu; dolu/boş süzgeci ve arama |
+| MSFH-W05 | **Rezervasyon Talepleri** | Talep listesi, seçili talep özeti, otomatik / manuel / haritada yerleştirme |
+| MSFH-W06 | **Peşinat ve Tahsilat** | Dönem filtresi, iş listeleri, ₺ Tahsilat Al, süresi dolanlar, peşinat kuralı |
+| MSFH-W07 | **Statü Takibi** | Talep → Peşinat Bekleniyor → Onaylı → Konaklıyor → Çıkış → İptal akışı ve kayıt listesi |
+| MSFH-W08 | **Kullanıcı ve Yetki** (Admin) | Kullanıcılar, roller, misafirhane yetkisi ve yetki matrisi |
 
-Her ekrandan erişilebilen **+ Yeni Rezervasyon / Kayıt** düğmesi yeni bir rezervasyon
+## Her çözünürlükte okunur arayüz
+
+- Yazı ölçeği ekran genişliğine göre akar (1280 px'te 15,2 px → 1920 px'te 17,2 px).
+- Üst bardaki **A− / %100 / A+** düğmeleriyle kullanıcı kendi ekranına göre büyütüp
+  küçültebilir; tercih tarayıcıda saklanır.
+- Kart ve oda ızgaraları sütun sayısını ekrana göre kendisi belirler; geniş tablolar kendi
+  içinde yatay kaydırılır, sayfa gövdesi taşmaz.
+
+Üst bardaki **+ Yeni Kayıt** düğmesi (her sayfadan erişilebilir) yeni bir rezervasyon
 veya doğrudan giriş kaydı açar: misafir satırları (Tc kimlik no, adı soyadı, cinsiyet,
 sicil no, görev sevk no, harcırah), canlı müsaitlik özeti, yatağı elle seçme veya
 «Uygun Yatağı Otomatik Bul», peşinat önizlemesi ve tahsilat işaretlemesi. Doluluk

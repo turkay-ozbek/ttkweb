@@ -4,8 +4,8 @@ Bu tablo, mevcut TTKNET ekranlarındaki her alanın yeni tasarımda nereye
 karşılık geldiğini gösterir. "Yeni" işaretli satırlar mevcut ekranlarda
 bulunmayan, prototipin getirdiği alanlardır.
 
-Web ekran kodları: **MSFH-W01** Doluluk Panosu · **MSFH-W02** Rezervasyon ve
-Yerleştirme · **MSFH-W03** Peşinat ve Rezervasyon Statüsü.
+Web ekran kodları: **W01 / W02** Doluluk Panosu · **W05 / W03** Rezervasyon ve
+Yerleştirme · **W06 / W07** Peşinat ve Rezervasyon Statüsü.
 
 ---
 
@@ -24,68 +24,68 @@ Yerleştirme · **MSFH-W03** Peşinat ve Rezervasyon Statüsü.
 
 | Mevcut alan | Web karşılığı | Ekran | Not |
 |---|---|---|---|
-| Adı Soyadı | "Adı Soyadı" kolonu | MSFH-W02 | Protokol talepleri ★ ile işaretli |
-| Rezerv edilen Tarih | "Rezerv Tarihi" kolonu | MSFH-W02 | GG.AA.YYYY |
-| Açıklama | "Açıklama" kolonu | MSFH-W02 | 200 karakter sınırı korunur |
-| Tel No | "Tel No" — seçili talep kartı | MSFH-W02 | Listede yer kazanmak için karta taşındı |
-| Kişi | "Kişi" kolonu | MSFH-W02 | Aile/birlikte talebi ⚭ simgesiyle |
-| Gün | "Gün" kolonu | MSFH-W02 | |
-| Oda No | "Oda No" kolonu | MSFH-W02 | **Artık otomatik dolar**; yerleşmemişse kırmızı "—" |
-| "Detay" düğmesi | Satıra tıklama → sağ panel + doluluk haritası canlı bağlanır | MSFH-W02 | Ayrı pencere yok |
-| Kırmızı / sarı satır boyama | Statü rozeti (Talep / Peşinat Bkl. / Onaylı / Konaklıyor / Çıkış / İptal) | MSFH-W02, W03 | Renk anlamı artık tanımlı ve filtrelenebilir |
-| Tarih aralığı + "Listele" | "Geliş Tarihi" aralık filtresi | MSFH-W02 | Statü ve serbest metin araması eklendi |
-| "Kalan Raporu" / "Rezerv Raporu" düğmeleri | MSFH-W01 aralık analizi ve KPI kartları | MSFH-W01 | Rapor beklemeden ekranda |
+| Adı Soyadı | "Adı Soyadı" kolonu | W05 / W03 | Protokol talepleri ★ ile işaretli |
+| Rezerv edilen Tarih | "Rezerv Tarihi" kolonu | W05 / W03 | GG.AA.YYYY |
+| Açıklama | "Açıklama" kolonu | W05 / W03 | 200 karakter sınırı korunur |
+| Tel No | "Tel No" — seçili talep kartı | W05 / W03 | Listede yer kazanmak için karta taşındı |
+| Kişi | "Kişi" kolonu | W05 / W03 | Aile/birlikte talebi ⚭ simgesiyle |
+| Gün | "Gün" kolonu | W05 / W03 | |
+| Oda No | "Oda No" kolonu | W05 / W03 | **Artık otomatik dolar**; yerleşmemişse kırmızı "—" |
+| "Detay" düğmesi | Satıra tıklama → sağ panel + doluluk haritası canlı bağlanır | W05 / W03 | Ayrı pencere yok |
+| Kırmızı / sarı satır boyama | Statü rozeti (Talep / Peşinat Bkl. / Onaylı / Konaklıyor / Çıkış / İptal) | W05 / W03, W03 | Renk anlamı artık tanımlı ve filtrelenebilir |
+| Tarih aralığı + "Listele" | "Geliş Tarihi" aralık filtresi | W05 / W03 | Statü ve serbest metin araması eklendi |
+| "Kalan Raporu" / "Rezerv Raporu" düğmeleri | W01 / W02 aralık analizi ve KPI kartları | W01 / W02 | Rapor beklemeden ekranda |
 
 ### 2.2 Sağ liste ("Odalar")
 
 | Mevcut alan | Web karşılığı | Ekran | Not |
 |---|---|---|---|
-| Oda/Yatak | Oda kartı içindeki yatak hücreleri (her yatakta misafir adı) + **Yatak Listesi** tablosu | MSFH-W01, W02 | Hem görsel harita hem «hangi yatakta kim» tablosu |
-| Tc Kimlik No | Yatak detayında / misafir kartında | MSFH-W01, W02 | |
-| Adı | Yatak detayı ve tooltip | MSFH-W01, W02 | |
-| Öd. Türü (KRT/BOS/MSD) | "Ödeme Türü" — yatak detayı ve MSFH-W03 tablosu | W01, W03 | Kodlar korundu, tooltip'te açıklaması var |
-| Peşinat Kalan | "Peşinattan Kalan" kolonu | MSFH-W03 | Ayrıca yatak detayında |
-| "Tarihli Listedir" başlığı | Harita üstündeki tarih seçici (◀ / ▶) | MSFH-W01 | |
-| Kayıt Sayısı | KPI kartları (dolu/boş/giriş/çıkış) | MSFH-W01 | |
+| Oda/Yatak | Oda kartı içindeki yatak hücreleri (her yatakta misafir adı) + **Yatak Listesi** tablosu | W01 / W02, W02 | Hem görsel harita hem «hangi yatakta kim» tablosu |
+| Tc Kimlik No | Yatak detayında / misafir kartında | W01 / W02, W02 | |
+| Adı | Yatak detayı ve tooltip | W01 / W02, W02 | |
+| Öd. Türü (KRT/BOS/MSD) | "Ödeme Türü" — yatak detayı ve W06 / W07 tablosu | W01, W03 | Kodlar korundu, tooltip'te açıklaması var |
+| Peşinat Kalan | "Peşinattan Kalan" kolonu | W06 / W07 | Ayrıca yatak detayında |
+| "Tarihli Listedir" başlığı | Harita üstündeki tarih seçici (◀ / ▶) | W01 / W02 | |
+| Kayıt Sayısı | KPI kartları (dolu/boş/giriş/çıkış) | W01 / W02 | |
 
 ## 3. MSFH0100 — Kayıt Giriş Çıkış
 
 | Mevcut alan | Web karşılığı | Ekran | Not |
 |---|---|---|---|
-| Sicil No | Misafir satırı "Sicil No" | MSFH-W02/W03 detay | |
-| Tc Kimlik No | Misafir kartı ve detay tablosu | MSFH-W02/W03 | Prototipte 11 haneli **sahte** numaralar |
-| Adı ve Soyadı | Misafir kartı / detay | MSFH-W02/W03 | |
+| Sicil No | Misafir satırı "Sicil No" | W05 / W03/W03 detay | |
+| Tc Kimlik No | Misafir kartı ve detay tablosu | W05 / W03/W03 | Prototipte 11 haneli **sahte** numaralar |
+| Adı ve Soyadı | Misafir kartı / detay | W05 / W03/W03 | |
 | Geliş Tarihi | "Geliş / Çıkış" kolonu ve talep kartı | Tümü | |
 | Çıkış Tarihi | Aynı | Tümü | Uzatma varsa "(uzatıldı, önceki …)" |
-| Kaldığı Gün | "Gün" kolonu | MSFH-W02 | |
+| Kaldığı Gün | "Gün" kolonu | W05 / W03 | |
 | Oda No | Yatak haritası + "Oda No" kolonu | W01, W02 | |
 | Yatak No | Yatak hücresi numarası | W01, W02 | Tahsis oda değil **yatak** seviyesinde |
-| Yatak Fiyatı | Oda kartı altında "₺/gece"; toplamı MSFH-W03 "Bedel" | W01, W03 | |
-| Harcırah Miktarı | Misafir detay tablosu | MSFH-W03 detay | |
-| Görev Sevk No | Misafir detay tablosu | MSFH-W03 detay | |
-| Geliş nedeni | Talep kartı "Geliş Nedeni" | MSFH-W02 | |
+| Yatak Fiyatı | Oda kartı altında "₺/gece"; toplamı W06 / W07 "Bedel" | W01, W03 | |
+| Harcırah Miktarı | Misafir detay tablosu | W06 / W07 detay | |
+| Görev Sevk No | Misafir detay tablosu | W06 / W07 detay | |
+| Geliş nedeni | Talep kartı "Geliş Nedeni" | W05 / W03 | |
 | Görev Tarihi | — | — | v2'ye bırakıldı |
-| Ödeme Türü | "Öd. Türü" kolonu | MSFH-W03 | |
-| Kurum-Şahıs | "Kurum-Şahıs" rozeti | MSFH-W02/W03 | **Peşinat kuralının anahtarı** |
-| Ödeyecek | Talep kartı "Kurum-Şahıs" satırı + detay | MSFH-W02 | |
-| Telefon No | Talep kartı "Tel No" | MSFH-W02 | |
-| Plaka No | Kayıt detayı | MSFH-W03 detay | |
-| Peşinatlar (düğme) | MSFH-W03 tablosu: Peşinat / Son Ödeme / Tahsil / Kalan | MSFH-W03 | Ayrı pencere yerine ana tablo |
-| Peşinattan Kalan | "Kalan" kolonu | MSFH-W03 | |
-| Rezervli Geldi işareti | Statü akışında "Onaylı → Konaklıyor" geçişi | MSFH-W03 | Ayrı kutucuk gerekmiyor |
+| Ödeme Türü | "Öd. Türü" kolonu | W06 / W07 | |
+| Kurum-Şahıs | "Kurum-Şahıs" rozeti | W05 / W03/W03 | **Peşinat kuralının anahtarı** |
+| Ödeyecek | Talep kartı "Kurum-Şahıs" satırı + detay | W05 / W03 | |
+| Telefon No | Talep kartı "Tel No" | W05 / W03 | |
+| Plaka No | Kayıt detayı | W06 / W07 detay | |
+| Peşinatlar (düğme) | W06 / W07 tablosu: Peşinat / Son Ödeme / Tahsil / Kalan | W06 / W07 | Ayrı pencere yerine ana tablo |
+| Peşinattan Kalan | "Kalan" kolonu | W06 / W07 | |
+| Rezervli Geldi işareti | Statü akışında "Onaylı → Konaklıyor" geçişi | W06 / W07 | Ayrı kutucuk gerekmiyor |
 | Tahmini kalacak gün / Yatak ücreti | Talep kartı ve "Bedel" kolonu | W02, W03 | |
-| Kayıt Yapan / Kayıt Tarihi | Kayıt hareketleri listesi (kullanıcı + tarih) | MSFH-W03 detay | Tam denetim izi |
+| Kayıt Yapan / Kayıt Tarihi | Kayıt hareketleri listesi (kullanıcı + tarih) | W06 / W07 detay | Tam denetim izi |
 | Şahsi Masraflar | — | — | Kapsam dışı (v2) |
 | Tahsilat-Fatura / Tahsilatı Yapılmamış | — | — | Kapsam dışı; prototip yalnız statü ve kayıt seviyesinde modeller |
 | Misafir Beyanı | — | — | Kapsam dışı (v2) |
-| Odaların Durumu (düğme) | MSFH-W01 oda/yatak haritası | MSFH-W01 | Ana ekranın parçası |
-| Kalanlar / Tüm Misafirler / Listele | MSFH-W02 filtre çubuğu, MSFH-W03 statü filtreleri | W02, W03 | |
-| Kaydı Sil | "İptal" işlemi (kayıt silinmez, İptal statüsüne düşer) | MSFH-W03 | Yatak otomatik serbest kalır |
+| Odaların Durumu (düğme) | W01 / W02 oda/yatak haritası | W01 / W02 | Ana ekranın parçası |
+| Kalanlar / Tüm Misafirler / Listele | W05 / W03 filtre çubuğu, W06 / W07 statü filtreleri | W02, W03 | |
+| Kaydı Sil | "İptal" işlemi (kayıt silinmez, İptal statüsüne düşer) | W06 / W07 | Yatak otomatik serbest kalır |
 
 ### 3.1 Yeni kayıt açma (MSFH0100 giriş formunun karşılığı)
 
 Prototipte kayıt açma tek bir formda toplanmıştır: üst bantdaki **+ Yeni Rezervasyon /
-Kayıt** düğmesi, MSFH-W02'deki **+ Yeni Rezervasyon** düğmesi veya MSFH-W01'de boş bir
+Kayıt** düğmesi, W05 / W03'deki **+ Yeni Rezervasyon** düğmesi veya W01 / W02'de boş bir
 yatağa tıklayıp **«Bu yatağa yeni kayıt aç»**.
 
 | MSFH0100 alanı | Formdaki karşılığı |
@@ -109,10 +109,10 @@ bilgilere göre otomatik belirlenir (Talep / Peşinat Bekleniyor / Onaylı / Kon
 
 | Mevcut alan | Web karşılığı | Not |
 |---|---|---|
-| Makbuz No | MSFH-W03 "Makbuz" kolonu ve tahsilat penceresi | Peşinat makbuzu için kullanıldı |
+| Makbuz No | W06 / W07 "Makbuz" kolonu ve tahsilat penceresi | Peşinat makbuzu için kullanıldı |
 | Şartname / Firma / Şartname Bedeli / Banka Makbuz No | — | Şartname işlemleri prototip kapsamı dışında (v2) |
 | Son kesilen Makbuz No | — | Kapsam dışı |
-| Aylık Rapor / Rapor Tarihleri | MSFH-W01 30 günlük takvim ve KPI'lar | Rapor yerine canlı gösterim |
+| Aylık Rapor / Rapor Tarihleri | W01 / W02 30 günlük takvim ve KPI'lar | Rapor yerine canlı gösterim |
 
 ## 5. Prototipin getirdiği yeni alanlar
 

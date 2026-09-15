@@ -8,6 +8,34 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.0.0] — 15.09.2026
+### Değişti — sayfa mimarisi
+- Arayüz üç yoğun ekrandan **sekiz odaklı sayfaya** bölündü; her sayfa tek bir işi yapar:
+  Bugünkü Durum (W01), Doluluk Takvimi (W02), Oda ve Yatak Durumu (W03), Yatak Listesi (W04),
+  Rezervasyon Talepleri (W05), Peşinat ve Tahsilat (W06), Statü Takibi (W07),
+  Kullanıcı ve Yetki (W08).
+- **Ana Menü** eklendi: her sayfa, üzerinde canlı sayı taşıyan bir kart düğmesinden açılır
+  (doluluk, boş yatak, bekleyen talep, tahsilat bekleyen kayıt…). Üstteki ince sayfa şeridi
+  her yerden hızlı geçiş sağlar.
+- Talepler sayfasından seçilen talep «Haritada Yerleştir» ile Oda ve Yatak Durumu sayfasında
+  **yerleştirme moduna** geçirilir; harita, misafir kartları ve gece seçimi orada toplanır.
+- Bugünkü Durum sayfasına «Bugünün İşleri» kısayolları ve son işlem listesi eklendi.
+
+### Değişti — çözünürlük ve okunurluk
+- Tipografi **rem tabanlı** hale getirildi; kök yazı boyutu ekran genişliğine göre akıyor
+  (1280 px'te 15,2 px → 1920 px'te 17,2 px). Tüm bileşenler bu ölçeğe bağlı.
+- Üst bara **A− / %100 / A+** arayüz ölçeği düğmeleri eklendi (0,85–1,35 arası, tarayıcıda
+  saklanır). Kullanıcı kendi ekranına göre yazı boyutunu ayarlayabiliyor.
+- Sabit sütun sayıları yerine **esnek ızgaralar** (`auto-fit/minmax`) kullanıldı; kartlar ve
+  oda haritası ekran genişliğine göre sütun sayısını kendisi belirliyor.
+- Geniş tablolar kendi içinde yatay kaydırılıyor; sayfa gövdesi hiçbir çözünürlükte yatay
+  taşmıyor. 1280 / 1440 / 1600 / 1920 px'te taşma olmadığı test edildi.
+- Yükseklikler `vh` tabanlı (max-h-[60vh] vb.) — küçük ekranlarda içerik ekranı taşırmıyor.
+
+### Eklendi
+- Çizgi ikon seti (emoji yerine), sayfa başlığı bileşeni, «Yeni Kayıt» düğmesi her sayfadan
+  erişilebilir biçimde üst barda.
+
 ## [1.4.0] — 15.09.2026
 ### Eklendi
 - **Manuel yerleştirme penceresi**: otomatik yerleştirmenin yanında açık bir seçenek.
