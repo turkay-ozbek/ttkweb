@@ -82,6 +82,29 @@ Yerleştirme · **MSFH-W03** Peşinat ve Rezervasyon Statüsü.
 | Kalanlar / Tüm Misafirler / Listele | MSFH-W02 filtre çubuğu, MSFH-W03 statü filtreleri | W02, W03 | |
 | Kaydı Sil | "İptal" işlemi (kayıt silinmez, İptal statüsüne düşer) | MSFH-W03 | Yatak otomatik serbest kalır |
 
+### 3.1 Yeni kayıt açma (MSFH0100 giriş formunun karşılığı)
+
+Prototipte kayıt açma tek bir formda toplanmıştır: üst bantdaki **+ Yeni Rezervasyon /
+Kayıt** düğmesi, MSFH-W02'deki **+ Yeni Rezervasyon** düğmesi veya MSFH-W01'de boş bir
+yatağa tıklayıp **«Bu yatağa yeni kayıt aç»**.
+
+| MSFH0100 alanı | Formdaki karşılığı |
+|---|---|
+| Sicil No / Tc Kimlik No / Adı ve Soyadı | Misafirler tablosunda satır başına bir kayıt (kişi sayısı kadar satır) |
+| Geliş / Çıkış Tarihi, Kaldığı Gün | «Konaklama» bölümü; gün sayısı +/− ile değişir, çıkış tarihi otomatik güncellenir |
+| Oda No / Yatak No | Misafir satırındaki «Oda / Yatak No» seçimi — yalnız seçili tarih aralığında **kesintisiz müsait** yataklar listelenir |
+| Yatak Fiyatı | Yatak seçeneğinin yanında; toplamı «Yatak bedeli» olarak gösterilir |
+| Görev Sevk No / Harcırah Miktarı | Misafir satırında (yalnız Kurum kayıtlarında etkin) |
+| Geliş nedeni, Açıklama, Tel No, Plaka No | «Rezervasyon Bilgileri» ve «Konaklama» bölümleri |
+| Kurum-Şahıs, Ödeyecek, Ödeme Türü | «Ödeme ve Peşinat» bölümü; kurum listesi öneri olarak sunulur |
+| Peşinatlar / Peşinattan Kalan | Peşinat önizlemesi (tesis kuralına göre canlı hesap) + «Peşinat tahsil edildi» ve Makbuz No |
+| Kayıt Yapan / Kayıt Tarihi | Otomatik: TTK7719 ve sistem tarihi; kayıt hareketlerine yazılır |
+| — (yeni) | «Aile / birlikte kalacak», «Protokol misafiri» işaretleri; «Uygun Yatağı Otomatik Bul» düğmesi |
+
+Kaydetmeden önce form; zorunlu alanları, Tc kimlik no biçimini, tarih tutarlılığını,
+aynı yatağın iki kişiye verilmesini ve karma oda kısıtını denetler. Statü, girilen
+bilgilere göre otomatik belirlenir (Talep / Peşinat Bekleniyor / Onaylı / Konaklıyor).
+
 ## 4. MSFH0030 — Şartname Makbuzları
 
 | Mevcut alan | Web karşılığı | Not |

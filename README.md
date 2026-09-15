@@ -22,8 +22,14 @@ Masaüstü önceliklidir, 1600 px genişlikte çalışacak şekilde tasarlanmı�
 | Kod | Ekran | İçerik |
 |---|---|---|
 | MSFH-W01 | **Doluluk Panosu** | 30 günlük doluluk takvimi (dolu/boş yatak, giriş, çıkış), bugünün oda/yatak haritası, seçili tarih aralığı için kalan yatak analizi, dört tesisin karşılaştırması |
-| MSFH-W02 | **Rezervasyon ve Yerleştirme** | Talep listesi ile oda/yatak doluluğu tek ekranda ve canlı bağlı; otomatik yerleştirme önerisi, onay akışı, sürükle-bırak veya tıklayarak manuel yerleştirme, yerleştirilemeyen talepler için gerekçe |
-| MSFH-W03 | **Peşinat ve Rezervasyon Statüsü** | Statü akışı (Talep → Peşinat Bekleniyor → Onaylı → Konaklıyor → Çıkış → İptal), peşinat/tahsilat takibi, tesis bazında peşinat kuralı, süresi dolan taleplerin otomatik iptali |
+| MSFH-W02 | **Rezervasyon ve Yerleştirme** | Talep listesi ile oda/yatak doluluğu tek ekranda ve canlı bağlı; otomatik yerleştirme önerisi, onay akışı, sürükle-bırak veya tıklayarak manuel yerleştirme, konaklanacak gecelerin tek tek incelenebildiği harita, yerleştirilemeyen talepler için gerekçe |
+| MSFH-W03 | **Peşinat / Tahsilat ve Statü** | Dönem (zaman) filtresi ve iş listeleri (tahsilat bekleyen, süresi dolan, bugün giriş/çıkış), statü akışı, satır başındaki **₺ Tahsilat Al** düğmesiyle tek tıkla tahsilat, tesis bazında peşinat kuralı, süresi dolan taleplerin toplu iptali |
+
+Her ekrandan erişilebilen **+ Yeni Rezervasyon / Kayıt** düğmesi yeni bir rezervasyon
+veya doğrudan giriş kaydı açar: misafir satırları (Tc kimlik no, adı soyadı, cinsiyet,
+sicil no, görev sevk no, harcırah), canlı müsaitlik özeti, yatağı elle seçme veya
+«Uygun Yatağı Otomatik Bul», peşinat önizlemesi ve tahsilat işaretlemesi. Doluluk
+panosunda boş bir yatağa tıklayıp **«Bu yatağa yeni kayıt aç»** ile de başlanabilir.
 
 Üst bantta **+1 / +7 gün** düğmeleriyle sistem tarihi ilerletilerek statü
 kurallarının (giriş, çıkış, süre aşımından iptal) canlı çalıştığı gösterilebilir.
