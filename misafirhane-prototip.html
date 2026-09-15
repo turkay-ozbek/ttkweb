@@ -84,7 +84,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment 
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '1.3.0';
+const SURUM = '1.3.1';
 const SURUM_TARIHI = '2026-09-15';
 
 const GUN_MS = 86400000;
@@ -215,8 +215,9 @@ const BASLANGIC_KULLANICILAR = [
 /* ── Giriş testi için hazırlanmış 4 haneli hesaplar ────────────────────────
    Yalnız prototipi denemek içindir; kullanıcı adları rastgele 4 rakam,
    şifreler 123 / 1234 / 12345 desenlerindedir. Her rol üç şifre uzunluğuyla
-   ayrı ayrı denenebilsin diye 12 hesap tanımlıdır. Ayrıntılı liste:
-   .gizli/test-hesaplari.md — bu hesaplar gerçek kurulumda silinmelidir. */
+   ayrı ayrı denenebilsin diye 12 hesap tanımlıdır. Ayrıntılı liste .gizli/
+   dizinindedir; o dizin .gitignore ile depo dışında tutulur. Bu hesaplar
+   gerçek kurulumda silinmelidir. */
 const TEST_KULLANICILAR = [
   { kod:'2697', sifre:'123',   ad:'Test Admin 1',      unvan:'Giriş testi — Admin',      rol:'ADMIN',      tesisler:'*',                            aktif:true, test:true },
   { kod:'4380', sifre:'1234',  ad:'Test Admin 2',      unvan:'Giriş testi — Admin',      rol:'ADMIN',      tesisler:'*',                            aktif:true, test:true },
@@ -2921,8 +2922,9 @@ function GirisEkrani({ kullanicilar, gonder }) {
             {testAcik && (
               <div className="mt-2 space-y-1">
                 <p className="text-2xs text-slate-500">
-                  Her rol için üç farklı şifre uzunluğu (123 / 1234 / 12345). Liste:
-                  <span className="num"> .gizli/test-hesaplari.md</span>
+                  Her rol için üç farklı şifre uzunluğu (123 / 1234 / 12345).
+                  Ayrıntılı liste <span className="num">.gizli/test-hesaplari.md</span> dosyasındadır
+                  (depoya dahil değildir).
                 </p>
                 {kullanicilar.filter(k => k.test).map(k => <HesapSatiri key={k.kod} k={k} hizli={hizli} />)}
               </div>

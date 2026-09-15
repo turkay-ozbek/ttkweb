@@ -1,0 +1,18 @@
+# Gizli test verileri — depoya girmez, yerelde tutulur
+.gizli/
+
+# Bağımlılıklar ve derleme çıktıları
+node_modules/
+dist/
+build/
+
+# İşletim sistemi ve editör dosyaları
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Günlükler ve geçici dosyalar
+*.log
+*.tmp

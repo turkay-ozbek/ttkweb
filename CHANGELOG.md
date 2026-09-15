@@ -8,6 +8,12 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [1.3.1] — 15.09.2026
+### Değişti
+- `.gizli/` dizini `.gitignore` ile depo dışına alındı; test hesabı listesi ve senaryolar
+  yalnız yerelde tutuluyor. Dosyalar kullanıcıya ayrıca iletildi.
+- Depoya `.gitignore` eklendi (bağımlılıklar, derleme çıktıları, editör ve işletim sistemi dosyaları).
+
 ## [1.3.0] — 15.09.2026
 ### Eklendi
 - **Giriş testi hesapları**: her rol için üç farklı şifre uzunluğuyla (123 / 1234 / 12345)
@@ -16,7 +22,8 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 - Giriş ekranına «Giriş testi hesapları · 4 haneli» katlanabilir bölümü; satıra tıklayınca
   doğrudan oturum açılır.
 - Kullanıcı ve Yetki Yönetimi ekranında test hesapları «test» rozetiyle işaretleniyor.
-- `.gizli/` dizini: test hesapları tablosu (md + json) ve rol bazlı test senaryoları.
+- `.gizli/` dizini: test hesapları tablosu (md + json) ve rol bazlı test senaryoları
+  (1.3.1 ile depo dışına alınmıştır).
 
 ### Not
 - Test hesapları ve `.gizli/` dizini yalnız prototip denemeleri içindir; gerçek kuruluma
