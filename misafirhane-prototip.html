@@ -84,7 +84,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment 
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '1.2.0';
+const SURUM = '1.3.0';
 const SURUM_TARIHI = '2026-09-15';
 
 const GUN_MS = 86400000;
@@ -210,6 +210,26 @@ const BASLANGIC_KULLANICILAR = [
   { kod:'MSF2002', sifre:'1234', ad:'Z. Altan',                   unvan:'Resepsiyon — Yayla Konağı', rol:'RESEPSIYON', tesisler:['YAYLA'],                      aktif:true },
   { kod:'MSF3001', sifre:'1234', ad:'H. Demir',                   unvan:'Muhasebe Şefi',             rol:'MUHASEBE',   tesisler:'*',                            aktif:true },
   { kod:'MSF2003', sifre:'1234', ad:'B. Aygün',                   unvan:'Resepsiyon — Amasra',       rol:'RESEPSIYON', tesisler:['AMASRA'],                     aktif:false },
+];
+
+/* ── Giriş testi için hazırlanmış 4 haneli hesaplar ────────────────────────
+   Yalnız prototipi denemek içindir; kullanıcı adları rastgele 4 rakam,
+   şifreler 123 / 1234 / 12345 desenlerindedir. Her rol üç şifre uzunluğuyla
+   ayrı ayrı denenebilsin diye 12 hesap tanımlıdır. Ayrıntılı liste:
+   .gizli/test-hesaplari.md — bu hesaplar gerçek kurulumda silinmelidir. */
+const TEST_KULLANICILAR = [
+  { kod:'2697', sifre:'123',   ad:'Test Admin 1',      unvan:'Giriş testi — Admin',      rol:'ADMIN',      tesisler:'*',                            aktif:true, test:true },
+  { kod:'4380', sifre:'1234',  ad:'Test Admin 2',      unvan:'Giriş testi — Admin',      rol:'ADMIN',      tesisler:'*',                            aktif:true, test:true },
+  { kod:'2682', sifre:'12345', ad:'Test Admin 3',      unvan:'Giriş testi — Admin',      rol:'ADMIN',      tesisler:'*',                            aktif:true, test:true },
+  { kod:'6458', sifre:'123',   ad:'Test Müdür 1',      unvan:'Giriş testi — Müdür',      rol:'YONETICI',   tesisler:['ANKARA'],                     aktif:true, test:true },
+  { kod:'1278', sifre:'1234',  ad:'Test Müdür 2',      unvan:'Giriş testi — Müdür',      rol:'YONETICI',   tesisler:['YAYLA','AMASRA'],             aktif:true, test:true },
+  { kod:'7622', sifre:'12345', ad:'Test Müdür 3',      unvan:'Giriş testi — Müdür',      rol:'YONETICI',   tesisler:['ARMUTCUK'],                   aktif:true, test:true },
+  { kod:'5819', sifre:'123',   ad:'Test Resepsiyon 1', unvan:'Giriş testi — Resepsiyon', rol:'RESEPSIYON', tesisler:['ANKARA'],                     aktif:true, test:true },
+  { kod:'3142', sifre:'1234',  ad:'Test Resepsiyon 2', unvan:'Giriş testi — Resepsiyon', rol:'RESEPSIYON', tesisler:['YAYLA'],                      aktif:true, test:true },
+  { kod:'8341', sifre:'12345', ad:'Test Resepsiyon 3', unvan:'Giriş testi — Resepsiyon', rol:'RESEPSIYON', tesisler:['AMASRA','ARMUTCUK'],          aktif:true, test:true },
+  { kod:'3610', sifre:'123',   ad:'Test Muhasebe 1',   unvan:'Giriş testi — Muhasebe',   rol:'MUHASEBE',   tesisler:'*',                            aktif:true, test:true },
+  { kod:'1655', sifre:'1234',  ad:'Test Muhasebe 2',   unvan:'Giriş testi — Muhasebe',   rol:'MUHASEBE',   tesisler:['ANKARA'],                     aktif:true, test:true },
+  { kod:'2021', sifre:'12345', ad:'Test Muhasebe 3',   unvan:'Giriş testi — Muhasebe',   rol:'MUHASEBE',   tesisler:['YAYLA','AMASRA','ARMUTCUK'],  aktif:true, test:true },
 ];
 
 const yetkiVar        = (k, izin) => !!k && (ROLLER[k.rol].izinler === '*' || ROLLER[k.rol].izinler.includes(izin));
@@ -865,7 +885,7 @@ function baslangicDurumu() {
     ekran: 'PANO',
     odakRezId: null,
     kullanici: null,
-    kullanicilar: BASLANGIC_KULLANICILAR.map(k => ({ ...k, sonGiris: null })),
+    kullanicilar: [...BASLANGIC_KULLANICILAR, ...TEST_KULLANICILAR].map(k => ({ ...k, sonGiris: null })),
     odalar, yataklar, rezervasyonlar, kurallar,
     gunluk: [{ tarih: SISTEM_TARIHI_BASLANGIC, metin: `Demo veri üretildi: ${odalar.length} oda / ${yataklar.length} yatak / ${rezervasyonlar.length} rezervasyon kaydı`, tip: 'bilgi' }],
   };
@@ -2792,11 +2812,24 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
   10) GİRİŞ EKRANI VE KULLANICI YÖNETİMİ
    ══════════════════════════════════════════════════════════════════════════ */
 
+const HesapSatiri = ({ k, hizli }) => (
+  <button onClick={() => hizli(k)} disabled={!k.aktif}
+    className={`w-full text-left px-2 py-1.5 rounded border text-xs flex items-center gap-2 transition-colors
+      ${k.aktif ? 'bg-white border-slate-200 hover:bg-ttk-50 hover:border-ttk-300' : 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'}`}>
+    <span className="num font-bold text-ttk-800 w-20">{k.kod}</span>
+    <span className="flex-1 truncate">{k.ad} <span className="text-slate-400">· {k.unvan}</span></span>
+    <Rozet sinif={ROLLER[k.rol].renk}>{ROLLER[k.rol].kisa}</Rozet>
+    <span className="num text-2xs text-slate-500 w-12 text-right">{k.sifre}</span>
+    {!k.aktif && <Rozet sinif="bg-rose-100 text-rose-700 border-rose-300">pasif</Rozet>}
+  </button>
+);
+
 function GirisEkrani({ kullanicilar, gonder }) {
   const [kod, setKod] = useState('');
   const [sifre, setSifre] = useState('');
   const [hata, setHata] = useState(null);
   const [hesaplarAcik, setHesaplarAcik] = useState(true);
+  const [testAcik, setTestAcik] = useState(false);
   const kodRef = useRef(null);
   useEffect(() => { if (kodRef.current) kodRef.current.focus(); }, []);
 
@@ -2868,7 +2901,7 @@ function GirisEkrani({ kullanicilar, gonder }) {
             </div>
           </div>
 
-          <div className="mt-5 border-t border-slate-200 pt-3">
+          <div className="mt-5 border-t border-slate-200 pt-3 max-h-[42vh] overflow-auto kaydir pr-1">
             <button onClick={() => setHesaplarAcik(x => !x)}
               className="text-2xs font-bold text-ttk-700 uppercase tracking-wide hover:underline">
               Demo hesapları {hesaplarAcik ? '▲' : '▼'}
@@ -2878,17 +2911,20 @@ function GirisEkrani({ kullanicilar, gonder }) {
                 <p className="text-2xs text-slate-500">
                   Rol farklarını görmek için bir hesaba tıklayın; kullanıcı adı ve şifre otomatik doldurulur.
                 </p>
-                {kullanicilar.map(k => (
-                  <button key={k.kod} onClick={() => hizli(k)} disabled={!k.aktif}
-                    className={`w-full text-left px-2 py-1.5 rounded border text-xs flex items-center gap-2 transition-colors
-                      ${k.aktif ? 'bg-white border-slate-200 hover:bg-ttk-50 hover:border-ttk-300' : 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'}`}>
-                    <span className="num font-bold text-ttk-800 w-20">{k.kod}</span>
-                    <span className="flex-1 truncate">{k.ad} <span className="text-slate-400">· {k.unvan}</span></span>
-                    <Rozet sinif={ROLLER[k.rol].renk}>{ROLLER[k.rol].kisa}</Rozet>
-                    <span className="num text-2xs text-slate-400 w-10 text-right">{k.sifre}</span>
-                    {!k.aktif && <Rozet sinif="bg-rose-100 text-rose-700 border-rose-300">pasif</Rozet>}
-                  </button>
-                ))}
+                {kullanicilar.filter(k => !k.test).map(k => <HesapSatiri key={k.kod} k={k} hizli={hizli} />)}
+              </div>
+            )}
+            <button onClick={() => setTestAcik(x => !x)}
+              className="mt-3 text-2xs font-bold text-emerald-700 uppercase tracking-wide hover:underline">
+              Giriş testi hesapları · 4 haneli {testAcik ? '▲' : '▼'}
+            </button>
+            {testAcik && (
+              <div className="mt-2 space-y-1">
+                <p className="text-2xs text-slate-500">
+                  Her rol için üç farklı şifre uzunluğu (123 / 1234 / 12345). Liste:
+                  <span className="num"> .gizli/test-hesaplari.md</span>
+                </p>
+                {kullanicilar.filter(k => k.test).map(k => <HesapSatiri key={k.kod} k={k} hizli={hizli} />)}
               </div>
             )}
           </div>
@@ -2989,7 +3025,11 @@ function KullaniciEkrani({ s, gonder }) {
               const kendisi = s.kullanici.kod === k.kod;
               return (
                 <tr key={k.kod} className={k.aktif ? '' : 'opacity-60'}>
-                  <td className="num font-bold text-ttk-900">{k.kod}{kendisi && <span className="text-2xs text-emerald-600 ml-1">(siz)</span>}</td>
+                  <td className="num font-bold text-ttk-900">
+                    {k.kod}
+                    {kendisi && <span className="text-2xs text-emerald-600 ml-1">(siz)</span>}
+                    {k.test && <Rozet sinif="bg-slate-100 text-slate-600 border-slate-300 ml-1" baslik="Giriş testi için tanımlanmış hesap — kurulumda silinmelidir">test</Rozet>}
+                  </td>
                   <td className="font-semibold">{k.ad}</td>
                   <td className="text-slate-600">{k.unvan}</td>
                   <td>

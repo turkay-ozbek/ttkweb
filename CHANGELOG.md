@@ -8,6 +8,20 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [1.3.0] — 15.09.2026
+### Eklendi
+- **Giriş testi hesapları**: her rol için üç farklı şifre uzunluğuyla (123 / 1234 / 12345)
+  toplam 12 hesap; kullanıcı adları rastgele 4 rakam. Tesis kapsamları da çeşitlendirildi
+  (tek tesis, iki tesis, tüm tesisler) ki yetki kapsamı denenebilsin.
+- Giriş ekranına «Giriş testi hesapları · 4 haneli» katlanabilir bölümü; satıra tıklayınca
+  doğrudan oturum açılır.
+- Kullanıcı ve Yetki Yönetimi ekranında test hesapları «test» rozetiyle işaretleniyor.
+- `.gizli/` dizini: test hesapları tablosu (md + json) ve rol bazlı test senaryoları.
+
+### Not
+- Test hesapları ve `.gizli/` dizini yalnız prototip denemeleri içindir; gerçek kuruluma
+  geçilirken hem dizin hem de `TEST_KULLANICILAR` listesi silinmelidir.
+
 ## [1.2.0] — 15.09.2026
 ### Eklendi
 - **Giriş ekranı**: TTKNET «Bağlantı» penceresinin karşılığı — YBS kullanıcı adı ve şifre,
