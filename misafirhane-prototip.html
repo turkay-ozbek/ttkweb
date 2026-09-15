@@ -84,6 +84,9 @@ const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment 
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
+const SURUM = '1.1.1';
+const SURUM_TARIHI = '2026-09-15';
+
 const GUN_MS = 86400000;
 const SISTEM_TARIHI_BASLANGIC = '2026-09-14';   // MSFH ekranlarındaki 14/09/2026
 
@@ -2744,6 +2747,7 @@ function Uygulama() {
           <b className="mr-1">İşlem günlüğü:</b>{s.gunluk[0] ? s.gunluk[0].metin : '—'}
         </button>
         <span className="num">Kayıt: {s.rezervasyonlar.length}</span>
+        <span className="num text-slate-500" title={`Sürüm ${SURUM} · ${tr(SURUM_TARIHI)}`}>v{SURUM}</span>
       </footer>
 
       {yeniForm && (
@@ -2768,6 +2772,10 @@ function Uygulama() {
       {bilgiAcik && (
         <Modal baslik="Prototip Hakkında ve Otomatik Yerleştirme Mantığı" genislik="max-w-3xl" kapat={() => setBilgiAcik(false)}>
           <div className="text-xs space-y-3 leading-relaxed">
+            <div className="flex items-center justify-between text-2xs text-slate-500">
+              <span>TTK Misafirhane Bilgi Sistemi — Web Prototipi</span>
+              <span className="num">Sürüm <b className="text-ttk-800">{SURUM}</b> · {tr(SURUM_TARIHI)}</span>
+            </div>
             <div className="bg-amber-50 border border-amber-200 rounded p-2">
               Bu uygulama mevcut TTKNET / Oracle Forms sistemine <b>hiç dokunmadan</b>, onun yanında çalışacak şekilde
               hazırlanmış bir <b>demo prototiptir</b>. Tüm veriler bellekte üretilmiştir; gerçek misafir verisi kullanılmaz,
