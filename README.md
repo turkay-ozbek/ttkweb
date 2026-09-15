@@ -43,8 +43,8 @@ ekranındadır; ayrıntısı [`docs/api-sozlesmesi.md`](docs/api-sozlesmesi.md) 
 
 | Kod | Ekran | İçerik |
 |---|---|---|
-| MSFH-W01 | **Doluluk Panosu** | 30 günlük doluluk takvimi (dolu/boş yatak, giriş, çıkış), bugünün oda/yatak haritası, seçili tarih aralığı için kalan yatak analizi, dört tesisin karşılaştırması |
-| MSFH-W02 | **Rezervasyon ve Yerleştirme** | Talep listesi ile oda/yatak doluluğu tek ekranda ve canlı bağlı; otomatik yerleştirme önerisi, onay akışı, sürükle-bırak veya tıklayarak manuel yerleştirme, konaklanacak gecelerin tek tek incelenebildiği harita, yerleştirilemeyen talepler için gerekçe |
+| MSFH-W01 | **Doluluk Panosu** | 30 günlük doluluk takvimi (dolu/boş yatak, giriş, çıkış), oda/yatak haritası (her yatakta misafir adı), **Yatak Listesi** görünümü (hangi odada kaç numaralı yatakta kim yatıyor), seçili tarih aralığı için kalan yatak analizi, dört tesisin karşılaştırması |
+| MSFH-W02 | **Rezervasyon ve Yerleştirme** | Talep listesi ile oda/yatak doluluğu tek ekranda ve canlı bağlı; **otomatik yerleştirme** önerisi ve onay akışı, **manuel yerleştirme penceresi** (misafir başına oda/yatak seçimi, odadaki mevcut misafirler görünür), sürükle-bırak veya tıklayarak yerleştirme, konaklanacak gecelerin tek tek incelenebildiği harita, yerleştirilemeyen talepler için gerekçe |
 | MSFH-W04 | **Kullanıcı ve Yetki Yönetimi** (yalnız Admin) | Kullanıcı listesi, rol ve misafirhane yetkisi atama, aktif/pasif yapma, yeni kullanıcı tanımlama, rol × yetki matrisi |
 | MSFH-W03 | **Peşinat / Tahsilat ve Statü** | Dönem (zaman) filtresi ve iş listeleri (tahsilat bekleyen, süresi dolan, bugün giriş/çıkış), statü akışı, satır başındaki **₺ Tahsilat Al** düğmesiyle tek tıkla tahsilat, tesis bazında peşinat kuralı, süresi dolan taleplerin toplu iptali |
 

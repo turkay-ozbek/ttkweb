@@ -23,10 +23,10 @@ tailwind.config = {
         mono: ['Consolas','SF Mono','Menlo','monospace']
       },
       fontSize: {
-        '2xs': ['10px','13px'],
-        'xs':  ['11px','15px'],
-        'sm':  ['12px','17px'],
-        'base':['13px','19px']
+        '2xs': ['11px','15px'],
+        'xs':  ['12px','17px'],
+        'sm':  ['13px','19px'],
+        'base':['14px','21px']
       }
     }
   }
@@ -39,14 +39,20 @@ tailwind.config = {
   table.veri { border-collapse: separate; border-spacing: 0; }
   table.veri thead th {
     position: sticky; top: 0; z-index: 10;
-    background: #eef2f7; color:#173c6d; font-weight:600;
+    background: #e9eff7; color:#122f56; font-weight:700;
     text-align:left; white-space:nowrap;
-    padding: 6px 8px; border-bottom:1px solid #cbd5e1; font-size:11px;
-    letter-spacing:.02em; text-transform:uppercase;
+    padding: 7px 10px; border-bottom:1px solid #b9c6d8; font-size:11.5px;
+    letter-spacing:.03em; text-transform:uppercase;
   }
-  table.veri tbody td { padding: 4px 8px; border-bottom:1px solid #eef1f5; white-space:nowrap; font-size:12px; }
-  table.veri tbody tr:hover { background:#f8fafc; }
+  table.veri tbody td { padding: 6px 10px; border-bottom:1px solid #eef1f5; white-space:nowrap; font-size:13px; color:#1e293b; }
+  table.veri tbody tr:nth-child(even) { background:#fafbfd; }
+  table.veri tbody tr:hover { background:#eef4fb; }
   table.veri tbody tr.secili { background:#dbeafe !important; box-shadow: inset 3px 0 0 #1d4b87; }
+  input, select, button, textarea { font-family: inherit; }
+  input:focus-visible, select:focus-visible, button:focus-visible {
+    outline: 2px solid #4a81c6; outline-offset: 1px;
+  }
+  ::selection { background:#b3cdec; }
   .kaydir::-webkit-scrollbar { width:10px; height:10px; }
   .kaydir::-webkit-scrollbar-thumb { background:#c3ccd8; border-radius:5px; border:2px solid #f4f6f9; }
   .kaydir::-webkit-scrollbar-track { background:transparent; }
@@ -84,7 +90,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment 
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '1.3.1';
+const SURUM = '1.4.0';
 const SURUM_TARIHI = '2026-09-15';
 
 const GUN_MS = 86400000;
@@ -144,7 +150,7 @@ const statuKisa= k => { const x = STATULER.find(s => s.kod === k) || {}; return 
 const statuRenk= k => (STATULER.find(s => s.kod === k) || {}).renk || 'bg-slate-100 text-slate-600 border-slate-300';
 
 const YATAK_DURUM = {
-  BOS:            { ad:'Boş',            kutu:'bg-white border-slate-300 text-slate-500',      nokta:'bg-slate-300' },
+  BOS:            { ad:'Boş',            kutu:'bg-white border-slate-300 text-slate-500',      nokta:'bg-white' },
   DOLU:           { ad:'Dolu',           kutu:'bg-ttk-600 border-ttk-700 text-white',          nokta:'bg-ttk-600' },
   REZERVE:        { ad:'Rezerve',        kutu:'bg-amber-300 border-amber-500 text-amber-950',  nokta:'bg-amber-400' },
   CIKIS_BEKLIYOR: { ad:'Çıkış Bekliyor', kutu:'bg-orange-500 border-orange-600 text-white',    nokta:'bg-orange-500' },
@@ -978,6 +984,29 @@ function indirgeyici(s, a) {
         metin: `${kyt.rez_no} — ${kyt.misafirler[misafirIndex].adi_soyadi} manuel olarak Oda ${yatak.oda_no} / Yatak ${yatak.yatak_no} yatağına yerleştirildi` }, ...s.gunluk] };
     }
 
+    /* Manuel yerleştirme penceresinden gelen toplu atama */
+    case 'MANUEL_ATA_TOPLU': {
+      const rezler = guncelle(s.rezervasyonlar, a.rezId, rz => {
+        rz.misafirler = rz.misafirler.map((g, i) => {
+          const at = a.atamalar.find(x => x.misafirIndex === i);
+          if (!at) return { ...g };
+          if (!at.yatakId) return { ...g, yatakId: null, oda_no: null, yatak_no: null };
+          return { ...g, yatakId: at.yatakId, oda_no: at.oda_no, yatak_no: at.yatak_no };
+        });
+        if (rz.statu === 'TALEP' && rz.misafirler.every(g => g.yatakId)) {
+          rz.statu = (rz.pesinat_tutari > rz.tahsil_edilen) ? 'PESINAT_BEKLENIYOR' : 'ONAYLI';
+        }
+        const yerlesim = rz.misafirler.filter(g => g.oda_no).map(g => `${g.adi_soyadi} → Oda ${g.oda_no}/${g.yatak_no}`);
+        rz.hareketler = [...rz.hareketler, { tarih: s.bugun, kullanici: ku,
+          metin: `Manuel yerleştirme: ${yerlesim.join(' · ') || 'tahsis kaldırıldı'}` }];
+        return rz;
+      });
+      const kyt4 = rezler.find(x => x.id === a.rezId);
+      return { ...s, rezervasyonlar: rezler, gunluk: [{ tarih: s.bugun, tip: 'basari',
+        metin: `${kyt4.rez_no} — ${kyt4.ad_soyad}: manuel yerleştirme kaydedildi ` +
+               `(${kyt4.misafirler.filter(g => g.oda_no).map(g => 'Oda ' + g.oda_no + '/' + g.yatak_no).join(', ') || 'tahsis yok'})` }, ...s.gunluk] };
+    }
+
     case 'ATAMA_KALDIR': {
       const rezler = guncelle(s.rezervasyonlar, a.rezId, rz => {
         rz.misafirler = rz.misafirler.map((g, i) =>
@@ -1106,7 +1135,7 @@ function indirgeyici(s, a) {
    ══════════════════════════════════════════════════════════════════════════ */
 
 const Rozet = ({ children, sinif = '', baslik }) => (
-  <span title={baslik} className={`inline-flex items-center gap-1 px-1.5 py-[1px] rounded border text-2xs font-semibold leading-4 ${sinif}`}>{children}</span>
+  <span title={baslik} className={`inline-flex items-center gap-1 px-1.5 py-[1px] rounded border text-2xs font-semibold leading-[15px] ${sinif}`}>{children}</span>
 );
 
 const StatuRozet = ({ kod, kisa }) => <Rozet sinif={statuRenk(kod)} baslik={statuAd(kod)}>{kisa ? statuKisa(kod) : statuAd(kod)}</Rozet>;
@@ -1119,14 +1148,14 @@ const Buton = ({ tur = 'ikincil', className = '', ...p }) => {
     basari:   'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700',
     sessiz:   'bg-transparent hover:bg-slate-100 text-slate-600 border-transparent',
   }[tur];
-  return <button {...p} className={`px-2.5 py-1 rounded border text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${t} ${className}`} />;
+  return <button {...p} className={`px-3 py-1.5 rounded border text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${t} ${className}`} />;
 };
 
 const Kart = ({ baslik, sag, children, className = '', govdeSinif = 'p-3' }) => (
   <section className={`bg-white border border-slate-200 rounded shadow-sm ${className}`}>
     {(baslik || sag) && (
-      <header className="flex items-center justify-between gap-3 px-3 py-2 border-b border-slate-200 bg-slate-50/70 rounded-t">
-        <h2 className="text-xs font-bold text-ttk-800 uppercase tracking-wide">{baslik}</h2>
+      <header className="flex items-center justify-between gap-3 px-3 py-2.5 border-b border-slate-200 bg-slate-50 rounded-t">
+        <h2 className="text-[12.5px] font-bold text-ttk-800 uppercase tracking-wide">{baslik}</h2>
         <div className="flex items-center gap-2">{sag}</div>
       </header>
     )}
@@ -1134,10 +1163,10 @@ const Kart = ({ baslik, sag, children, className = '', govdeSinif = 'p-3' }) => 
   </section>
 );
 
-const Kpi = ({ etiket, deger, alt, renk = 'text-ttk-700', ikon }) => (
-  <div className="bg-white border border-slate-200 rounded px-3 py-2 flex-1 min-w-[132px]">
-    <div className="text-2xs uppercase tracking-wide text-slate-500 font-semibold">{etiket}</div>
-    <div className={`num text-2xl font-bold leading-7 ${renk}`}>{deger}</div>
+const Kpi = ({ etiket, deger, alt, renk = 'text-ttk-700' }) => (
+  <div className="bg-white border border-slate-200 rounded px-3 py-2.5 flex-1 min-w-[142px]">
+    <div className="text-2xs uppercase tracking-wide text-slate-600 font-semibold">{etiket}</div>
+    <div className={`num text-[26px] font-bold leading-8 ${renk}`}>{deger}</div>
     {alt && <div className="text-2xs text-slate-500 num">{alt}</div>}
   </div>
 );
@@ -1184,6 +1213,71 @@ const Cubuk = ({ oran, renk = 'bg-ttk-500' }) => (
   </div>
 );
 
+
+/* Ortak oda/yatak haritası. Hücrenin nasıl görüneceğini çağıran ekran belirler:
+   hucre(yatak) -> { sinif, ad, baslik, ek?, props? }
+   isimli=true iken her yatak satırında yatak no + misafir adı yazılır. */
+function YatakHaritasi({ katlar, yataklar, hucre, isimli = true, yukseklik = 'max-h-[460px]' }) {
+  return (
+    <div className={`space-y-3 ${yukseklik} overflow-auto kaydir pr-1`}>
+      {katlar.map(([kat, odaListesi]) => (
+        <div key={kat}>
+          <div className="text-2xs font-bold text-slate-500 uppercase tracking-wide mb-1">
+            {kat}. Kat · {odaListesi.length} oda
+          </div>
+          <div className="grid gap-1.5"
+            style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${isimli ? 172 : 104}px, 1fr))` }}>
+            {odaListesi.map(o => {
+              const ys = yataklar.filter(y => y.odaId === o.id);
+              return (
+                <div key={o.id} className="border border-slate-200 rounded bg-slate-50/60 px-1.5 py-1">
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="num text-xs font-bold text-ttk-800">Oda {o.oda_no}</span>
+                    <span className="flex items-center gap-1">
+                      {o.protokol && <Rozet sinif="bg-violet-100 text-violet-700 border-violet-300" baslik="Protokol odası">P</Rozet>}
+                      <span className="num text-[9px] text-slate-400">{para(o.yatak_fiyati)}</span>
+                    </span>
+                  </div>
+                  <div className={isimli ? 'space-y-[3px]' : 'flex gap-1'}>
+                    {ys.map(y => {
+                      const h = hucre(y);
+                      return isimli ? (
+                        <div key={y.id} title={h.baslik} {...(h.props || {})}
+                          className={`yatak-hucre flex items-center gap-1 px-1 py-[3px] rounded border text-2xs leading-4 ${h.sinif} ${h.ek || ''}`}>
+                          <span className="num font-bold w-3.5 text-center shrink-0">{y.yatak_no}</span>
+                          <span className="flex-1 truncate">{h.ad}</span>
+                        </div>
+                      ) : (
+                        <div key={y.id} title={h.baslik} {...(h.props || {})}
+                          className={`yatak-hucre flex-1 h-9 rounded border text-2xs font-bold flex items-center justify-center ${h.sinif} ${h.ek || ''}`}>
+                          {y.yatak_no}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {!isimli && <div className="num text-[9px] text-slate-400 mt-0.5">{para(o.yatak_fiyati)}/gece</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const GorunumSecici = ({ deger, ayarla, secenekler }) => (
+  <div className="flex items-center gap-0.5 bg-slate-100 rounded p-0.5">
+    {secenekler.map(([kod, ad, ipucu]) => (
+      <button key={kod} onClick={() => ayarla(kod)} title={ipucu}
+        className={`px-2 py-0.5 rounded text-2xs font-semibold transition-colors
+          ${deger === kod ? 'bg-white text-ttk-800 shadow-sm' : 'text-slate-500 hover:text-ttk-700'}`}>
+        {ad}
+      </button>
+    ))}
+  </div>
+);
+
 const BosDurum = ({ metin }) => (
   <div className="text-center text-slate-400 text-xs py-8 border border-dashed border-slate-300 rounded">{metin}</div>
 );
@@ -1221,7 +1315,11 @@ function yatakDurumu(y, t, dolu, temizlik) {
     if (d.rez.cikis_tarihi === ekle(t, 1)) return { durum: 'CIKIS_BEKLIYOR', kayit: d };
     return { durum: 'DOLU', kayit: d };
   }
-  if (temizlik.has(y.id + '|' + t)) return { durum: 'TEMIZLIK', kayit: temizlik.get(y.id + '|' + t) };
+  if (temizlik.has(y.id + '|' + t)) {
+    const tz = temizlik.get(y.id + '|' + t);
+    const cikan = tz.rez.misafirler.find(g => g.yatakId === y.id) || null;
+    return { durum: 'TEMIZLIK', kayit: { ...tz, cikanMisafir: cikan } };
+  }
   return { durum: 'BOS', kayit: null };
 }
 
@@ -1231,6 +1329,10 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin }) {
   const [aralikBas, setAralikBas] = useState(s.bugun);
   const [aralikSon, setAralikSon] = useState(ekle(s.bugun, 3));
   const [detay, setDetay] = useState(null);
+  const [gorunum, setGorunum] = useState('HARITA');     // HARITA | LISTE
+  const [isimli, setIsimli] = useState(true);
+  const [listeFiltre, setListeFiltre] = useState('HEPSI');
+  const [listeArama, setListeArama] = useState('');
 
   useEffect(() => { setSeritBas(s.bugun); setHaritaTarihi(s.bugun); setAralikBas(s.bugun); setAralikSon(ekle(s.bugun, 3)); }, [s.bugun]);
 
@@ -1266,6 +1368,26 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin }) {
     tesisOda.forEach(o => { if (!m.has(o.kat)) m.set(o.kat, []); m.get(o.kat).push(o); });
     return [...m.entries()].sort((a, b) => a[0] - b[0]);
   }, [tesisOda]);
+
+  /* «Hangi yatakta kim yatıyor» listesi */
+  const yatakListesi = useMemo(() => {
+    const q = listeArama.trim().toLocaleLowerCase('tr-TR');
+    return tesisYatak.map(y => {
+      const { durum, kayit } = yatakDurumu(y, haritaTarihi, dolu, temizlik);
+      return { y, durum, kayit, rez: kayit ? kayit.rez : null,
+               misafir: kayit ? kayit.misafir : null, cikan: kayit ? kayit.cikanMisafir : null };
+    }).filter(r => {
+      if (listeFiltre === 'DOLU' && r.durum === 'BOS') return false;
+      if (listeFiltre === 'BOS' && r.durum !== 'BOS') return false;
+      if (q) {
+        const havuz = [r.y.oda_no, r.y.yatak_no, r.misafir && r.misafir.adi_soyadi,
+                       r.misafir && r.misafir.tc_kimlik_no, r.cikan && r.cikan.adi_soyadi, r.rez && r.rez.rez_no]
+                       .filter(Boolean).join(' ').toLocaleLowerCase('tr-TR');
+        if (!havuz.includes(q)) return false;
+      }
+      return true;
+    }).sort((a, b) => a.y.oda_no - b.y.oda_no || a.y.yatak_no - b.y.yatak_no);
+  }, [tesisYatak, haritaTarihi, dolu, temizlik, listeFiltre, listeArama]);
 
   const tesisOzet = useMemo(() => TESISLER.map(t => {
     const x = gunIstatistikleri(t.kod, [s.bugun], s.yataklar, s.rezervasyonlar, dolu, temizlik)[0];
@@ -1345,7 +1467,7 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin }) {
 
       <div className="grid grid-cols-12 gap-3">
         {/* Aralık analizi */}
-        <Kart className="col-span-3" baslik="Seçili Tarih Aralığı — Kalan Yatak">
+        {gorunum === 'HARITA' && <Kart className="col-span-3" baslik="Seçili Tarih Aralığı — Kalan Yatak">
           <div className="flex items-center gap-1.5 mb-3">
             <TarihGirdi deger={aralikBas} onChange={setAralikBas} />
             <span className="text-slate-400 text-xs">→</span>
@@ -1383,55 +1505,105 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin }) {
               </div>
             </div>
           )}
-        </Kart>
+        </Kart>}
 
-        {/* Oda / yatak haritası */}
-        <Kart className="col-span-9" baslik={`Oda / Yatak Haritası — ${tr(haritaTarihi)}`}
+        {/* Oda / yatak haritası ve yatak listesi */}
+        <Kart className={gorunum === 'HARITA' ? 'col-span-9' : 'col-span-12'}
+          baslik={gorunum === 'HARITA'
+            ? `Oda / Yatak Haritası — ${tr(haritaTarihi)} · hangi yatakta kim kalıyor`
+            : `Yatak Listesi — ${tr(haritaTarihi)} · oda ve yatak numarasına göre misafirler`}
           sag={<>
-            <div className="flex items-center gap-2 mr-2 text-2xs">
-              {Object.entries(YATAK_DURUM).map(([k, v]) => (
-                <span key={k} className="flex items-center gap-1 text-slate-600">
-                  <i className={`w-2.5 h-2.5 rounded-sm inline-block ${v.nokta}`} />{v.ad}
-                </span>
-              ))}
-            </div>
+            <GorunumSecici deger={gorunum} ayarla={setGorunum} secenekler={[
+              ['HARITA', 'Harita', 'Oda kartları üzerinde görsel yerleşim'],
+              ['LISTE', 'Liste', 'Oda / yatak / misafir tablosu'],
+            ]} />
+            {gorunum === 'HARITA' &&
+              <GorunumSecici deger={isimli ? 'AD' : 'KOMPAKT'} ayarla={v => setIsimli(v === 'AD')} secenekler={[
+                ['AD', 'İsimli', 'Her yatakta misafirin adı yazar'],
+                ['KOMPAKT', 'Kompakt', 'Yalnız yatak numaraları — daha çok oda ekrana sığar'],
+              ]} />}
             <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, -1))}>◀</Buton>
             <TarihGirdi deger={haritaTarihi} onChange={setHaritaTarihi} />
             <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, 1))}>▶</Buton>
           </>}>
-          <div className="space-y-3 max-h-[460px] overflow-auto kaydir pr-1">
-            {katlar.map(([kat, odalar]) => (
-              <div key={kat}>
-                <div className="text-2xs font-bold text-slate-500 uppercase tracking-wide mb-1">{kat}. Kat · {odalar.length} oda</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {odalar.map(o => {
-                    const ys = tesisYatak.filter(y => y.odaId === o.id);
-                    return (
-                      <div key={o.id} className="border border-slate-200 rounded bg-slate-50/60 px-1.5 py-1 w-[104px]">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="num text-xs font-bold text-ttk-800">Oda {o.oda_no}</span>
-                          {o.protokol && <Rozet sinif="bg-violet-100 text-violet-700 border-violet-300" baslik="Protokol odası">P</Rozet>}
-                        </div>
-                        <div className="flex gap-1">
-                          {ys.map(y => {
-                            const { durum, kayit } = yatakDurumu(y, haritaTarihi, dolu, temizlik);
-                            const v = YATAK_DURUM[durum];
-                            return (
-                              <button key={y.id} onClick={() => setDetay({ yatak: y, tarih: haritaTarihi, durum, kayit })}
-                                title={`Oda ${y.oda_no} / Yatak ${y.yatak_no} — ${v.ad}${kayit && kayit.misafir ? '\n' + kayit.misafir.adi_soyadi : ''}`}
-                                className={`yatak-hucre flex-1 h-9 rounded border text-2xs font-bold ${v.kutu}`}>
-                                {y.yatak_no}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <div className="num text-[9px] text-slate-400 mt-0.5">{para(o.yatak_fiyati)}/gece</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+          <div className="flex items-center gap-3 flex-wrap mb-2 pb-2 border-b border-slate-100">
+            {Object.entries(YATAK_DURUM).map(([k, v]) => (
+              <span key={k} className="flex items-center gap-1 text-2xs text-slate-600">
+                <i className={`w-3 h-3 rounded-sm inline-block border ${v.nokta} border-black/10`} />{v.ad}
+              </span>
             ))}
+            {gorunum === 'LISTE' && <>
+              <select value={listeFiltre} onChange={e => setListeFiltre(e.target.value)}
+                className="ml-auto border border-slate-300 rounded px-1.5 py-0.5 text-xs bg-white">
+                <option value="HEPSI">Tüm yataklar</option>
+                <option value="DOLU">Yalnız dolu yataklar</option>
+                <option value="BOS">Yalnız boş yataklar</option>
+              </select>
+              <input value={listeArama} onChange={e => setListeArama(e.target.value)}
+                placeholder="Ad soyad / Tc kimlik / oda no…"
+                className="border border-slate-300 rounded px-2 py-0.5 text-xs w-52" />
+            </>}
+          </div>
+
+          {gorunum === 'HARITA' ? (
+            <YatakHaritasi katlar={katlar} yataklar={tesisYatak} isimli={isimli}
+              hucre={(y) => {
+                const { durum, kayit } = yatakDurumu(y, haritaTarihi, dolu, temizlik);
+                const v = YATAK_DURUM[durum];
+                const ad = durum === 'TEMIZLIK' ? 'Temizlik'
+                         : kayit && kayit.misafir ? kayit.misafir.adi_soyadi : 'Boş';
+                return {
+                  sinif: v.kutu,
+                  ad,
+                  baslik: `Oda ${y.oda_no} / Yatak ${y.yatak_no} — ${v.ad}` +
+                    (kayit && kayit.misafir
+                      ? `\n${kayit.misafir.adi_soyadi} (Tc ${kayit.misafir.tc_kimlik_no})` +
+                        `\n${tr(kayit.rez.gelis_tarihi)} – ${tr(kayit.rez.cikis_tarihi)} · ${kayit.rez.kurum_sahis === 'KURUM' ? 'Kurum' : 'Şahıs'}`
+                      : '\nTıklayarak kayıt açabilirsiniz'),
+                  props: { onClick: () => setDetay({ yatak: y, tarih: haritaTarihi, durum, kayit }), role: 'button', tabIndex: 0 },
+                };
+              }} />
+          ) : (
+            <div className="max-h-[460px] overflow-auto kaydir">
+              <table className="veri w-full">
+                <thead><tr>
+                  <th className="text-center">Oda No</th><th className="text-center">Yatak No</th><th>Oda Tipi</th><th>Durum</th>
+                  <th>Tc Kimlik No</th><th>Adı ve Soyadı</th><th className="text-center">C.</th>
+                  <th>Geliş / Çıkış</th><th className="text-center">Gün</th><th>Kurum-Şahıs</th>
+                  <th title="Ödeme Türü">Öd. Türü</th><th className="text-right">Peşinattan Kalan</th><th>Rez. No</th>
+                </tr></thead>
+                <tbody>
+                  {yatakListesi.map(r => (
+                    <tr key={r.y.id} className={r.durum === 'BOS' ? 'text-slate-400' : ''}
+                      onDoubleClick={() => setDetay({ yatak: r.y, tarih: haritaTarihi, durum: r.durum, kayit: r.kayit })}>
+                      <td className="num text-center font-bold text-ttk-900">{r.y.oda_no}</td>
+                      <td className="num text-center font-bold">{r.y.yatak_no}</td>
+                      <td className="text-slate-600">{r.y.tip === 'TEK' ? 'Tek kişilik' : r.y.tip === 'CIFT' ? 'İki kişilik' : 'Üç kişilik'}{r.y.protokol && ' · protokol'}</td>
+                      <td><Rozet sinif={YATAK_DURUM[r.durum].kutu}>{YATAK_DURUM[r.durum].ad}</Rozet></td>
+                      <td className="num">{r.misafir ? r.misafir.tc_kimlik_no : r.cikan ? r.cikan.tc_kimlik_no : '—'}</td>
+                      <td className="font-semibold text-ttk-900">
+                        {r.misafir ? r.misafir.adi_soyadi
+                          : r.cikan ? <span className="font-normal text-violet-700">çıkış: {r.cikan.adi_soyadi}</span>
+                          : <span className="text-slate-400 font-normal">— boş —</span>}
+                      </td>
+                      <td className="text-center">{r.misafir ? r.misafir.cinsiyet : r.cikan ? r.cikan.cinsiyet : ''}</td>
+                      <td className="num">{r.rez ? `${tr(r.rez.gelis_tarihi)} – ${tr(r.rez.cikis_tarihi)}` : ''}</td>
+                      <td className="num text-center">{r.rez ? r.rez.gun_sayisi : ''}</td>
+                      <td>{r.rez ? (r.rez.kurum_sahis === 'KURUM' ? 'Kurum' : 'Şahıs') : ''}</td>
+                      <td className="text-slate-600">{r.rez ? r.rez.odeme_turu : ''}</td>
+                      <td className="num text-right">{r.rez && r.rez.pesinat_tutari ? para(Math.max(0, r.rez.pesinat_tutari - r.rez.tahsil_edilen)) : ''}</td>
+                      <td className="num text-slate-500">{r.rez ? r.rez.rez_no.slice(4) : ''}</td>
+                    </tr>
+                  ))}
+                  {!yatakListesi.length && <tr><td colSpan="13" className="text-center text-slate-400 py-6">Filtreye uyan yatak yok.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="text-2xs text-slate-500 mt-2">
+            {gorunum === 'HARITA'
+              ? 'Yatağa tıklayınca kayıt detayı açılır; boş yataklarda doğrudan yeni kayıt açabilirsiniz.'
+              : `${yatakListesi.length} satır · satıra çift tıklayınca kayıt detayı açılır.`}
           </div>
         </Kart>
       </div>
@@ -1495,6 +1667,192 @@ function RezervasyonOzet({ rz, misafir }) {
    7) EKRAN 2 — REZERVASYON VE OTOMATİK YERLEŞTİRME
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* ── Manuel yerleştirme penceresi ──────────────────────────────────────────
+   Otomatik yerleştirmeye alternatif: her misafir için oda/yatak elle seçilir.
+   Seçenekler yalnız talebin tüm gecelerinde müsait olan yataklardır; odadaki
+   mevcut misafirler seçenekle birlikte gösterilir. */
+function ManuelYerlestirme({ s, rz, gonder, kapat }) {
+  const [secim, setSecim] = useState(() => rz.misafirler.map(g => g.yatakId || ''));
+  const [odaSecim, setOdaSecim] = useState('');
+
+  const { dolu, temizlik } = useMemo(
+    () => dolulukKur(s.rezervasyonlar.filter(r => r.id !== rz.id)), [s.rezervasyonlar, rz.id]);
+  const tesisYatak = useMemo(() => s.yataklar.filter(y => y.tesis === rz.tesis), [s.yataklar, rz.tesis]);
+  const tesisOda = useMemo(() => s.odalar.filter(o => o.tesis === rz.tesis), [s.odalar, rz.tesis]);
+  const geceler = aralik(rz.gelis_tarihi, rz.cikis_tarihi);
+
+  const musaitler = useMemo(
+    () => tesisYatak.filter(y => yatakMusait(y.id, rz.gelis_tarihi, rz.cikis_tarihi, dolu, temizlik)),
+    [tesisYatak, rz.gelis_tarihi, rz.cikis_tarihi, dolu, temizlik]);
+
+  /* Odada, talebin tarihlerinde konaklayan diğer misafirler */
+  const odaSakinleri = useMemo(() => {
+    const m = new Map();
+    for (const y of tesisYatak) {
+      for (const t of geceler) {
+        const d = dolu.get(y.id + '|' + t);
+        if (!d || !d.misafir) continue;
+        const liste = m.get(y.odaId) || [];
+        if (!liste.some(x => x.tc === d.misafir.tc_kimlik_no)) {
+          liste.push({ tc: d.misafir.tc_kimlik_no, ad: d.misafir.adi_soyadi, cinsiyet: d.misafir.cinsiyet, yatak_no: y.yatak_no });
+        }
+        m.set(y.odaId, liste);
+      }
+    }
+    return m;
+  }, [tesisYatak, dolu, geceler.join()]);
+
+  /* Grubun tamamını alabilecek odalar */
+  const uygunOdalar = useMemo(() => tesisOda.filter(o => {
+    const bos = musaitler.filter(y => y.odaId === o.id).length;
+    return bos >= rz.misafirler.length;
+  }), [tesisOda, musaitler, rz.misafirler.length]);
+
+  const odayaYerlestir = (odaId) => {
+    if (!odaId) return;
+    const bos = musaitler.filter(y => y.odaId === odaId).sort((a, b) => a.yatak_no - b.yatak_no);
+    setSecim(rz.misafirler.map((_, i) => bos[i] ? bos[i].id : ''));
+    setOdaSecim(odaId);
+  };
+
+  const hatalar = useMemo(() => {
+    const h = [];
+    const dolular = secim.filter(Boolean);
+    if (new Set(dolular).size !== dolular.length) h.push('Aynı yatak birden fazla misafire verilemez.');
+    if (!rz.aile) {
+      const odaCins = new Map();
+      secim.forEach((yid, i) => {
+        if (!yid) return;
+        const y = tesisYatak.find(x => x.id === yid);
+        if (!y) return;
+        const mevcut = new Set((odaSakinleri.get(y.odaId) || []).map(x => x.cinsiyet));
+        const formda = odaCins.get(y.odaId) || new Set();
+        const hepsi = new Set([...mevcut, ...formda]);
+        if (hepsi.size && !hepsi.has(rz.misafirler[i].cinsiyet))
+          h.push(`${rz.misafirler[i].adi_soyadi}: Oda ${y.oda_no} karma konaklamaya kapalı (odada farklı cinsiyette misafir var).`);
+        formda.add(rz.misafirler[i].cinsiyet); odaCins.set(y.odaId, formda);
+      });
+    }
+    return [...new Set(h)];
+  }, [secim, tesisYatak, odaSakinleri, rz]);
+
+  const secenekler = (i) => {
+    const digerleri = new Set(secim.filter((v, k) => k !== i && v));
+    return musaitler.filter(y => !digerleri.has(y.id));
+  };
+  const yerlesen = secim.filter(Boolean).length;
+
+  const kaydet = () => {
+    if (hatalar.length) return;
+    const atamalar = secim.map((yid, i) => {
+      const y = yid ? tesisYatak.find(x => x.id === yid) : null;
+      return { misafirIndex: i, yatakId: y ? y.id : null, oda_no: y ? y.oda_no : null, yatak_no: y ? y.yatak_no : null };
+    });
+    gonder({ tip: 'MANUEL_ATA_TOPLU', rezId: rz.id, atamalar });
+    kapat();
+  };
+
+  return (
+    <Modal baslik={`Manuel Yerleştirme — ${rz.rez_no} · ${rz.ad_soyad}`} genislik="max-w-5xl" kapat={kapat}
+      altlik={<>
+        <span className="text-2xs text-slate-500 mr-auto">
+          {hatalar.length ? <b className="text-rose-700">{hatalar.length} çakışma var — kaydedilemez</b>
+            : `${yerlesen} / ${rz.misafirler.length} misafir yerleştirildi`}
+        </span>
+        <Buton tur="sessiz" onClick={kapat}>Vazgeç</Buton>
+        <Buton tur="sessiz" onClick={() => { setSecim(rz.misafirler.map(() => '')); setOdaSecim(''); }}>Seçimi Temizle</Buton>
+        <Buton tur="basari" onClick={kaydet} disabled={hatalar.length > 0}>Yerleşimi Kaydet</Buton>
+      </>}>
+      <div className="space-y-3 text-xs">
+        <div className="grid grid-cols-4 gap-2">
+          {[['Konaklama', `${tr(rz.gelis_tarihi)} – ${tr(rz.cikis_tarihi)} · ${geceler.length} gece`],
+            ['Kişi / Talep', `${rz.misafirler.length} kişi${rz.aile ? ' · aile (birlikte)' : ''}${rz.protokol ? ' · protokol' : ''}`],
+            ['Kurum-Şahıs', rz.kurum_sahis === 'KURUM' ? 'Kurum · ' + rz.odeyecek : 'Şahıs'],
+            ['Kesintisiz müsait yatak', `${musaitler.length} yatak · ${uygunOdalar.length} oda grubu tamamen alabilir`]].map(([k, v]) => (
+            <div key={k} className="bg-slate-50 border border-slate-200 rounded px-2 py-1.5">
+              <div className="text-2xs uppercase text-slate-500 font-semibold">{k}</div>
+              <div className="num text-ttk-900 truncate" title={v}>{v}</div>
+            </div>
+          ))}
+        </div>
+
+        {rz.misafirler.length > 1 && (
+          <div className="flex items-center gap-2 bg-ttk-50 border border-ttk-200 rounded px-2 py-1.5">
+            <span className="font-semibold text-ttk-800">Hızlı seçim:</span>
+            <span className="text-slate-600">grubun tamamını tek odaya yerleştir</span>
+            <select value={odaSecim} onChange={e => odayaYerlestir(e.target.value)}
+              className={`${GIRDI} !w-72`}>
+              <option value="">— oda seçiniz —</option>
+              {uygunOdalar.map(o => {
+                const sakin = odaSakinleri.get(o.id) || [];
+                return (
+                  <option key={o.id} value={o.id}>
+                    Oda {o.oda_no} · {o.tip === 'TEK' ? 'tek' : o.tip === 'CIFT' ? 'iki' : 'üç'} kişilik · {o.kat}. kat
+                    {sakin.length ? ` · odada: ${sakin.map(x => x.ad.split(' ')[0]).join(', ')}` : ' · oda tamamen boş'}
+                  </option>
+                );
+              })}
+            </select>
+            {!uygunOdalar.length && <span className="text-rose-700 font-semibold">Grubun tamamını alabilecek oda yok — kişileri tek tek yerleştirin.</span>}
+          </div>
+        )}
+
+        <table className="veri w-full">
+          <thead><tr>
+            <th className="w-6">#</th><th>Adı ve Soyadı</th><th className="text-center">C.</th><th>Tc Kimlik No</th>
+            <th>Mevcut Yatak</th><th>Yeni Oda / Yatak No</th><th>Odada kimler var</th>
+          </tr></thead>
+          <tbody>
+            {rz.misafirler.map((g, i) => {
+              const secili = secim[i] ? tesisYatak.find(y => y.id === secim[i]) : null;
+              const sakin = secili ? (odaSakinleri.get(secili.odaId) || []) : [];
+              return (
+                <tr key={i}>
+                  <td className="num text-slate-400">{i + 1}</td>
+                  <td className="font-semibold text-ttk-900">{g.adi_soyadi}</td>
+                  <td className="text-center">
+                    <span className={`inline-flex w-5 h-5 rounded-full text-2xs font-bold items-center justify-center text-white ${g.cinsiyet === 'E' ? 'bg-sky-600' : 'bg-pink-600'}`}>{g.cinsiyet}</span>
+                  </td>
+                  <td className="num">{g.tc_kimlik_no || '—'}</td>
+                  <td className="num">{g.oda_no ? `Oda ${g.oda_no} / Yatak ${g.yatak_no}` : <span className="text-rose-600">tahsis yok</span>}</td>
+                  <td>
+                    <select value={secim[i] || ''} onChange={e => { const v = e.target.value; setSecim(x => x.map((o, k) => k === i ? v : o)); setOdaSecim(''); }}
+                      className={`${GIRDI} !w-64 ${secim[i] ? 'border-emerald-400 bg-emerald-50' : ''}`}>
+                      <option value="">— yerleştirme —</option>
+                      {secenekler(i).map(y => {
+                        const s2 = odaSakinleri.get(y.odaId) || [];
+                        return (
+                          <option key={y.id} value={y.id}>
+                            Oda {y.oda_no} / Yatak {y.yatak_no} · {y.kat}. kat{y.protokol ? ' · protokol' : ''}
+                            {s2.length ? ` · odada ${s2.length} kişi` : ' · oda boş'}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </td>
+                  <td className="text-slate-600 max-w-[260px]">
+                    {!secili ? '—' : sakin.length
+                      ? sakin.map(x => `${x.yatak_no}: ${x.ad} (${x.cinsiyet})`).join(' · ')
+                      : <span className="text-emerald-700">oda tamamen boş</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {hatalar.map((h, i) => (
+          <div key={i} className="px-2 py-1 rounded border bg-rose-50 border-rose-300 text-rose-800 text-2xs">⛔ {h}</div>
+        ))}
+        <div className="text-2xs text-slate-500">
+          Listede yalnız <b>{tr(rz.gelis_tarihi)} – {tr(rz.cikis_tarihi)}</b> arasındaki {geceler.length} gecenin
+          tamamında boş olan yataklar görünür; çıkış sonrası {TEMIZLIK_GUN} günlük temizlik boşluğu da hesaba katılmıştır.
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin }) {
   const [secili, setSecili] = useState(null);
   const [filtreBas, setFiltreBas] = useState(s.bugun);
@@ -1507,6 +1865,8 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin }) {
   const [surukleHedef, setSurukleHedef] = useState(null);
   const [seciliMisafir, setSeciliMisafir] = useState(null);
   const [geceGorunum, setGeceGorunum] = useState(null);   // null = tüm aralık, aksi halde tek gece
+  const [isimli, setIsimli] = useState(true);
+  const [manuel, setManuel] = useState(null);             // manuel yerleştirme penceresi
   const [haritaTarihi, setHaritaTarihi] = useState(s.bugun);
 
   useEffect(() => { setFiltreBas(s.bugun); setFiltreSon(ekle(s.bugun, 21)); setHaritaTarihi(s.bugun); }, [s.bugun]);
@@ -1690,6 +2050,8 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin }) {
                   const eksik = rz.misafirler.some(g => !g.yatakId);
                   return (
                     <tr key={rz.id} onClick={() => setSecili(rz.id)}
+                      onDoubleClick={() => izin('rezervasyon.yerlestir') && setManuel(rz)}
+                      title="Tek tık: seç · Çift tık: manuel yerleştirme penceresi"
                       className={`cursor-pointer ${secili === rz.id ? 'secili' : ''} ${eksik ? 'bg-rose-50/40' : ''}`}>
                       <td className="max-w-[170px] truncate font-semibold text-ttk-900" title={rz.ad_soyad}>
                         {rz.protokol && <span title="Protokol" className="text-violet-600 mr-1">★</span>}{rz.ad_soyad}
@@ -1715,6 +2077,10 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin }) {
           sag={seciliRez && <>
             {izin('rezervasyon.tahsis_kaldir') &&
               <Buton tur="tehlike" onClick={() => gonder({ tip: 'ATAMA_KALDIR', rezId: seciliRez.id })}>Tahsisi Kaldır</Buton>}
+            <Buton disabled={!izin('rezervasyon.yerlestir')} onClick={() => setManuel(seciliRez)}
+              title={izin('rezervasyon.yerlestir') ? 'Oda ve yatakları elle seç' : yetkiNotu(s.kullanici, 'rezervasyon.yerlestir')}>
+              ✋ Manuel Yerleştir
+            </Buton>
             <Buton disabled={!izin('rezervasyon.yerlestir')}
               title={izin('rezervasyon.yerlestir') ? '' : yetkiNotu(s.kullanici, 'rezervasyon.yerlestir')}
               onClick={() => {
@@ -1722,7 +2088,7 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin }) {
               const { dolu: d2, temizlik: t2 } = dolulukKur(s.rezervasyonlar.filter(r => !haric.has(r.id)));
               const sonuc = yerlestirmeMotoru([seciliRez], s.yataklar, s.odalar, d2, t2, {});
               setOneri(sonuc); setOnaylanan(sonuc.oneriler.length ? { [seciliRez.id]: true } : {});
-            }}>Bu Talebi Yerleştir</Buton>
+            }}>⚙ Otomatik Yerleştir</Buton>
           </>}>
           {!seciliRez ? <BosDurum metin="Soldaki listeden bir talep seçiniz." /> : (
             <div className="space-y-2">
@@ -1793,8 +2159,14 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin }) {
               </button>
             ))}
             <span className="text-2xs text-slate-400 ml-1">çıkış günü ({tr(seciliRez.cikis_tarihi)}) gecelenmez</span>
+            <GorunumSecici deger={isimli ? 'AD' : 'KOMPAKT'} ayarla={v => setIsimli(v === 'AD')} secenekler={[
+              ['AD', 'İsimli', 'Yataklarda misafir adı yazar'], ['KOMPAKT', 'Kompakt', 'Yalnız yatak numaraları'],
+            ]} />
           </div>
         ) : (<>
+          <GorunumSecici deger={isimli ? 'AD' : 'KOMPAKT'} ayarla={v => setIsimli(v === 'AD')} secenekler={[
+            ['AD', 'İsimli', 'Yataklarda misafir adı yazar'], ['KOMPAKT', 'Kompakt', 'Yalnız yatak numaraları'],
+          ]} />
           <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, -1))}>◀</Buton>
           <TarihGirdi deger={haritaTarihi} onChange={setHaritaTarihi} />
           <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, 1))}>▶</Buton>
@@ -1820,70 +2192,59 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin }) {
             {!musaitlik.tamSayi && <span className="ml-auto font-semibold">Bu aralıkta kesintisiz yatak yok — talebi bölmek veya tarihi değiştirmek gerekir.</span>}
           </div>
         )}
-        <div className="space-y-3 max-h-[420px] overflow-auto kaydir pr-1">
-          {katlar.map(([kat, odalar]) => (
-            <div key={kat}>
-              <div className="text-2xs font-bold text-slate-500 uppercase tracking-wide mb-1">{kat}. Kat</div>
-              <div className="flex flex-wrap gap-1.5">
-                {odalar.map(o => {
-                  const ys = tesisYatak.filter(y => y.odaId === o.id);
-                  return (
-                    <div key={o.id} className="border border-slate-200 rounded bg-slate-50/60 px-1.5 py-1 w-[104px]">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="num text-xs font-bold text-ttk-800">Oda {o.oda_no}</span>
-                        {o.protokol && <Rozet sinif="bg-violet-100 text-violet-700 border-violet-300">P</Rozet>}
-                      </div>
-                      <div className="flex gap-1">
-                        {ys.map(y => {
-                          let sinif, baslik, musait = false;
-                          if (seciliRez && musaitlik && geceGorunum) {
-                            const bende = seciliRez.misafirler.find(g => g.yatakId === y.id);
-                            const { durum, kayit } = yatakDurumu(y, geceGorunum, musaitlik.dolu, musaitlik.temizlik);
-                            const m = musaitlik.harita.get(y.id) || { tam: false };
-                            musait = m.tam;
-                            sinif = bende ? 'bg-emerald-600 border-emerald-700 text-white' : YATAK_DURUM[durum].kutu;
-                            baslik = bende ? `${bende.adi_soyadi} — bu talebe tahsis edildi`
-                              : `${tr(geceGorunum)} gecesi: ${YATAK_DURUM[durum].ad}` +
-                                (kayit && kayit.misafir ? ` — ${kayit.misafir.adi_soyadi} (${tr(kayit.rez.gelis_tarihi)} – ${tr(kayit.rez.cikis_tarihi)})` : '') +
-                                (m.tam ? ' · talebin tüm gecelerinde müsait' : ' · talebin tüm gecelerinde müsait değil');
-                          } else if (seciliRez && musaitlik) {
-                            const m = musaitlik.harita.get(y.id) || { tam: false, engel: 0, gece: 0 };
-                            musait = m.tam;
-                            const kismi = !m.tam && m.engel < m.gece;
-                            const bende = seciliRez.misafirler.find(g => g.yatakId === y.id);
-                            sinif = bende ? 'bg-emerald-600 border-emerald-700 text-white'
-                              : m.tam ? 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-50'
-                              : kismi ? 'bg-amber-50 border-amber-300 text-amber-700'
-                              : 'bg-slate-200 border-slate-300 text-slate-400';
-                            baslik = bende ? `${bende.adi_soyadi} — bu talebe tahsis edildi`
-                              : m.tam ? `Talebin ${m.gece} gecesinin tamamında müsait — misafir kartını buraya sürükleyin`
-                              : `Kesintisiz müsait değil — ${m.gece} gecenin ${m.engel} tanesinde dolu/temizlikte`;
-                          } else {
-                            const { durum, kayit } = yatakDurumu(y, haritaTarihi, dolu, temizlik);
-                            sinif = YATAK_DURUM[durum].kutu;
-                            baslik = `${YATAK_DURUM[durum].ad}${kayit && kayit.misafir ? ' — ' + kayit.misafir.adi_soyadi : ''}`;
-                          }
-                          const hedefMi = surukleHedef === y.id;
-                          return (
-                            <div key={y.id} title={baslik} onClick={() => yatagaTikla(y)}
-                              onDragOver={e => { if (seciliRez) { e.preventDefault(); setSurukleHedef(y.id); } }}
-                              onDragLeave={() => setSurukleHedef(null)}
-                              onDrop={birak(y)}
-                              className={`yatak-hucre flex-1 h-9 rounded border text-2xs font-bold flex items-center justify-center
-                                ${seciliRez ? 'cursor-pointer' : ''} ${sinif} ${hedefMi ? 'surukle-hedef' : ''}`}>
-                              {y.yatak_no}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
+        <YatakHaritasi katlar={katlar} yataklar={tesisYatak} isimli={isimli} yukseklik="max-h-[420px]"
+          hucre={(y) => {
+            let sinif, baslik, ad, musait = false;
+            const bende = seciliRez ? seciliRez.misafirler.find(g => g.yatakId === y.id) : null;
+            if (seciliRez && musaitlik && geceGorunum) {
+              const { durum, kayit } = yatakDurumu(y, geceGorunum, musaitlik.dolu, musaitlik.temizlik);
+              const m = musaitlik.harita.get(y.id) || { tam: false };
+              musait = m.tam;
+              sinif = bende ? 'bg-emerald-600 border-emerald-700 text-white font-semibold' : YATAK_DURUM[durum].kutu;
+              ad = bende ? bende.adi_soyadi
+                 : durum === 'TEMIZLIK' ? 'Temizlik'
+                 : kayit && kayit.misafir ? kayit.misafir.adi_soyadi : (m.tam ? 'Müsait' : 'Boş');
+              baslik = bende ? `${bende.adi_soyadi} — bu talebe tahsis edildi`
+                : `${tr(geceGorunum)} gecesi: ${YATAK_DURUM[durum].ad}` +
+                  (kayit && kayit.misafir ? ` — ${kayit.misafir.adi_soyadi} (${tr(kayit.rez.gelis_tarihi)} – ${tr(kayit.rez.cikis_tarihi)})` : '') +
+                  (m.tam ? '\nTalebin tüm gecelerinde müsait' : '\nTalebin tüm gecelerinde müsait değil');
+            } else if (seciliRez && musaitlik) {
+              const m = musaitlik.harita.get(y.id) || { tam: false, engel: 0, gece: 0 };
+              musait = m.tam;
+              const kismi = !m.tam && m.engel < m.gece;
+              sinif = bende ? 'bg-emerald-600 border-emerald-700 text-white font-semibold'
+                : m.tam ? 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-50'
+                : kismi ? 'bg-amber-50 border-amber-300 text-amber-800'
+                : 'bg-slate-200 border-slate-300 text-slate-500';
+              ad = bende ? bende.adi_soyadi
+                 : m.tam ? 'Müsait'
+                 : kismi ? `${m.engel}/${m.gece} gece dolu`
+                 : 'Dolu';
+              baslik = bende ? `${bende.adi_soyadi} — bu talebe tahsis edildi`
+                : m.tam ? `Talebin ${m.gece} gecesinin tamamında müsait — misafir kartını sürükleyin veya tıklayın`
+                : `Kesintisiz müsait değil — ${m.gece} gecenin ${m.engel} tanesinde dolu/temizlikte`;
+            } else {
+              const { durum, kayit } = yatakDurumu(y, haritaTarihi, dolu, temizlik);
+              sinif = YATAK_DURUM[durum].kutu;
+              ad = durum === 'TEMIZLIK' ? 'Temizlik' : kayit && kayit.misafir ? kayit.misafir.adi_soyadi : 'Boş';
+              baslik = `Oda ${y.oda_no} / Yatak ${y.yatak_no} — ${YATAK_DURUM[durum].ad}` +
+                (kayit && kayit.misafir ? `\n${kayit.misafir.adi_soyadi} · ${tr(kayit.rez.gelis_tarihi)} – ${tr(kayit.rez.cikis_tarihi)}` : '');
+            }
+            return {
+              sinif, ad, baslik,
+              ek: `${seciliRez ? 'cursor-pointer' : ''} ${surukleHedef === y.id ? 'surukle-hedef' : ''}`,
+              props: {
+                onClick: () => yatagaTikla(y),
+                onDragOver: e => { if (seciliRez) { e.preventDefault(); setSurukleHedef(y.id); } },
+                onDragLeave: () => setSurukleHedef(null),
+                onDrop: birak(y),
+              },
+            };
+          }} />
       </Kart>
+
+      {manuel && <ManuelYerlestirme s={s} rz={s.rezervasyonlar.find(r => r.id === manuel.id) || manuel}
+                   gonder={gonder} kapat={() => setManuel(null)} />}
 
       {oneri && (
         <Modal baslik="Otomatik Yerleştirme Önerisi — Kullanıcı Onayı Bekliyor" genislik="max-w-6xl" kapat={() => setOneri(null)}

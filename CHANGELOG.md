@@ -8,6 +8,29 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [1.4.0] — 15.09.2026
+### Eklendi
+- **Manuel yerleştirme penceresi**: otomatik yerleştirmenin yanında açık bir seçenek.
+  Her misafir için oda/yatak elle seçilir; seçenekler yalnız talebin tüm gecelerinde
+  müsait yataklardır ve odada hâlihazırda kimlerin kaldığı seçenekle birlikte görünür.
+  «Grubun tamamını tek odaya yerleştir» hızlı seçimi, çakışma ve karma oda denetimi içerir.
+  Rezervasyon listesinde satıra çift tıklayarak da açılır.
+- **Yatak haritasında misafir adları**: her yatak satırında yatak numarası ve o yatakta
+  kalan misafirin adı yazıyor. «İsimli / Kompakt» görünüm anahtarı eklendi.
+- **Yatak Listesi görünümü** (Doluluk Panosu): «hangi odada, kaç numaralı yatakta kim
+  yatıyor» sorusunun tablo karşılığı — oda no, yatak no, oda tipi, durum, Tc kimlik no,
+  adı soyadı, cinsiyet, geliş/çıkış, gün, kurum-şahıs, ödeme türü, peşinattan kalan, rez. no.
+  Dolu/boş süzgeci ve serbest metin araması var; temizlikteki yataklarda çıkış yapan misafir
+  görünür.
+
+### Değişti
+- Oda/yatak haritası ortak bir bileşene taşındı; Doluluk Panosu ve Rezervasyon ekranı
+  aynı görünümü kullanıyor. Oda kartları ekran genişliğine göre esnek ızgarada diziliyor.
+- **Okunurluk**: tipografi ölçeği bir kademe büyütüldü (tablo gövdesi 12→13 px, etiketler
+  10→11 px), tablo satır yüksekliği ve başlık kontrastı artırıldı, çift satır gölgelendirmesi
+  (zebra) ve belirgin klavye odak halkası eklendi, düğme ve kart başlıkları büyütüldü.
+- Liste görünümünde tablo tam ekran genişliğini kullanıyor.
+
 ## [1.3.1] — 15.09.2026
 ### Değişti
 - `.gizli/` dizini `.gitignore` ile depo dışına alındı; test hesabı listesi ve senaryolar

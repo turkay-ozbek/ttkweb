@@ -40,7 +40,7 @@ Yerleştirme · **MSFH-W03** Peşinat ve Rezervasyon Statüsü.
 
 | Mevcut alan | Web karşılığı | Ekran | Not |
 |---|---|---|---|
-| Oda/Yatak | Oda kartı içindeki yatak hücreleri | MSFH-W01, W02 | Liste yerine görsel harita |
+| Oda/Yatak | Oda kartı içindeki yatak hücreleri (her yatakta misafir adı) + **Yatak Listesi** tablosu | MSFH-W01, W02 | Hem görsel harita hem «hangi yatakta kim» tablosu |
 | Tc Kimlik No | Yatak detayında / misafir kartında | MSFH-W01, W02 | |
 | Adı | Yatak detayı ve tooltip | MSFH-W01, W02 | |
 | Öd. Türü (KRT/BOS/MSD) | "Ödeme Türü" — yatak detayı ve MSFH-W03 tablosu | W01, W03 | Kodlar korundu, tooltip'te açıklaması var |
