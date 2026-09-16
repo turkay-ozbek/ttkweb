@@ -2,7 +2,10 @@
 
 Bu belge, uygulama içindeki **Kullanım Rehberi** sayfasının (MSFH-W10) yazılı karşılığıdır.
 Uygulamada aynı içerik, adımların sonundaki bağlantılarla ilgili sayfaya doğrudan giderek
-kullanılabilir: üst banttaki **Rehber** düğmesi veya ana menüdeki **Kullanım Rehberi** kartı.
+kullanılabilir. Rehbere **yalnız üst bandın sağındaki «Rehber» düğmesinden** ulaşılır.
+
+Başlıklardaki form kodları (MSFH-Wxx) bu belgeye ve API sözleşmesine özeldir; kullanıcı
+arayüzünde gösterilmez.
 
 ---
 
@@ -11,15 +14,17 @@ kullanılabilir: üst banttaki **Rehber** düğmesi veya ana menüdeki **Kullan�
 1. **Oturum açın.** Giriş ekranında YBS kullanıcı adınızı ve şifrenizi yazıp **BAĞLAN** düğmesine
    basın. Rolünüz (Müdür, Resepsiyon, Muhasebe, Admin) hangi sayfaları ve düğmeleri
    görebileceğinizi belirler.
-2. **Misafirhaneyi seçin.** Üst bandın solundaki açılır listeden çalışacağınız misafirhaneyi
-   seçin. Listede yalnız yetkili olduğunuz misafirhaneler görünür.
+2. **Hangi misafirhanede çalıştığınızı görün.** Üst bandın solunda «&lt;Misafirhane&gt; Bilgi
+   Sistemi» yazar; çalışılan misafirhane her sayfanın başlığında da görünür (örn. «Ankara
+   Misafirhanesi Rezervasyon Talepleri»). Birden çok misafirhaneye yetkiliyseniz Ana Menü'nün
+   üstündeki misafirhane düğmelerinden veya «Bugünkü Durum» karşılaştırma tablosundan geçersiniz.
 3. **Sayfalar arasında gezinin.** Logoya veya **Ana Menü**'ye basınca bütün sayfaların kart
    görünümü açılır; kartlardaki sayılar canlıdır. Sık kullanılan sayfalara logonun altındaki
    sayfa şeridinden tek tıkla geçilir.
 4. **Yazı boyutu.** Ekranın sağ alt köşesindeki dikey büyüteç kutusu: **+** büyütür, **−**
    küçültür, ortadaki yüzde düğmesi %100'e döndürür. Ayar tarayıcıda saklanır.
-5. **Kullanıcı sekmesi.** Üst bandın sağındaki yuvarlak kişi simgesi; adınız, unvanınız,
-   kullanıcı adınız, rolünüz ve yetkili misafirhaneleriniz. En sağdaki güç simgesi oturumu kapatır.
+5. **Rehber ve oturum.** Üst bandın sağındaki **Rehber** düğmesi bu sayfayı her ekrandan açar;
+   en sağdaki güç simgesi oturumu kapatır. Kullanıcı adınız alt bilgi çubuğunun solunda yazar.
 
 > Bir düğme soluk (pasif) görünüyorsa üzerine gelin: o işlem için hangi yetkinin gerektiği
 > ipucu olarak yazar.

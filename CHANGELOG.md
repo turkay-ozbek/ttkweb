@@ -1,12 +1,31 @@
 # Sürüm Geçmişi
 
 TTK Misafirhane Bilgi Sistemi — Web Prototipi.
-Sürüm numarası uygulamanın alt bilgi çubuğunda ve «Nasıl çalışır?» penceresinde görünür.
+Sürüm numarası uygulamanın alt bilgi çubuğunda görünür.
 
 Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 ÖZELLİK: yeni yetenek, DÜZELTME: hata ve arayüz düzeltmeleri.
 
 ---
+
+## [2.3.0] — 16.09.2026
+### Değişti — arayüz sadeleştirmesi (ikinci tur)
+- **Rehber yalnız üst bandın sağında.** Sayfa şeridinden ve ana menüden «Kullanım Rehberi»
+  kartı ile «Yardım» grubu kaldırıldı; sayfa `gizli` olarak işaretlendi.
+- **«?» (Prototip ve yetkiler hakkında) düğmesi ve penceresi kaldırıldı.** İçeriği zaten
+  `docs/yerlestirme-algoritmasi.md` ve uygulama içi Kullanım Rehberi'nde bulunuyor.
+- **Kullanıcı sekmesi (kafa simgesi) kaldırıldı**; üst bantta yalnız oturumu kapatma simgesi kaldı.
+- **Üst banttaki misafirhane seçicisi kaldırıldı.** Başlık artık oturum açan kullanıcının
+  misafirhanesine göre yazıyor: «Ankara Misafirhanesi Bilgi Sistemi», «Yayla Konağı Bilgi Sistemi»…
+  Birden çok misafirhaneye yetkili kullanıcılar için ana menünün üstüne misafirhane düğmeleri
+  eklendi; tek misafirhaneli kullanıcıda bu sıra hiç görünmez.
+- **Çalışılan misafirhane sayfa başlıklarında** yazıyor: «Ankara Misafirhanesi Rezervasyon
+  Talepleri», «Yayla Konağı Oda ve Yatak Durumu» gibi.
+- **Form kodları (MSFH-Wxx) arayüzden kaldırıldı** — ana menü kartlarından, alt bilgi
+  çubuğundan ve rehber bağlantılarından. Kodlar veri modelinde ve belgelerde korunuyor.
+- **Alt bilgi çubuğundaki oturum kaydı kısaltıldı**: ad, unvan ve yetkili misafirhane listesi
+  yerine yalnız «Oturum açıldı: TTK7719».
+- «Kullanıcı ve Yetki» sayfasına, diğer sayfalarla tutarlı olsun diye sayfa başlığı eklendi.
 
 ## [2.2.0] — 16.09.2026
 ### Eklendi — kullanım rehberi

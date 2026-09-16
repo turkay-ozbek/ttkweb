@@ -102,7 +102,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment 
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.2.0';
+const SURUM = '2.3.0';
 const SURUM_TARIHI = '2026-09-16';
 
 const GUN_MS = 86400000;
@@ -1069,7 +1069,7 @@ function indirgeyici(s, a) {
         tesis: tesisler.includes(s.tesis) ? s.tesis : tesisler[0],
         kullanicilar: s.kullanicilar.map(x => x.kod === k.kod ? { ...x, sonGiris: s.bugun } : x),
         gunluk: [{ tarih: s.bugun, tip: 'bilgi',
-          metin: `Oturum açıldı: ${k.kod} — ${k.ad} (${rolAd(k.rol)}) · yetkili misafirhane: ${tesisler.map(t => TESISLER.find(x => x.kod === t).ad).join(', ')}` }, ...s.gunluk] };
+          metin: `Oturum açıldı: ${k.kod}` }, ...s.gunluk] };
     }
 
     case 'CIKIS': return { ...s, kullanici: null, odakRezId: null };
@@ -1536,13 +1536,15 @@ const Ikon = ({ ad, sinif = 'w-4 h-4' }) => (
 );
 
 /* ── Sayfa başlığı (her sayfanın üstünde tek satır) ───────────────────────── */
-const SayfaBasligi = ({ ikon, baslik, aciklama, sag }) => (
+const SayfaBasligi = ({ ikon, baslik, aciklama, sag, tesis }) => (
   <div className="flex items-center gap-3 flex-wrap mb-3">
     <span className="w-9 h-9 rounded-lg bg-ttk-100 text-ttk-700 flex items-center justify-center shrink-0">
       <Ikon ad={ikon} sinif="w-5 h-5" />
     </span>
     <div className="min-w-0">
-      <h1 className="text-base font-bold text-ttk-900 leading-tight">{baslik}</h1>
+      <h1 className="text-base font-bold text-ttk-900 leading-tight">
+        {tesis && <span className="text-ttk-600">{tesis} </span>}{baslik}
+      </h1>
       {aciklama && <p className="text-xs text-slate-500 leading-tight">{aciklama}</p>}
     </div>
     {sag && <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">{sag}</div>}
@@ -1630,6 +1632,7 @@ function YatakDetayModal({ detay, kapat, acYeniKayit, izin, tesis }) {
 }
 
 function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolum }) {
+  const tesisAd = (TESISLER.find(t => t.kod === s.tesis) || {}).ad || '';
   const [seritBas, setSeritBas] = useState(s.bugun);
   const [haritaTarihi, setHaritaTarihi] = useState(s.bugun);
   const [aralikBas, setAralikBas] = useState(s.bugun);
@@ -1694,7 +1697,7 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolu
 
   return (
     <div>
-      <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad} aciklama={sayfa.aciklama}
+      <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad} aciklama={sayfa.aciklama} tesis={tesisAd}
         sag={bolum === 'YATAK_LISTESI' ? tarihGezgini : null} />
 
       {/* ── BUGÜNKÜ DURUM ─────────────────────────────────────────────── */}
@@ -2128,7 +2131,7 @@ function OnayEkrani({ s, gonder, izin, git, acYeniKayit }) {
 
   return (
     <div>
-      <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad} aciklama={sayfa.aciklama}
+      <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad} aciklama={sayfa.aciklama} tesis={tesisAd}
         sag={<span className="text-2xs text-slate-500">
           {yetkili ? 'Onayladığınız kayıtlar rezervasyon listesine girer ve yerleştirmeye açılır.'
                    : '🔒 Görüntüleme yetkiniz var, onay yetkiniz yok.'}
@@ -2438,6 +2441,7 @@ function ManuelYerlestirme({ s, rz, gonder, kapat }) {
 }
 
 function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolum }) {
+  const tesisAd = (TESISLER.find(t => t.kod === s.tesis) || {}).ad || '';
   const [filtreBas, setFiltreBas] = useState(s.bugun);
   const [filtreSon, setFiltreSon] = useState(ekle(s.bugun, 21));
   const [statuFiltre, setStatuFiltre] = useState('BEKLEYEN');
@@ -2603,7 +2607,7 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
     const odalar = seciliRez ? [...new Set(seciliRez.misafirler.filter(g => g.oda_no).map(g => g.oda_no))] : [];
     return (
       <div>
-        <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad} aciklama={sayfa.aciklama}
+        <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad} aciklama={sayfa.aciklama} tesis={tesisAd}
           sag={<>
             {izin('rezervasyon.olustur') &&
               <Buton tur="basari" onClick={() => acYeniKayit({ tesis: s.tesis })}>
@@ -2785,7 +2789,7 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
   const yerlestirmeModu = !!seciliRez;
   return (
     <div>
-      <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad}
+      <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad} tesis={tesisAd}
         aciklama={yerlestirmeModu
           ? `Yerleştirme modu — ${seciliRez.rez_no} · ${tr(seciliRez.gelis_tarihi)} – ${tr(seciliRez.cikis_tarihi)}`
           : sayfa.aciklama}
@@ -3009,6 +3013,7 @@ function OneriPenceresi({ oneri, onaylanan, setOnaylanan, kapat, onayla, izin, k
    ══════════════════════════════════════════════════════════════════════════ */
 
 function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
+  const tesisAd = (TESISLER.find(t => t.kod === s.tesis) || {}).ad || '';
   const [filtreBas, setFiltreBas] = useState(ekle(s.bugun, -15));
   const [filtreSon, setFiltreSon] = useState(ekle(s.bugun, 45));
   const [liste, setListe] = useState('HEPSI');
@@ -3097,7 +3102,7 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
 
   return (
     <div className="space-y-3">
-      <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad} aciklama={sayfa.aciklama}
+      <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad} aciklama={sayfa.aciklama} tesis={tesisAd}
         sag={izin('rezervasyon.olustur') &&
           <Buton tur="basari" onClick={() => acYeniKayit({ tesis: s.tesis })}>
             <span className="flex items-center gap-1"><Ikon ad="yeni" sinif="w-3.5 h-3.5" /> Yeni Kayıt</span>
@@ -4058,6 +4063,8 @@ function KullaniciEkrani({ s, gonder }) {
 
   return (
     <div className="space-y-3">
+      <SayfaBasligi ikon={sayfaBul('KULLANICILAR').ikon} baslik={sayfaBul('KULLANICILAR').ad}
+        aciklama={sayfaBul('KULLANICILAR').aciklama} />
       <Kart baslik="Roller ve Yetki Tanımları"
         sag={<Buton tur="sessiz" onClick={() => setMatrisAcik(x => !x)}>{matrisAcik ? 'Yetki matrisini gizle' : 'Yetki matrisini göster'}</Buton>}>
         <div className="grid grid-cols-4 gap-2">
@@ -4232,66 +4239,11 @@ const SAYFALAR = [
     ikon:'statu',  grup:'İşlemler',    aciklama:'Talepten çıkışa kadar kayıtların statü akışı' },
   { kod:'KULLANICILAR', ad:'Kullanıcı ve Yetki',kisa:'Kullanıcılar', form:'MSFH-W09', izin:'sistem.kullanici',
     ikon:'kullanici', grup:'Yönetim',  aciklama:'Kullanıcılar, roller ve yetki matrisi' },
-  { kod:'REHBER',    ad:'Kullanım Rehberi',     kisa:'Rehber',    form:'MSFH-W10', izin:'pano.goruntule',
+  /* gizli: sayfa şeridinde ve ana menüde görünmez; yalnız üst bandın sağındaki «Rehber» düğmesinden açılır */
+  { kod:'REHBER',    ad:'Kullanım Rehberi',     kisa:'Rehber',    form:'MSFH-W10', izin:'pano.goruntule', gizli:true,
     ikon:'rehber', grup:'Yardım',      aciklama:'Adım adım: kayıt açma, kapora, yerleştirme, tahsilat, giriş-çıkış ve iptal işlemleri' },
 ];
 const sayfaBul = kod => SAYFALAR.find(x => x.kod === kod);
-
-function BilgiPenceresi({ kapat }) {
-  return (
-        <Modal baslik="Prototip Hakkında ve Otomatik Yerleştirme Mantığı" genislik="max-w-3xl" kapat={kapat}>
-          <div className="text-xs space-y-3 leading-relaxed">
-            <div className="flex items-center justify-between text-2xs text-slate-500">
-              <span>TTK Misafirhane Bilgi Sistemi — Web Prototipi</span>
-              <span className="num">Sürüm <b className="text-ttk-800">{SURUM}</b> · {tr(SURUM_TARIHI)}</span>
-            </div>
-            <div className="bg-amber-50 border border-amber-200 rounded p-2">
-              Bu uygulama mevcut TTKNET / Oracle Forms sistemine <b>hiç dokunmadan</b>, onun yanında çalışacak şekilde
-              hazırlanmış bir <b>demo prototiptir</b>. Tüm veriler bellekte üretilmiştir; gerçek misafir verisi kullanılmaz,
-              Tc kimlik numaraları 11 haneli sahte numaralardır. Gerçek ödeme veya muhasebe entegrasyonu yoktur.
-            </div>
-            <div>
-              <h4 className="font-bold text-ttk-800 uppercase text-2xs mb-1">Otomatik yerleştirme nasıl çalışır?</h4>
-              <ol className="list-decimal ml-4 space-y-1">
-                <li><b>Öncelik sırası:</b> protokol → kurum misafiri → peşinatı tahsil edilmiş → geliş tarihi yakın → kalabalık grup.</li>
-                <li><b>Gruplama:</b> aile / birlikte kalma talebi tek grup sayılır; değilse talep cinsiyete göre alt gruplara ayrılır.</li>
-                <li><b>Kısıt denetimi:</b> yatak, geliş–çıkış arasındaki <i>her gecede</i> boş olmalı; çıkış sonrası {TEMIZLIK_GUN} günlük
-                    temizlik boşluğu bloklanır; karma oda kısıtı ve protokol odası kuralı uygulanır.</li>
-                <li><b>Skorlama:</b> grubun tek odada kalması (+{SKOR.TEK_ODA}), kapasite uyumu (+{SKOR.KAPASITE_TAM}),
-                    odayı aynı cinsiyetle doldurma (+{SKOR.ODA_DOLDURMA}), protokol uyumu (+{SKOR.PROTOKOL_UYUM}),
-                    ardışık gecelerde sıkı paketleme (+{SKOR.SIKI_PAKET}); atıl yatak ({SKOR.BOS_YATAK_CEZASI}/yatak),
-                    1 gecelik satılamaz boşluk ({SKOR.KISA_BOSLUK_CEZASI}) ve grup bölünmesi ({SKOR.BOLUNME_CEZASI}) cezalandırılır.</li>
-                <li><b>Geri alma:</b> yüksek öncelikli bir talep yerleşemezse, aynı turda yerleşmiş düşük öncelikli ve tarihi
-                    çakışan bir öneri geri alınıp yeniden denenir (tek seviyeli backtracking).</li>
-                <li><b>Öneri:</b> sonuç doğrudan uygulanmaz; onay ekranına düşer. Onaylanmayan öneri doluluğu değiştirmez.
-                    Yerleştirilemeyen her talep için okunabilir gerekçe üretilir.</li>
-              </ol>
-            </div>
-            <div>
-              <h4 className="font-bold text-ttk-800 uppercase text-2xs mb-1">Roller ve yetkilendirme</h4>
-              <ul className="space-y-1">
-                {Object.entries(ROLLER).map(([kod, r]) => (
-                  <li key={kod} className="flex gap-2">
-                    <Rozet sinif={r.renk}>{r.kisa}</Rozet>
-                    <span className="flex-1"><b>{r.ad}</b> — {r.aciklama}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-1">Yetkisi olmayan ekran ve düğmeler gizlenir veya pasif gösterilir; kullanıcı
-                yalnız yetkili olduğu misafirhaneleri görür. Yetki matrisi Admin rolündeki
-                «Kullanıcı ve Yetki Yönetimi» ekranındadır.</p>
-            </div>
-            <div>
-              <h4 className="font-bold text-ttk-800 uppercase text-2xs mb-1">Statü akışı</h4>
-              <p>Talep → Peşinat Bekleniyor → Onaylı → Konaklıyor → Çıkış (her aşamadan İptal mümkün).
-                 Kurum misafirinde peşinat aranmaması tesis bazında açılıp kapatılabilir. Peşinat son ödeme tarihi geçen talep
-                 otomatik olarak İptal statüsüne düşer ve yatağı serbest bırakır — «Bugünkü Durum» sayfasındaki
-                 «+1 / +7 gün» düğmeleriyle bu kuralı canlı olarak görebilirsiniz.</p>
-            </div>
-          </div>
-        </Modal>
-  );
-}
 
 /* ══════════════════════════════════════════════════════════════════════════
   11b) KULLANIM REHBERİ  (MSFH-W10)
@@ -4306,10 +4258,10 @@ const REHBER_KONULARI = [
     roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
     adimlar: [
       { b: 'Oturum açın', m: 'Giriş ekranında YBS kullanıcı adınızı ve şifrenizi yazıp «BAĞLAN» düğmesine basın. Rolünüz (Müdür, Resepsiyon, Muhasebe, Admin) hangi sayfaları ve düğmeleri görebileceğinizi belirler.' },
-      { b: 'Misafirhaneyi seçin', m: 'Üst bandın solundaki açılır listeden çalışacağınız misafirhaneyi seçin. Listede yalnız yetkili olduğunuz misafirhaneler görünür; yaptığınız her işlem seçili misafirhane için geçerlidir.' },
+      { b: 'Hangi misafirhanede çalıştığınızı görün', m: 'Üst bandın solunda «<Misafirhane> Bilgi Sistemi» yazar; yaptığınız her işlem bu misafirhane için geçerlidir. Çalışılan misafirhane her sayfanın başlığında da yazar (örn. «Ankara Misafirhanesi Rezervasyon Talepleri»). Birden çok misafirhaneye yetkiliyseniz Ana Menü\'nün üstündeki misafirhane düğmelerinden ya da «Bugünkü Durum» sayfasındaki karşılaştırma tablosundan geçiş yaparsınız.' },
       { b: 'Sayfalar arasında gezinin', m: 'Üst banttaki logoya veya «Ana Menü» düğmesine basınca bütün sayfaların kart görünümü açılır. Kartların üzerindeki sayılar (boş yatak, bekleyen talep, onaydaki dekont…) canlıdır. Sürekli kullandığınız sayfalara logonun altındaki sayfa şeridinden tek tıkla geçebilirsiniz.' },
       { b: 'Yazılar küçük geliyorsa', m: 'Ekranın sağ alt köşesindeki dikey büyüteç kutusunu kullanın: «+» büyütür, «−» küçültür, ortadaki yüzde düğmesi %100\'e döndürür. Ayar tarayıcınızda saklanır, bir daha girdiğinizde aynı boyutla açılır.' },
-      { b: 'Kim olduğunuzu görün', m: 'Üst bandın sağındaki yuvarlak kişi simgesine tıklayın; adınız, unvanınız, kullanıcı adınız, rolünüz ve yetkili olduğunuz misafirhaneler açılır. En sağdaki güç simgesi oturumu kapatır.' },
+      { b: 'Rehber ve oturum', m: 'Üst bandın sağındaki «Rehber» düğmesi bu sayfayı her ekrandan açar; en sağdaki güç simgesi oturumu kapatır. Kullanıcı adınız alt bilgi çubuğunun solunda yazar.' },
     ],
     notlar: ['Bir düğme soluk (pasif) görünüyorsa üzerine gelin: o işlem için hangi yetkinin gerektiği ipucu olarak yazar.'],
   },
@@ -4516,7 +4468,7 @@ function RehberEkrani({ s, git, izin }) {
                         <button onClick={() => git(a.sayfa)}
                           className="mt-1 inline-flex items-center gap-1 text-2xs font-semibold text-ttk-700 hover:underline">
                           <Ikon ad={sayfaBul(a.sayfa).ikon} sinif="w-3 h-3" />
-                          {sayfaBul(a.sayfa).ad} ({sayfaBul(a.sayfa).form})
+                          {sayfaBul(a.sayfa).ad}
                         </button>
                       )}
                     </div>
@@ -4582,18 +4534,31 @@ function RehberEkrani({ s, git, izin }) {
 }
 
 /* ── Ana menü: her sayfa ayrı bir karttan açılır ──────────────────────────── */
-function AnaMenu({ s, sayfalar, sayilar, git, acYeniKayit, izin }) {
+function AnaMenu({ s, sayfalar, sayilar, git, gonder, tesisler, acYeniKayit, izin }) {
   const gruplar = [...new Set(sayfalar.map(x => x.grup))];
   return (
     <div className="space-y-5">
-      {izin('rezervasyon.olustur') && (
-        <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        {tesisler.length > 1 ? (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider mr-1">Misafirhane</span>
+            {tesisler.map(t => (
+              <button key={t.kod} onClick={() => gonder({ tip: 'TESIS', tesis: t.kod })}
+                className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors
+                  ${t.kod === s.tesis ? 'bg-ttk-600 border-ttk-700 text-white shadow-sm'
+                                      : 'bg-white border-slate-200 text-slate-600 hover:border-ttk-400'}`}>
+                {t.ad}
+              </button>
+            ))}
+          </div>
+        ) : <span />}
+        {izin('rezervasyon.olustur') && (
           <button onClick={() => acYeniKayit({ tesis: s.tesis })}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm">
             <Ikon ad="yeni" sinif="w-4 h-4" /> Yeni Rezervasyon / Kayıt
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {gruplar.map(grup => (
         <section key={grup}>
@@ -4609,10 +4574,7 @@ function AnaMenu({ s, sayfalar, sayilar, git, acYeniKayit, izin }) {
                       <Ikon ad={x.ikon} sinif="w-5 h-5" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <h3 className="text-sm font-bold text-ttk-900">{x.ad}</h3>
-                        <span className="num text-2xs text-slate-400 ml-auto whitespace-nowrap">{x.form}</span>
-                      </div>
+                      <h3 className="text-sm font-bold text-ttk-900">{x.ad}</h3>
                       <p className="text-xs text-slate-500 leading-snug mt-0.5">{x.aciklama}</p>
                       {sayi && (
                         <div className="mt-2 flex items-baseline gap-1.5">
@@ -4652,61 +4614,6 @@ const OlcekKontrol = ({ olcek, gonder }) => (
   </div>
 );
 
-/* ── Kullanıcı sekmesi: yuvarlak kişi simgesi, tıklayınca bilgiler açılır ───── */
-function KullaniciMenusu({ k, tesisler }) {
-  const [acik, setAcik] = useState(false);
-  const kutu = useRef(null);
-  useEffect(() => {
-    if (!acik) return;
-    const kapat = (e) => { if (kutu.current && !kutu.current.contains(e.target)) setAcik(false); };
-    document.addEventListener('mousedown', kapat);
-    return () => document.removeEventListener('mousedown', kapat);
-  }, [acik]);
-  return (
-    <div className="relative" ref={kutu}>
-      <button onClick={() => setAcik(x => !x)} aria-expanded={acik}
-        title={`${k.ad} · ${rolAd(k.rol)}`} aria-label="Kullanıcı bilgileri"
-        className={`p-1.5 rounded-full transition-colors ${acik ? 'bg-ttk-600' : 'hover:bg-ttk-700'}`}>
-        <Ikon ad="kisi" sinif="w-5 h-5" />
-      </button>
-      {acik && (
-        <div className="absolute right-0 top-full mt-1 w-64 bg-white text-slate-800 rounded-lg shadow-2xl
-                        border border-slate-200 p-3 z-50 bel">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-            <span className="w-9 h-9 rounded-full bg-ttk-100 text-ttk-700 flex items-center justify-center shrink-0">
-              <Ikon ad="kisi" sinif="w-5 h-5" />
-            </span>
-            <div className="min-w-0">
-              <div className="text-sm font-bold text-ttk-900 truncate">{k.ad}</div>
-              <div className="text-2xs text-slate-500 truncate">{k.unvan}</div>
-            </div>
-          </div>
-          <dl className="text-2xs mt-2 space-y-1.5">
-            <div className="flex justify-between gap-2">
-              <dt className="text-slate-500">Kullanıcı adı</dt><dd className="num font-bold text-ttk-800">{k.kod}</dd>
-            </div>
-            <div className="flex justify-between gap-2 items-center">
-              <dt className="text-slate-500">Rol</dt><dd><Rozet sinif={ROLLER[k.rol].renk}>{rolAd(k.rol)}</Rozet></dd>
-            </div>
-            <div>
-              <dt className="text-slate-500 mb-0.5">Yetkili misafirhaneler</dt>
-              <dd className="text-ttk-900">{tesisler.map(t => t.ad).join(', ')}</dd>
-            </div>
-            {k.sonGiris && (
-              <div className="flex justify-between gap-2">
-                <dt className="text-slate-500">Son giriş</dt><dd className="num">{tr(k.sonGiris)}</dd>
-              </div>
-            )}
-          </dl>
-          <div className="mt-2 pt-2 border-t border-slate-100 text-2xs text-slate-500">
-            {ROLLER[k.rol].aciklama}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ══════════════════════════════════════════════════════════════════════════
   12) KABUK VE UYGULAMA
    ══════════════════════════════════════════════════════════════════════════ */
@@ -4714,7 +4621,6 @@ function KullaniciMenusu({ k, tesisler }) {
 function Uygulama() {
   const [s, gonder] = useReducer(indirgeyici, null, baslangicDurumu);
   const [gunlukAcik, setGunlukAcik] = useState(false);
-  const [bilgiAcik, setBilgiAcik] = useState(false);
   const [yeniForm, setYeniForm] = useState(null);
   const [menuAcik, setMenuAcik] = useState(false);
 
@@ -4725,8 +4631,10 @@ function Uygulama() {
 
   const izin = (x) => yetkiVar(k, x);
   const sayfalar = SAYFALAR.filter(x => izin(x.izin));
+  const menuSayfalari = sayfalar.filter(x => !x.gizli);   /* şerit ve ana menü kartları */
   const aktif = s.ekran === 'ANA_MENU' ? null : (sayfaBul(s.ekran) || sayfalar[0]);
   const tesisler = TESISLER.filter(t => tesisYetkisi(k, t.kod));
+  const tesisAdi = (TESISLER.find(t => t.kod === s.tesis) || {}).ad || 'Misafirhane';
   const git = (kod) => { gonder({ tip: 'EKRAN', ekran: kod }); setMenuAcik(false); };
 
   /* Ana menü kartlarındaki canlı sayılar */
@@ -4768,18 +4676,13 @@ function Uygulama() {
       {/* Üst bant — sade */}
       <header className="bg-ttk-800 text-white">
         <div className="sayfa-govde px-3 py-2 flex items-center gap-3 flex-wrap">
-          <button onClick={() => git('ANA_MENU')} className="flex items-center gap-2 hover:opacity-90" title="Ana menüye dön">
+          <button onClick={() => git('ANA_MENU')} className="flex items-center gap-2 hover:opacity-90 min-w-0" title="Ana menüye dön">
             <TtkLogo boyut="h-11 w-auto" />
-            <div className="leading-tight text-left">
+            <div className="leading-tight text-left min-w-0">
               <div className="font-bold text-sm tracking-wide">TTKNET</div>
-              <div className="text-2xs text-ttk-200">Misafirhane Bilgi Sistemi</div>
+              <div className="text-2xs text-ttk-200 truncate">{tesisAdi} Bilgi Sistemi</div>
             </div>
           </button>
-
-          <select value={s.tesis} onChange={e => gonder({ tip: 'TESIS', tesis: e.target.value })}
-            className="bg-ttk-700 border border-ttk-600 text-white rounded px-2 py-1.5 text-xs font-semibold max-w-[15rem]">
-            {tesisler.map(t => <option key={t.kod} value={t.kod} className="text-slate-900">{t.ad} — {t.sehir}</option>)}
-          </select>
 
           <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end text-xs">
             <span className="px-2 py-1 rounded bg-amber-400 text-amber-950 font-bold text-2xs">DEMO</span>
@@ -4788,8 +4691,6 @@ function Uygulama() {
                 ${s.ekran === 'REHBER' ? 'bg-ttk-600 text-white' : 'text-ttk-100 hover:bg-ttk-700'}`}>
               <Ikon ad="rehber" sinif="w-4 h-4" /> Rehber
             </button>
-            <button onClick={() => setBilgiAcik(true)} className="px-2 py-1 rounded hover:bg-ttk-700 text-ttk-100" title="Prototip ve yetkiler hakkında">?</button>
-            <KullaniciMenusu k={k} tesisler={tesisler} />
             <button onClick={() => gonder({ tip: 'CIKIS' })} title="Oturumu kapat" aria-label="Oturumu kapat"
               className="p-1.5 rounded-full text-ttk-100 hover:bg-rose-500/80 hover:text-white transition-colors">
               <Ikon ad="guc" sinif="w-5 h-5" />
@@ -4806,7 +4707,7 @@ function Uygulama() {
               <Ikon ad="menu" sinif="w-3.5 h-3.5" /> Ana Menü
             </button>
             <span className="w-px h-5 bg-ttk-700 mx-1" />
-            {sayfalar.map(x => (
+            {menuSayfalari.map(x => (
               <button key={x.kod} onClick={() => git(x.kod)} title={x.aciklama}
                 className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors
                   ${s.ekran === x.kod ? 'border-white text-white' : 'border-transparent text-ttk-200 hover:text-white'}`}>
@@ -4820,7 +4721,8 @@ function Uygulama() {
       <main className="flex-1 p-3">
         <div className="sayfa-govde">
           {s.ekran === 'ANA_MENU'
-            ? <AnaMenu s={s} sayfalar={sayfalar} sayilar={sayilar} git={git} acYeniKayit={setYeniForm} izin={izin} />
+            ? <AnaMenu s={s} sayfalar={menuSayfalari} sayilar={sayilar} git={git} gonder={gonder}
+                tesisler={tesisler} acYeniKayit={setYeniForm} izin={izin} />
             : !aktif || !izin(aktif.izin)
               ? <YetkiUyarisi metin={`Bu sayfa ${rolAd(k.rol)} rolüne kapalıdır. Yetki için Bilgi İşlem Şube Müdürlüğü ile görüşünüz.`} />
               : <>
@@ -4838,7 +4740,6 @@ function Uygulama() {
       <footer className="bg-slate-200 border-t border-slate-300">
         <div className="sayfa-govde px-3 py-1 flex items-center gap-3 text-2xs text-slate-600 flex-wrap">
           <span className="num font-semibold" title={`${k.ad} · ${rolAd(k.rol)}`}>{k.kod}</span>
-          <span className="num">{aktif ? aktif.form : 'MSFH-W00'}</span>
           <span className="num">{tr(s.bugun)}</span>
           <button onClick={() => setGunlukAcik(true)} className="flex-1 min-w-[12rem] text-left truncate hover:text-ttk-700">
             <b className="mr-1">Son işlem:</b>{s.gunluk[0] ? s.gunluk[0].metin : '—'}
@@ -4869,7 +4770,6 @@ function Uygulama() {
         </Modal>
       )}
 
-      {bilgiAcik && <BilgiPenceresi kapat={() => setBilgiAcik(false)} />}
     </div>
   );
 }

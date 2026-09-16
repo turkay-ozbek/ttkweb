@@ -54,13 +54,25 @@ Uygulama ana menüden açılan on odaklı sayfadan oluşur; her sayfa tek bir i�
 | MSFH-W07 | **Peşinat ve Tahsilat** | Dönem filtresi, iş listeleri, ₺ Tahsilat Al, süresi dolanlar, peşinat kuralı |
 | MSFH-W08 | **Statü Takibi** | Talep → Peşinat Bekleniyor → Onaylı → Konaklıyor → Çıkış → İptal akışı ve kayıt listesi |
 | MSFH-W09 | **Kullanıcı ve Yetki** (Admin) | Kullanıcılar, roller, misafirhane yetkisi ve yetki matrisi |
-| MSFH-W10 | **Kullanım Rehberi** | Adım adım anlatım: kayıt açma, kapora, dekont onayı, yerleştirme, tahsilat, giriş-çıkış, rol yetkileri ve SSS |
+| MSFH-W10 | **Kullanım Rehberi** | Adım adım anlatım: kayıt açma, kapora, dekont onayı, yerleştirme, tahsilat, giriş-çıkış, rol yetkileri ve SSS (yalnız üst banttaki «Rehber» düğmesinden açılır) |
+
+> Form kodları (MSFH-Wxx) yalnız bu belgede ve API sözleşmesinde kullanılır; kullanıcı
+> arayüzünde gösterilmez.
+
+### Üst bant ve misafirhane seçimi
+
+Üst bant sadedir: TTK logosu, **«&lt;Misafirhane&gt; Bilgi Sistemi»** başlığı (oturum açan
+kullanıcının çalıştığı misafirhaneye göre yazılır), DEMO rozeti, **Rehber** düğmesi ve
+oturumu kapatma simgesi. Birden çok misafirhaneye yetkili kullanıcılar misafirhaneyi
+**ana menünün üstündeki düğme sırasından** veya «Bugünkü Durum» sayfasındaki karşılaştırma
+tablosundan değiştirir. Çalışılan misafirhane her sayfanın başlığında yazar
+(örn. «Ankara Misafirhanesi Rezervasyon Talepleri»).
 
 ## Kullanım rehberi
 
 Uygulamanın nasıl kullanılacağı, **her iş için hangi sayfada hangi düğmeye basılacağı**
-sırasıyla anlatılmıştır. Rehbere üst banttaki **Rehber** düğmesinden, ana menüdeki
-**Kullanım Rehberi** kartından veya sayfa şeridinden ulaşılır.
+sırasıyla anlatılmıştır. Rehbere **yalnız üst bandın sağındaki «Rehber» düğmesinden** ulaşılır; sayfa şeridini ve
+ana menüyü kalabalıklaştırmamak için oralarda görünmez.
 
 - Dokuz başlık: başlarken · yeni kayıt · kapora tahsilatı · dekont ve müdür onayı ·
   oda/yatak yerleştirme · doluluk ve boş yatak arama · giriş-çıkış-uzatma-iptal ·
