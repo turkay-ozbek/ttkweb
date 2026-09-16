@@ -8,6 +8,15 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.0.2] — 16.09.2026
+### Eklendi
+- **Kurum logosu yerleştirildi**: TTK logosu giriş ekranında (64 px) ve üst barda (36 px)
+  görünüyor. Logo, tek dosya yapısı korunacak şekilde `LOGO_VERI` sabitine base64 SVG
+  olarak gömüldü; kaynak dosya ayrıca `ttk-logo.svg` olarak depoda.
+- SVG, Inkscape düzenleyici verisinden (namedview, metadata, inkscape/sodipodi öznitelikleri)
+  arındırıldı ve ölçekten bağımsız kullanım için sabit `width`/`height` yerine `viewBox`
+  bırakıldı — her boyutta net görünüyor.
+
 ## [2.0.1] — 16.09.2026
 ### Eklendi
 - Kurum logosu tek bir yerden besleniyor: `LOGO_VERI` sabiti doldurulduğunda giriş ekranı

@@ -100,24 +100,24 @@ peşinattan kalan, yatak no, yatak fiyatı, harcırah miktarı, görev sevk no,
 kurum-şahıs, ödeyecek, makbuz no, sicil no, geliş/çıkış tarihi, kaldığı gün* ve
 ödeme türü kodları (KRT, NKT, MSD, BOS).
 
-## Kurum logosunu yerleştirme
+## Kurum logosu
 
-Logo tek bir yerden gelir. `misafirhane-prototip.html` içinde `const LOGO_VERI = '';`
-satırını doldurmanız yeterlidir; giriş ekranı ve üst bar otomatik güncellenir.
+TTK logosu prototipe gömülüdür: giriş ekranında 64 px, üst barda 36 px olarak görünür.
+Kaynak dosya depoda [`ttk-logo.svg`](ttk-logo.svg) olarak durur; HTML içinde ise tek dosya
+yapısı bozulmasın diye `LOGO_VERI` sabitine base64 SVG olarak yazılmıştır.
 
-```js
-// 1) Tek dosya yapısını korumak için (önerilen): base64 veri adresi
-const LOGO_VERI = 'data:image/png;base64,iVBORw0KGgoAAAANS...';
+Logoyu değiştirmek isterseniz `misafirhane-prototip.html` içindeki `const LOGO_VERI = '...'`
+satırını güncellemeniz yeterlidir; giriş ekranı ve üst bar birlikte değişir. Satırı `''`
+yaparsanız beyaz daire içinde «TTK» yazılı yedek gösterime döner.
 
-// 2) Ya da logoyu HTML'in yanına koyup dosya adını yazın
-const LOGO_VERI = 'ttk-logo.png';
+```bash
+# Linux/macOS — yeni bir logoyu gömmek için
+B64=$(base64 -w0 yeni-logo.svg)
+sed -i "s|const LOGO_VERI = '[^']*';|const LOGO_VERI = 'data:image/svg+xml;base64,$B64';|" misafirhane-prototip.html
 ```
 
-Windows'ta base64'e çevirmek için PowerShell:
-`[Convert]::ToBase64String([IO.File]::ReadAllBytes("ttk-logo.png"))`
-
-SVG kullanacaksanız dosya içeriğini doğrudan `TtkLogo` bileşenine inline olarak da
-koyabilirsiniz. Önerilen biçim: kare (1:1), en az 128×128 piksel, saydam zemin.
+Logoyu HTML'in yanına koyup dosya adı da verebilirsiniz: `const LOGO_VERI = 'ttk-logo.svg';`
+Önerilen biçim: kare (1:1) SVG veya en az 256×256 piksel PNG.
 
 ## Sürüm geçmişi
 
