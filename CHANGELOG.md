@@ -8,6 +8,31 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.1.0] — 16.09.2026
+### Eklendi — kapora ve dekont onay akışı
+- **Kapora zorunluluğu**: şahsi misafirin rezervasyon listesine girebilmesi için konaklama
+  bedelinin bir bölümünü (varsayılan: **ilk gecenin yatak bedeli**, asgari 750 ₺) kapora
+  olarak yatırması gerekiyor. Kurum misafiri ve protokol kayıtları muaf.
+- **Dekont yükleme**: PDF/PNG/JPEG dosya yükleme (en çok 5 MB) veya demo için örnek dekont
+  üretme; banka, dekont no, ödeme tarihi ve tutar alanları. Yüklenen kayıt «Müdür Onayı
+  Bekliyor» statüsüne geçiyor.
+- **Yeni ekran — Dekont ve Onay (MSFH-W06)**: misafirhane müdürü dekontu PDF önizlemesiyle
+  inceleyip onaylıyor veya gerekçe yazarak reddediyor. Onay bekleyen / onaylanan /
+  reddedilen sayaçları ve toplam kapora tutarı üstte görünüyor.
+- **Yeni statü**: «Müdür Onayı Bekliyor» (Talep → Kapora Bekleniyor → Müdür Onayı Bekliyor
+  → Onaylı → Konaklıyor → Çıkış; her aşamadan İptal).
+- **Yerleştirme kısıtı**: kapora onaylanmadan yatak tahsis edilemiyor. Kural otomatik
+  yerleştirmede (gerekçeli), manuel yerleştirme penceresinde ve haritada sürükle-bırak /
+  tıklayarak yerleştirmede birlikte uygulanıyor.
+- **Yeni yetkiler**: `rezervasyon.dekont` (yükleme — admin, müdür, resepsiyon, muhasebe) ve
+  `rezervasyon.onay` (onaylama/reddetme — yalnız admin ve müdür).
+- Kapora kuralı ayarları: hesap türü (gece / oran), kapora gecesi, müdür onayı zorunluluğu.
+- Demo veri: onaylı kayıtlarda onaylanmış dekont, kapora bekleyenlerin bir bölümünde müdür
+  onayında bekleyen dekont üretiliyor. Demo dekontlar açılabilir gerçek PDF olarak
+  görüntüleme anında oluşturuluyor.
+- Belgeler: `docs/kapora-onay-akisi.md` (akış, kural, veri modeli, API) ve
+  `docs/test-senaryolari-kapora.md` (6 başlıkta 30 test adımı).
+
 ## [2.0.4] — 16.09.2026
 ### Değişti
 - Logonun kırmızı çevre yazısı («Türkiye Taşkömürü Kurumu Genel Müdürlüğü» ve «1848»)

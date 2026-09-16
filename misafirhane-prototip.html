@@ -102,7 +102,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment 
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.0.4';
+const SURUM = '2.1.0';
 const SURUM_TARIHI = '2026-09-15';
 
 const GUN_MS = 86400000;
@@ -151,7 +151,8 @@ const ODEME_TURU = {
 
 const STATULER = [
   { kod:'TALEP',             ad:'Talep',             renk:'bg-slate-100 text-slate-700 border-slate-300' },
-  { kod:'PESINAT_BEKLENIYOR',ad:'Peşinat Bekleniyor',kisa:'Peşinat Bkl.',renk:'bg-amber-100 text-amber-800 border-amber-300' },
+  { kod:'PESINAT_BEKLENIYOR',ad:'Kapora Bekleniyor', kisa:'Kapora Bkl.',renk:'bg-amber-100 text-amber-800 border-amber-300' },
+  { kod:'ONAY_BEKLIYOR',     ad:'Müdür Onayı Bekliyor', kisa:'Onay Bkl.', renk:'bg-sky-100 text-sky-800 border-sky-300' },
   { kod:'ONAYLI',            ad:'Onaylı',            renk:'bg-emerald-100 text-emerald-800 border-emerald-300' },
   { kod:'KONAKLIYOR',        ad:'Konaklıyor',        renk:'bg-ttk-100 text-ttk-700 border-ttk-300' },
   { kod:'CIKIS',             ad:'Çıkış',             renk:'bg-violet-100 text-violet-700 border-violet-300' },
@@ -182,7 +183,9 @@ const IZINLER = [
   { kod:'rezervasyon.yerlestir',     ad:'Yatak tahsisi (otomatik ve manuel)',  grup:'Rezervasyon' },
   { kod:'rezervasyon.tahsis_kaldir', ad:'Yatak tahsisini kaldırma',            grup:'Rezervasyon' },
   { kod:'rezervasyon.iptal',         ad:'Rezervasyon iptali',                  grup:'Rezervasyon' },
-  { kod:'pesinat.tahsilat',          ad:'Peşinat tahsilatı girme',             grup:'Peşinat' },
+  { kod:'pesinat.tahsilat',          ad:'Peşinat/kapora tahsilatı girme',      grup:'Peşinat' },
+  { kod:'rezervasyon.dekont',        ad:'Kapora dekontu yükleme',              grup:'Rezervasyon' },
+  { kod:'rezervasyon.onay',          ad:'Dekont inceleyip rezervasyonu onaylama', grup:'Rezervasyon' },
   { kod:'pesinat.kural',             ad:'Peşinat kuralını değiştirme',         grup:'Peşinat' },
   { kod:'pesinat.toplu_iptal',       ad:'Süresi dolanları toplu iptal etme',   grup:'Peşinat' },
   { kod:'sistem.tarih',              ad:'Sistem tarihini ilerletme (demo)',    grup:'Sistem' },
@@ -199,24 +202,26 @@ const ROLLER = {
   YONETICI: {
     ad:'Misafirhane Müdürü', kisa:'Müdür',
     renk:'bg-ttk-100 text-ttk-800 border-ttk-300',
-    aciklama:'Sorumlu olduğu misafirhanede rezervasyon, yerleştirme, iptal, peşinat kuralı ve tahsilat işlemlerinin tamamı.',
+    aciklama:'Sorumlu olduğu misafirhanede rezervasyon, yerleştirme, iptal, kapora kuralı ve tahsilat işlemleri; kapora dekontunu inceleyip rezervasyonu onaylama yetkisi.',
     izinler:['pano.goruntule','rezervasyon.goruntule','pesinat.goruntule','rezervasyon.olustur',
              'rezervasyon.yerlestir','rezervasyon.tahsis_kaldir','rezervasyon.iptal',
+             'rezervasyon.dekont','rezervasyon.onay',
              'pesinat.tahsilat','pesinat.kural','pesinat.toplu_iptal','sistem.tarih'],
   },
   RESEPSIYON: {
     ad:'Resepsiyon Görevlisi', kisa:'Resepsiyon',
     renk:'bg-emerald-100 text-emerald-800 border-emerald-300',
-    aciklama:'Kayıt açma, yatak tahsisi ve giriş-çıkış işlemleri. Peşinat tahsilatı giremez, kural değiştiremez, kayıt iptal edemez.',
+    aciklama:'Kayıt açma, yatak tahsisi, giriş-çıkış ve kapora dekontu yükleme. Tahsilat giremez, dekont onaylayamaz, kayıt iptal edemez.',
     izinler:['pano.goruntule','rezervasyon.goruntule','pesinat.goruntule',
-             'rezervasyon.olustur','rezervasyon.yerlestir','rezervasyon.tahsis_kaldir'],
+             'rezervasyon.olustur','rezervasyon.yerlestir','rezervasyon.tahsis_kaldir',
+             'rezervasyon.dekont'],
   },
   MUHASEBE: {
     ad:'Muhasebe Görevlisi', kisa:'Muhasebe',
     renk:'bg-amber-100 text-amber-800 border-amber-300',
-    aciklama:'Peşinat tahsilatı, makbuz işlemleri ve süresi dolan taleplerin iptali. Yatak tahsisi yapamaz, kayıt açamaz.',
+    aciklama:'Kapora/peşinat tahsilatı, makbuz işlemleri, dekont yükleme ve süresi dolan taleplerin iptali. Yatak tahsisi yapamaz, kayıt açamaz, dekont onaylayamaz.',
     izinler:['pano.goruntule','rezervasyon.goruntule','pesinat.goruntule',
-             'pesinat.tahsilat','pesinat.toplu_iptal'],
+             'pesinat.tahsilat','pesinat.toplu_iptal','rezervasyon.dekont'],
   },
 };
 
@@ -263,10 +268,14 @@ const TEMIZLIK_GUN = 1;   // çıkış günü yatak temizlik için bloke
 /* Varsayılan peşinat kuralları — tesis bazında düzenlenebilir (Ekran 3) */
 const VARSAYILAN_PESINAT_KURALI = () => ({
   kurumMisafirindePesinatAranmasin: true,
-  sahisOran: 30,          // yatak bedelinin %'si
+  kaporaTuru: 'GECE',     // GECE: ilk N gecenin yatak bedeli · ORAN: toplam bedelin %'si
+  kaporaGece: 1,          // kaç gecelik bedel kapora olarak alınır
+  sahisOran: 30,          // ORAN seçildiğinde yatak bedelinin %'si
   sahisAsgariTutar: 750,
   odemeSuresiGun: 7,      // talep tarihinden itibaren
-  gelistenOnceEnGecGun: 2 // gelişten en geç kaç gün önce tahsil edilmeli
+  gelistenOnceEnGecGun: 2,// gelişten en geç kaç gün önce yatırılmalı
+  dekontZorunlu: true,    // kapora dekontu yüklenmeden onaya düşmez
+  mudurOnayiZorunlu: true // dekontu misafirhane müdürü onaylamadan yerleştirme yapılamaz
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -449,7 +458,7 @@ function rezervasyonlariUret(r, yataklar, odalar, bugun) {
           statu: 'TALEP',
           uzatma: false, onceki_cikis_tarihi: null,
           pesinat_tutari: 0, pesinat_son_odeme_tarihi: null, tahsil_edilen: 0,
-          makbuz_no: null, hareketler: [],
+          makbuz_no: null, hareketler: [], dekont: null,
         };
         sayac++;
 
@@ -516,6 +525,19 @@ function rezervasyonlariUret(r, yataklar, odalar, bugun) {
         } else if (rz.statu === 'PESINAT_BEKLENIYOR') {
           rz.tahsil_edilen = r() < 0.2 ? Math.round(rz.pesinat_tutari * 0.5 / 50) * 50 : 0;
         }
+        /* Kapora dekontu: onaylı kayıtlarda onaylanmış, bekleyenlerin bir kısmında müdür onayında */
+        if (rz.pesinat_tutari > 0 && rz.statu !== 'IPTAL') {
+          const tesisAd = t.ad;
+          if (['ONAYLI', 'KONAKLIYOR', 'CIKIS'].includes(rz.statu)) {
+            rz.dekont = { ...ornekDekont(rz, tesisAd, 'MSF2001', ekle(rz.rezerv_tarihi, 1), r),
+                          durum: 'ONAYLANDI', onaylayan: 'MSF1001', onay_tarihi: ekle(rz.rezerv_tarihi, 2) };
+          } else if (rz.statu === 'PESINAT_BEKLENIYOR' && r() < 0.45) {
+            rz.dekont = ornekDekont(rz, tesisAd, 'MSF2001', ekle(rz.rezerv_tarihi, 1), r);
+            rz.statu = 'ONAY_BEKLIYOR';
+            rz.hareketler.push({ tarih: rz.dekont.yuklenme_tarihi, kullanici: 'MSF2001',
+              metin: `Kapora dekontu yüklendi — ${rz.dekont.banka} · ${para(rz.dekont.tutar)} · müdür onayına gönderildi` });
+          }
+        }
         rz.hareketler.push({ tarih: rz.rezerv_tarihi, metin: 'Rezervasyon talebi alındı', kullanici: 'TTK7719' });
         if (rz.statu === 'IPTAL') rz.hareketler.push({ tarih: ekle(rz.rezerv_tarihi, 2), metin: 'Talep iptal edildi', kullanici: 'TTK7719' });
 
@@ -549,7 +571,16 @@ function pesinatHesapla(rz, odalar, kural) {
     rz.pesinat_tutari = 0;
     rz.pesinat_son_odeme_tarihi = null;
   } else {
-    rz.pesinat_tutari = Math.max(kural.sahisAsgariTutar, Math.round(bedel * kural.sahisOran / 100 / 50) * 50);
+    if (kural.kaporaTuru === 'GECE') {
+      const gece = Math.max(1, rz.gun_sayisi || 1);
+      const gecelik = bedel / gece;                       // bir gecenin toplam yatak bedeli
+      const alinan = Math.min(gece, Math.max(1, kural.kaporaGece));
+      rz.pesinat_tutari = Math.max(kural.sahisAsgariTutar, Math.round(gecelik * alinan / 50) * 50);
+      rz.kapora_gece = alinan;
+    } else {
+      rz.pesinat_tutari = Math.max(kural.sahisAsgariTutar, Math.round(bedel * kural.sahisOran / 100 / 50) * 50);
+      rz.kapora_gece = null;
+    }
     const a = ekle(rz.rezerv_tarihi, kural.odemeSuresiGun);
     const b = ekle(rz.gelis_tarihi, -kural.gelistenOnceEnGecGun);
     rz.pesinat_son_odeme_tarihi = a < b ? a : b;
@@ -557,6 +588,112 @@ function pesinatHesapla(rz, odalar, kural) {
   }
   rz.pesinattan_kalan = Math.max(0, rz.pesinat_tutari - (rz.tahsil_edilen || 0));
   return rz;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   KAPORA DEKONTU
+   Misafir, konaklama bedelinin bir bölümünü (varsayılan: ilk gecenin bedeli)
+   kapora olarak yatırır; banka dekontu sisteme yüklenir ve misafirhane müdürü
+   dekontu inceleyip rezervasyonu onaylar. Onaylanmadan yatak tahsis edilemez.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const BANKALAR = ['Ziraat Bankası', 'Halk Bankası', 'Vakıfbank', 'İş Bankası', 'Garanti BBVA'];
+
+/* PDF/Type1 yazı tipleri Türkçe karakter taşımadığından dekont metni sadeleştirilir */
+const ascii = (m) => String(m)
+  .replace(/ı/g, 'i').replace(/İ/g, 'I').replace(/ş/g, 's').replace(/Ş/g, 'S')
+  .replace(/ğ/g, 'g').replace(/Ğ/g, 'G').replace(/ü/g, 'u').replace(/Ü/g, 'U')
+  .replace(/ö/g, 'o').replace(/Ö/g, 'O').replace(/ç/g, 'c').replace(/Ç/g, 'C')
+  .replace(/[\\()]/g, ' ').replace(/[^\x20-\x7E]/g, '');
+
+/* Demo için gerçek, açılabilir bir PDF üretir (tek sayfa, Helvetica) */
+function dekontPdfUret(d) {
+  const satirlar = [
+    ['B', 16, 'TURKIYE TASKOMURU KURUMU'],
+    ['N', 11, 'Misafirhane Bilgi Sistemi'],
+    ['B', 13, 'KAPORA ODEME DEKONTU'],
+    ['-', 0, ''],
+    ['N', 11, 'Rezervasyon No : ' + ascii(d.rezNo)],
+    ['N', 11, 'Misafirhane    : ' + ascii(d.tesis)],
+    ['N', 11, 'Ad Soyad       : ' + ascii(d.ad)],
+    ['N', 11, 'Konaklama      : ' + ascii(d.konaklama)],
+    ['-', 0, ''],
+    ['N', 11, 'Banka          : ' + ascii(d.banka)],
+    ['N', 11, 'Dekont No      : ' + ascii(d.dekontNo)],
+    ['N', 11, 'Odeme Tarihi   : ' + ascii(d.odemeTarihi)],
+    ['B', 13, 'Tutar          : ' + ascii(d.tutar)],
+    ['-', 0, ''],
+    ['N', 10, ascii(d.aciklama || '')],
+    ['N', 9,  'Bu belge prototip gosterimi icin uretilmis ORNEK dekonttur.'],
+  ];
+  let y = 372, akis = '0.1 0.18 0.34 RG 1.2 w 18 18 384 384 re S\n';
+  for (const [tur, boy, metin] of satirlar) {
+    if (tur === '-') { akis += `0.75 0.78 0.83 RG 0.7 w 34 ${y + 6} m 386 ${y + 6} l S\n`; y -= 10; continue; }
+    akis += `BT /${tur === 'B' ? 'F2' : 'F1'} ${boy} Tf 34 ${y} Td (${metin}) Tj ET\n`;
+    y -= boy + 7;
+  }
+  const nesneler = [
+    '<</Type/Catalog/Pages 2 0 R>>',
+    '<</Type/Pages/Kids[3 0 R]/Count 1>>',
+    '<</Type/Page/Parent 2 0 R/MediaBox[0 0 420 420]/Resources<</Font<</F1 5 0 R/F2 6 0 R>>>>/Contents 4 0 R>>',
+    `<</Length ${akis.length}>>\nstream\n${akis}endstream`,
+    '<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>',
+    '<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold/Encoding/WinAnsiEncoding>>',
+  ];
+  let pdf = '%PDF-1.4\n';
+  const konumlar = [];
+  nesneler.forEach((n, i) => { konumlar.push(pdf.length); pdf += `${i + 1} 0 obj\n${n}\nendobj\n`; });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${nesneler.length + 1}\n0000000000 65535 f \n`;
+  konumlar.forEach(k => { pdf += String(k).padStart(10, '0') + ' 00000 n \n'; });
+  pdf += `trailer\n<</Size ${nesneler.length + 1}/Root 1 0 R>>\nstartxref\n${xref}\n%%EOF`;
+  return 'data:application/pdf;base64,' + btoa(pdf);
+}
+
+/* Bir rezervasyon için örnek dekont nesnesi üretir */
+function ornekDekont(rz, tesisAd, kullanici, tarih, rastgele) {
+  const r = rastgele || Math.random;
+  const banka = BANKALAR[Math.floor(r() * BANKALAR.length)];
+  const dekontNo = String(Math.floor(r() * 9e8) + 1e8);
+  const odemeTarihi = ekle(tarih, -Math.floor(r() * 3));
+  const veri = {
+    banka, dekont_no: dekontNo, odeme_tarihi: odemeTarihi,
+    tutar: rz.pesinat_tutari,
+    dosya_adi: `kapora-dekont-${rz.rez_no}.pdf`,
+    tur: 'application/pdf',
+    yukleyen: kullanici, yuklenme_tarihi: tarih,
+    durum: 'YUKLENDI', red_gerekcesi: '', onaylayan: null, onay_tarihi: null,
+  };
+  veri.icerik = null;          // demo dekontun PDF'i görüntüleme anında üretilir
+  veri.uretilmis = true;       // gerçek yüklenen dosyalarda bu alan false olur
+  veri.boyut = 2400 + Math.floor(r() * 900);
+  return veri;
+}
+
+/* Dekontun görüntülenecek PDF adresi: yüklenen dosya varsa o, yoksa demo PDF üretilir */
+function dekontKaynagi(rz, tesisAd) {
+  const d = rz.dekont;
+  if (!d) return null;
+  if (d.icerik) return d.icerik;
+  return dekontPdfUret({
+    rezNo: rz.rez_no, tesis: tesisAd, ad: rz.ad_soyad,
+    konaklama: `${tr(rz.gelis_tarihi)} - ${tr(rz.cikis_tarihi)} (${rz.gun_sayisi} gece)`,
+    banka: d.banka, dekontNo: d.dekont_no, odemeTarihi: tr(d.odeme_tarihi),
+    tutar: para(d.tutar),
+    aciklama: rz.kapora_gece ? `${rz.kapora_gece} gecelik kapora bedeli` : 'Kapora bedeli',
+  });
+}
+
+/* Kapora/onay kuralına göre bu kayda yatak tahsis edilebilir mi? */
+function yerlesmeyeUygun(rz, kural) {
+  if (['IPTAL', 'CIKIS'].includes(rz.statu)) return { ok: false, neden: 'Kayıt kapalı (iptal/çıkış).' };
+  if (!rz.pesinat_tutari) return { ok: true };                       // kurum misafiri / protokol: kapora aranmıyor
+  if (!kural || !kural.mudurOnayiZorunlu) return { ok: true };
+  if (['ONAYLI', 'KONAKLIYOR'].includes(rz.statu)) return { ok: true };
+  if (rz.statu === 'ONAY_BEKLIYOR')
+    return { ok: false, neden: `Kapora dekontu müdür onayında (${para(rz.pesinat_tutari)}); onaylanmadan yatak tahsis edilemez.` };
+  return { ok: false, neden: `Kapora (${para(rz.pesinat_tutari)}) yatırılıp dekontu onaylanmadan yatak tahsis edilemez.` };
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1025,6 +1162,54 @@ function indirgeyici(s, a) {
                `(${kyt4.misafirler.filter(g => g.oda_no).map(g => 'Oda ' + g.oda_no + '/' + g.yatak_no).join(', ') || 'tahsis yok'})` }, ...s.gunluk] };
     }
 
+    /* Kapora dekontu yüklendi → müdür onayına düşer */
+    case 'DEKONT_YUKLE': {
+      const rezler = guncelle(s.rezervasyonlar, a.rezId, rz => {
+        rz.dekont = { ...a.dekont, durum: 'YUKLENDI', yukleyen: ku, yuklenme_tarihi: s.bugun,
+                      red_gerekcesi: '', onaylayan: null, onay_tarihi: null };
+        if (['TALEP', 'PESINAT_BEKLENIYOR'].includes(rz.statu)) rz.statu = 'ONAY_BEKLIYOR';
+        rz.hareketler = [...rz.hareketler, { tarih: s.bugun, kullanici: ku,
+          metin: `Kapora dekontu yüklendi — ${a.dekont.banka} · Dekont No ${a.dekont.dekont_no} · ${para(a.dekont.tutar)} ` +
+                 `(${a.dekont.dosya_adi}) · müdür onayına gönderildi` }];
+        return rz;
+      });
+      const kd = rezler.find(x => x.id === a.rezId);
+      return { ...s, rezervasyonlar: rezler, gunluk: [{ tarih: s.bugun, tip: 'bilgi',
+        metin: `${kd.rez_no} — ${kd.ad_soyad}: kapora dekontu yüklendi (${para(a.dekont.tutar)}), müdür onayı bekleniyor` }, ...s.gunluk] };
+    }
+
+    /* Müdür dekontu onayladı → rezervasyon listeye girer, yerleştirmeye açılır */
+    case 'DEKONT_ONAY': {
+      const rezler = guncelle(s.rezervasyonlar, a.rezId, rz => {
+        rz.dekont = { ...rz.dekont, durum: 'ONAYLANDI', onaylayan: ku, onay_tarihi: s.bugun, red_gerekcesi: '' };
+        rz.tahsil_edilen = Math.max(rz.tahsil_edilen || 0, rz.dekont.tutar || rz.pesinat_tutari);
+        rz.pesinattan_kalan = Math.max(0, rz.pesinat_tutari - rz.tahsil_edilen);
+        rz.makbuz_no = rz.makbuz_no || rz.dekont.dekont_no;
+        rz.statu = (rz.gelis_tarihi <= s.bugun && rz.cikis_tarihi > s.bugun) ? 'KONAKLIYOR' : 'ONAYLI';
+        rz.hareketler = [...rz.hareketler, { tarih: s.bugun, kullanici: ku,
+          metin: `Kapora dekontu onaylandı${a.aciklama ? ' — ' + a.aciklama : ''}; rezervasyon listeye alındı (${statuAd(rz.statu)})` }];
+        return rz;
+      });
+      const kd = rezler.find(x => x.id === a.rezId);
+      return { ...s, rezervasyonlar: rezler, gunluk: [{ tarih: s.bugun, tip: 'basari',
+        metin: `${kd.rez_no} — ${kd.ad_soyad}: kapora dekontu onaylandı (${para(kd.tahsil_edilen)}), rezervasyon ${statuAd(kd.statu)}` }, ...s.gunluk] };
+    }
+
+    /* Müdür dekontu reddetti → kapora beklemeye geri döner */
+    case 'DEKONT_RED': {
+      const rezler = guncelle(s.rezervasyonlar, a.rezId, rz => {
+        rz.dekont = { ...rz.dekont, durum: 'REDDEDILDI', red_gerekcesi: a.gerekce,
+                      onaylayan: ku, onay_tarihi: s.bugun };
+        rz.statu = 'PESINAT_BEKLENIYOR';
+        rz.hareketler = [...rz.hareketler, { tarih: s.bugun, kullanici: ku,
+          metin: `Kapora dekontu reddedildi — ${a.gerekce}` }];
+        return rz;
+      });
+      const kd = rezler.find(x => x.id === a.rezId);
+      return { ...s, rezervasyonlar: rezler, gunluk: [{ tarih: s.bugun, tip: 'uyari',
+        metin: `${kd.rez_no} — ${kd.ad_soyad}: dekont reddedildi (${a.gerekce}); kayıt kapora beklemeye döndü` }, ...s.gunluk] };
+    }
+
     case 'ATAMA_KALDIR': {
       const rezler = guncelle(s.rezervasyonlar, a.rezId, rz => {
         rz.misafirler = rz.misafirler.map((g, i) =>
@@ -1107,11 +1292,11 @@ function indirgeyici(s, a) {
       const olaylar = [];
       let rezler = s.rezervasyonlar.map(rz => {
         let k = rz;
-        if (k.statu === 'PESINAT_BEKLENIYOR' && k.pesinat_son_odeme_tarihi &&
+        if (['PESINAT_BEKLENIYOR', 'TALEP'].includes(k.statu) && k.pesinat_tutari > 0 && k.pesinat_son_odeme_tarihi &&
             k.pesinat_son_odeme_tarihi < yeni && k.tahsil_edilen < k.pesinat_tutari) {
           olaylar.push(`${k.rez_no} süre aşımından iptal`);
           k = { ...k, statu: 'IPTAL', misafirler: k.misafirler.map(g => ({ ...g, yatakId: null, oda_no: null, yatak_no: null })),
-                hareketler: [...k.hareketler, { tarih: yeni, kullanici: 'SİSTEM', metin: 'Peşinat süresi doldu — otomatik iptal, yatak serbest' }] };
+                hareketler: [...k.hareketler, { tarih: yeni, kullanici: 'SİSTEM', metin: 'Kapora son ödeme tarihi geçti — otomatik iptal, yatak serbest' }] };
         }
         if (k.statu === 'ONAYLI' && k.gelis_tarihi <= yeni && k.cikis_tarihi > yeni) {
           olaylar.push(`${k.rez_no} girişi yapıldı`);
@@ -1329,6 +1514,7 @@ const IKON_YOLLARI = {
   statu:     'M4 12a8 8 0 0113-6M20 12a8 8 0 01-13 6M17 3v3h-3M7 21v-3h3',
   kullanici: 'M12 11a4 4 0 100-8 4 4 0 000 8zM5 21a7 7 0 0114 0',
   menu:      'M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v7H4zM13 14h7v7h-7z',
+  onay:      'M6 3h8l4 4v14H6zM14 3v4h4M9 13l2.5 2.5L16 11',
   geri:      'M15 5l-7 7 7 7',
   yeni:      'M12 5v14M5 12h14',
 };
@@ -1747,6 +1933,300 @@ function RezervasyonOzet({ rz, misafir }) {
    7) EKRAN 2 — REZERVASYON VE OTOMATİK YERLEŞTİRME
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* ── Dekont yükleme penceresi ─────────────────────────────────────────────── */
+function DekontYukleme({ s, rz, gonder, kapat }) {
+  const kural = s.kurallar[rz.tesis];
+  const tesisAd = (TESISLER.find(t => t.kod === rz.tesis) || {}).ad || '';
+  const [f, setF] = useState(() => ({
+    banka: BANKALAR[0], dekont_no: '', odeme_tarihi: s.bugun,
+    tutar: rz.pesinat_tutari, dosya_adi: '', tur: '', icerik: null, boyut: 0, uretilmis: false,
+  }));
+  const [hata, setHata] = useState(null);
+  const dosyaRef = useRef(null);
+
+  const dosyaSec = (e) => {
+    const dosya = e.target.files && e.target.files[0];
+    if (!dosya) return;
+    if (dosya.size > 5 * 1024 * 1024) { setHata('Dosya 5 MB üzerinde. Daha küçük bir tarama yükleyiniz.'); return; }
+    const okur = new FileReader();
+    okur.onload = () => setF(x => ({ ...x, dosya_adi: dosya.name, tur: dosya.type || 'application/pdf',
+                                     icerik: okur.result, boyut: dosya.size, uretilmis: false }));
+    okur.onerror = () => setHata('Dosya okunamadı.');
+    okur.readAsDataURL(dosya);
+    setHata(null);
+  };
+
+  const ornekUret = () => setF(x => ({
+    ...x, dosya_adi: `kapora-dekont-${rz.rez_no}.pdf`, tur: 'application/pdf',
+    icerik: null, uretilmis: true, boyut: 2600,
+    dekont_no: x.dekont_no || String(Math.floor(Math.random() * 9e8) + 1e8),
+  }));
+
+  const eksik = Number(f.tutar) < rz.pesinat_tutari;
+  const gecerli = f.dosya_adi && f.dekont_no.trim() && Number(f.tutar) > 0;
+
+  const kaydet = () => {
+    if (!gecerli) return;
+    gonder({ tip: 'DEKONT_YUKLE', rezId: rz.id, dekont: {
+      banka: f.banka, dekont_no: f.dekont_no.trim(), odeme_tarihi: f.odeme_tarihi,
+      tutar: Number(f.tutar), dosya_adi: f.dosya_adi, tur: f.tur,
+      icerik: f.icerik, uretilmis: f.uretilmis, boyut: f.boyut,
+    } });
+    kapat();
+  };
+
+  return (
+    <Modal baslik={`Kapora Dekontu Yükle — ${rz.rez_no} · ${rz.ad_soyad}`} genislik="max-w-3xl" kapat={kapat}
+      altlik={<>
+        <span className="text-2xs text-slate-500 mr-auto">
+          {gecerli ? 'Kaydedildiğinde kayıt müdür onayına düşer.' : 'Dosya ve dekont numarası zorunludur.'}
+        </span>
+        <Buton tur="sessiz" onClick={kapat}>Vazgeç</Buton>
+        <Buton tur="basari" onClick={kaydet} disabled={!gecerli}>Dekontu Kaydet ve Onaya Gönder</Buton>
+      </>}>
+      <div className="space-y-3 text-xs">
+        <div className="bg-ttk-50 border border-ttk-200 rounded p-2.5">
+          <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(10rem, 1fr))' }}>
+            {[['Konaklama', `${tr(rz.gelis_tarihi)} – ${tr(rz.cikis_tarihi)} · ${rz.gun_sayisi} gece`],
+              ['Toplam Yatak Bedeli', para(rz.yatak_bedeli)],
+              ['İstenen Kapora', para(rz.pesinat_tutari) + (rz.kapora_gece ? ` (${rz.kapora_gece} gecelik)` : '')],
+              ['Son Ödeme Tarihi', rz.pesinat_son_odeme_tarihi ? tr(rz.pesinat_son_odeme_tarihi) : '—']].map(([k, v]) => (
+              <div key={k}>
+                <div className="text-2xs uppercase text-slate-500 font-semibold">{k}</div>
+                <div className="num font-semibold text-ttk-900">{v}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(16rem, 1fr))' }}>
+          <fieldset className="border border-slate-200 rounded p-2.5 space-y-2">
+            <legend className="text-2xs font-bold text-ttk-800 uppercase px-1">Ödeme Bilgileri</legend>
+            <Alan etiket="Banka" zorunlu>
+              <select value={f.banka} onChange={e => setF({ ...f, banka: e.target.value })} className={GIRDI}>
+                {BANKALAR.map(b => <option key={b}>{b}</option>)}
+              </select>
+            </Alan>
+            <Alan etiket="Dekont / Referans No" zorunlu>
+              <input value={f.dekont_no} onChange={e => setF({ ...f, dekont_no: e.target.value })} className={`${GIRDI} num`} />
+            </Alan>
+            <div className="grid grid-cols-2 gap-2">
+              <Alan etiket="Ödeme Tarihi" zorunlu>
+                <TarihGirdi deger={f.odeme_tarihi} onChange={v => setF({ ...f, odeme_tarihi: v })} className="!w-full" />
+              </Alan>
+              <Alan etiket="Yatırılan Tutar (₺)" zorunlu>
+                <input type="number" value={f.tutar} onChange={e => setF({ ...f, tutar: e.target.value })}
+                  className={`${GIRDI} num text-right ${eksik ? 'border-rose-400 bg-rose-50' : ''}`} />
+              </Alan>
+            </div>
+            {eksik && <div className="px-2 py-1 rounded border bg-amber-50 border-amber-300 text-amber-900 text-2xs">
+              ⚠ Yatırılan tutar istenen kaporanın altında ({para(rz.pesinat_tutari)}). Müdür yine de değerlendirebilir.
+            </div>}
+          </fieldset>
+
+          <fieldset className="border border-slate-200 rounded p-2.5 space-y-2">
+            <legend className="text-2xs font-bold text-ttk-800 uppercase px-1">Dekont Dosyası</legend>
+            <input ref={dosyaRef} type="file" accept="application/pdf,image/png,image/jpeg" onChange={dosyaSec}
+              className="block w-full text-xs file:mr-2 file:px-2.5 file:py-1.5 file:rounded file:border-0
+                         file:bg-ttk-600 file:text-white file:font-semibold hover:file:bg-ttk-700" />
+            <div className="text-2xs text-slate-500">PDF, PNG veya JPEG · en çok 5 MB</div>
+            <div className="flex items-center gap-2">
+              <span className="text-2xs text-slate-400">veya</span>
+              <Buton tur="sessiz" onClick={ornekUret}>Örnek dekont üret (demo)</Buton>
+            </div>
+            {f.dosya_adi && (
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded border bg-emerald-50 border-emerald-300">
+                <Ikon ad="talep" sinif="w-4 h-4 text-emerald-700" />
+                <span className="flex-1 truncate font-semibold text-emerald-900">{f.dosya_adi}</span>
+                <span className="num text-2xs text-emerald-800">{(f.boyut / 1024).toFixed(0)} KB</span>
+              </div>
+            )}
+            {hata && <div className="px-2 py-1 rounded border bg-rose-50 border-rose-300 text-rose-800 text-2xs">⛔ {hata}</div>}
+          </fieldset>
+        </div>
+        <div className="text-2xs text-slate-500">
+          Dekont, misafirhane müdürünün «Dekont ve Onay» sayfasına düşer. Müdür onaylamadan
+          kayda yatak tahsis edilemez ve misafir rezervasyon listesine alınmaz.
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/* ── Dekont görüntüleyici ─────────────────────────────────────────────────── */
+function DekontGoruntule({ rz, tesisAd, yukseklik = 'h-[28rem]' }) {
+  const kaynak = useMemo(() => dekontKaynagi(rz, tesisAd), [rz.id, rz.dekont && rz.dekont.dekont_no]);
+  const d = rz.dekont;
+  if (!d) return <BosDurum metin="Bu kayda ait dekont yüklenmemiş." />;
+  const resimMi = (d.tur || '').startsWith('image/');
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 flex-wrap text-xs">
+        <Ikon ad="talep" sinif="w-4 h-4 text-ttk-600" />
+        <span className="font-semibold text-ttk-900 truncate">{d.dosya_adi}</span>
+        <span className="num text-2xs text-slate-500">{(d.boyut / 1024).toFixed(0)} KB</span>
+        {d.uretilmis && <Rozet sinif="bg-slate-100 text-slate-600 border-slate-300" baslik="Demo için üretilmiş örnek dekont">demo</Rozet>}
+        <a href={kaynak} target="_blank" rel="noopener" className="ml-auto text-ttk-700 hover:underline font-semibold">
+          Yeni sekmede aç ↗
+        </a>
+      </div>
+      <div className={`border border-slate-300 rounded overflow-hidden bg-slate-100 ${yukseklik}`}>
+        {resimMi
+          ? <img src={kaynak} alt="Dekont" className="w-full h-full object-contain" />
+          : <iframe src={kaynak} title="Kapora dekontu" className="w-full h-full" />}
+      </div>
+    </div>
+  );
+}
+
+/* ── Dekont ve onay sayfası (misafirhane müdürü) ──────────────────────────── */
+function OnayEkrani({ s, gonder, izin, git, acYeniKayit }) {
+  const [secili, setSecili] = useState(null);
+  const [redAcik, setRedAcik] = useState(false);
+  const [gerekce, setGerekce] = useState('');
+  const [onayNotu, setOnayNotu] = useState('');
+  const [liste, setListe] = useState('ONAY_BEKLIYOR');
+  const sayfa = sayfaBul('ONAY');
+  const tesisAd = (TESISLER.find(t => t.kod === s.tesis) || {}).ad || '';
+  const yetkili = izin('rezervasyon.onay');
+
+  const kapsam = useMemo(() => s.rezervasyonlar.filter(rz => rz.tesis === s.tesis && rz.dekont), [s.rezervasyonlar, s.tesis]);
+  const gruplar = useMemo(() => ({
+    ONAY_BEKLIYOR: kapsam.filter(rz => rz.dekont.durum === 'YUKLENDI'),
+    ONAYLANDI:     kapsam.filter(rz => rz.dekont.durum === 'ONAYLANDI'),
+    REDDEDILDI:    kapsam.filter(rz => rz.dekont.durum === 'REDDEDILDI'),
+  }), [kapsam]);
+  const kayitlar = (gruplar[liste] || []).slice().sort((a, b) => a.gelis_tarihi < b.gelis_tarihi ? -1 : 1);
+
+  const seciliRez = secili ? s.rezervasyonlar.find(r => r.id === secili) : null;
+  useEffect(() => { if (!seciliRez && kayitlar.length) setSecili(kayitlar[0].id); }, [liste, kayitlar.length]);
+  useEffect(() => { setRedAcik(false); setGerekce(''); setOnayNotu(''); }, [secili]);
+
+  const bekleyenTutar = gruplar.ONAY_BEKLIYOR.reduce((a, r) => a + (r.dekont.tutar || 0), 0);
+
+  return (
+    <div>
+      <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad} aciklama={sayfa.aciklama}
+        sag={<span className="text-2xs text-slate-500">
+          {yetkili ? 'Onayladığınız kayıtlar rezervasyon listesine girer ve yerleştirmeye açılır.'
+                   : '🔒 Görüntüleme yetkiniz var, onay yetkiniz yok.'}
+        </span>} />
+
+      <div className="grid gap-2 mb-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(12rem, 1fr))' }}>
+        {[['ONAY_BEKLIYOR', 'Onay Bekleyen', gruplar.ONAY_BEKLIYOR.length, 'text-sky-700', para(bekleyenTutar) + ' kapora'],
+          ['ONAYLANDI', 'Onaylanan', gruplar.ONAYLANDI.length, 'text-emerald-700', 'rezervasyon listesinde'],
+          ['REDDEDILDI', 'Reddedilen', gruplar.REDDEDILDI.length, 'text-rose-700', 'kapora bekleniyor']].map(([kod, ad, sayi, renk, alt]) => (
+          <button key={kod} onClick={() => { setListe(kod); setSecili(null); }}
+            className={`text-left bg-white border rounded px-3 py-2.5 transition-all
+              ${liste === kod ? 'border-ttk-500 ring-2 ring-ttk-200' : 'border-slate-200 hover:border-ttk-300'}`}>
+            <div className="text-2xs uppercase tracking-wide text-slate-600 font-semibold">{ad}</div>
+            <div className={`num text-[26px] font-bold leading-8 ${renk}`}>{sayi}</div>
+            <div className="text-2xs text-slate-500 num">{alt}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="grid gap-3 items-start" style={{ gridTemplateColumns: 'minmax(20rem, 2fr) minmax(24rem, 3fr)' }}>
+        <Kart baslik={`${STATULER.find(x => x.kod === 'ONAY_BEKLIYOR').ad.replace('Müdür Onayı Bekliyor', 'Dekontlar')} (${kayitlar.length})`} govdeSinif="p-0">
+          <div className="max-h-[60vh] overflow-auto kaydir">
+            <table className="veri w-full">
+              <thead><tr>
+                <th>Adı Soyadı</th><th>Geliş / Çıkış</th><th className="text-right">Kapora</th><th>Dekont</th><th>Statü</th>
+              </tr></thead>
+              <tbody>
+                {kayitlar.map(rz => (
+                  <tr key={rz.id} onClick={() => setSecili(rz.id)}
+                    className={`cursor-pointer ${secili === rz.id ? 'secili' : ''}`}>
+                    <td className="font-semibold text-ttk-900 max-w-[12rem] truncate" title={rz.ad_soyad}>{rz.ad_soyad}</td>
+                    <td className="num">{tr(rz.gelis_tarihi).slice(0, 6)} – {tr(rz.cikis_tarihi)}</td>
+                    <td className="num text-right font-semibold">{para(rz.dekont.tutar)}</td>
+                    <td className="num text-slate-500">{rz.dekont.dekont_no}</td>
+                    <td><StatuRozet kod={rz.statu} kisa /></td>
+                  </tr>
+                ))}
+                {!kayitlar.length && <tr><td colSpan="5" className="text-center text-slate-400 py-6">Bu listede kayıt yok.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </Kart>
+
+        <Kart baslik={seciliRez ? `Dekont İncelemesi — ${seciliRez.rez_no}` : 'Dekont İncelemesi'}>
+          {!seciliRez ? <BosDurum metin="Soldaki listeden bir kayıt seçiniz." /> : (
+            <div className="space-y-3">
+              <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(9rem, 1fr))' }}>
+                {[['Rezerv Eden', seciliRez.ad_soyad],
+                  ['Konaklama', `${tr(seciliRez.gelis_tarihi)} – ${tr(seciliRez.cikis_tarihi)} · ${seciliRez.gun_sayisi} gece`],
+                  ['Kişi', `${seciliRez.kisi_sayisi} kişi`],
+                  ['İstenen Kapora', para(seciliRez.pesinat_tutari) + (seciliRez.kapora_gece ? ` · ${seciliRez.kapora_gece} gecelik` : '')],
+                  ['Yatırılan', para(seciliRez.dekont.tutar)],
+                  ['Banka / Tarih', `${seciliRez.dekont.banka} · ${tr(seciliRez.dekont.odeme_tarihi)}`],
+                  ['Yükleyen', `${seciliRez.dekont.yukleyen} · ${tr(seciliRez.dekont.yuklenme_tarihi)}`],
+                  ['Statü', statuAd(seciliRez.statu)]].map(([k, v]) => (
+                  <div key={k} className="bg-slate-50 border border-slate-200 rounded px-2 py-1.5 min-w-0">
+                    <div className="text-2xs uppercase text-slate-500 font-semibold">{k}</div>
+                    <div className="num text-xs text-ttk-900 truncate" title={v}>{v}</div>
+                  </div>
+                ))}
+              </div>
+
+              {seciliRez.dekont.tutar < seciliRez.pesinat_tutari && (
+                <div className="px-2 py-1.5 rounded border bg-amber-50 border-amber-300 text-amber-900 text-2xs">
+                  ⚠ Yatırılan tutar istenen kaporanın altında — eksik {para(seciliRez.pesinat_tutari - seciliRez.dekont.tutar)}.
+                </div>
+              )}
+              {seciliRez.dekont.durum === 'REDDEDILDI' && (
+                <div className="px-2 py-1.5 rounded border bg-rose-50 border-rose-300 text-rose-800 text-2xs">
+                  ⛔ Reddedildi ({tr(seciliRez.dekont.onay_tarihi)} · {seciliRez.dekont.onaylayan}): {seciliRez.dekont.red_gerekcesi}
+                </div>
+              )}
+              {seciliRez.dekont.durum === 'ONAYLANDI' && (
+                <div className="px-2 py-1.5 rounded border bg-emerald-50 border-emerald-300 text-emerald-900 text-2xs">
+                  ✓ Onaylandı ({tr(seciliRez.dekont.onay_tarihi)} · {seciliRez.dekont.onaylayan}) — kayıt rezervasyon listesinde.
+                </div>
+              )}
+
+              <DekontGoruntule rz={seciliRez} tesisAd={tesisAd} />
+
+              {seciliRez.dekont.durum === 'YUKLENDI' && (
+                redAcik ? (
+                  <div className="space-y-2 border-t border-slate-200 pt-2">
+                    <Alan etiket="Red gerekçesi" zorunlu ipucu="Kayıt kapora beklemeye döner, gerekçe misafire iletilir.">
+                      <input value={gerekce} onChange={e => setGerekce(e.target.value)} className={GIRDI}
+                        placeholder="Örn. Dekont tutarı eksik / dekont okunmuyor / farklı hesaba yatırılmış" />
+                    </Alan>
+                    <div className="flex gap-2 justify-end">
+                      <Buton tur="sessiz" onClick={() => setRedAcik(false)}>Vazgeç</Buton>
+                      <Buton tur="tehlike" disabled={!gerekce.trim()}
+                        onClick={() => { gonder({ tip: 'DEKONT_RED', rezId: seciliRez.id, gerekce: gerekce.trim() }); setRedAcik(false); }}>
+                        Dekontu Reddet
+                      </Buton>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 border-t border-slate-200 pt-2">
+                    <Alan etiket="Onay notu (isteğe bağlı)">
+                      <input value={onayNotu} onChange={e => setOnayNotu(e.target.value)} className={GIRDI} />
+                    </Alan>
+                    <div className="flex gap-2 justify-end">
+                      <Buton tur="tehlike" disabled={!yetkili} onClick={() => setRedAcik(true)}
+                        title={yetkili ? '' : yetkiNotu(s.kullanici, 'rezervasyon.onay')}>Reddet</Buton>
+                      <Buton tur="basari" disabled={!yetkili}
+                        title={yetkili ? '' : yetkiNotu(s.kullanici, 'rezervasyon.onay')}
+                        onClick={() => gonder({ tip: 'DEKONT_ONAY', rezId: seciliRez.id, aciklama: onayNotu.trim() })}>
+                        ✓ Onayla ve Rezervasyon Listesine Al
+                      </Buton>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+        </Kart>
+      </div>
+    </div>
+  );
+}
+
 /* ── Manuel yerleştirme penceresi ──────────────────────────────────────────
    Otomatik yerleştirmeye alternatif: her misafir için oda/yatak elle seçilir.
    Seçenekler yalnız talebin tüm gecelerinde müsait olan yataklardır; odadaki
@@ -1797,6 +2277,8 @@ function ManuelYerlestirme({ s, rz, gonder, kapat }) {
 
   const hatalar = useMemo(() => {
     const h = [];
+    const uygunluk = yerlesmeyeUygun(rz, s.kurallar[rz.tesis]);
+    if (!uygunluk.ok && secim.some(Boolean)) h.push(uygunluk.neden);
     const dolular = secim.filter(Boolean);
     if (new Set(dolular).size !== dolular.length) h.push('Aynı yatak birden fazla misafire verilemez.');
     if (!rz.aile) {
@@ -1948,6 +2430,8 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
   const [manuel, setManuel] = useState(null);
   const [haritaTarihi, setHaritaTarihi] = useState(s.bugun);
   const [yatakDetay, setYatakDetay] = useState(null);
+  const [dekontAcik, setDekontAcik] = useState(null);
+  const [dekontGoster, setDekontGoster] = useState(null);
 
   const secili = s.seciliRezId;
   const setSecili = (id) => gonder({ tip: 'SECILI_REZ', rezId: id });
@@ -2013,13 +2497,26 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
   const yerlesmemisSayi = talepler.filter(rz => rz.misafirler.some(g => !g.yatakId)).length;
 
   const otomatikYerlestir = (hedefListe) => {
-    const hedef = (hedefListe || talepler).filter(rz => rz.misafirler.some(g => !g.yatakId) && !['IPTAL', 'CIKIS'].includes(rz.statu));
-    if (!hedef.length) { setUyari({ tip: 'bilgi', metin: 'Yerleştirilecek talep bulunmuyor.' }); return; }
+    const aday = (hedefListe || talepler).filter(rz => rz.misafirler.some(g => !g.yatakId) && !['IPTAL', 'CIKIS'].includes(rz.statu));
+    if (!aday.length) { setUyari({ tip: 'bilgi', metin: 'Yerleştirilecek talep bulunmuyor.' }); return; }
+    /* Kapora/dekont onayı tamamlanmayan kayıtlar yerleştirmeye alınmaz */
+    const kuralT = s.kurallar[s.tesis];
+    const hedef = [], engelli = [];
+    aday.forEach(rz => {
+      const u = yerlesmeyeUygun(rz, kuralT);
+      if (u.ok) hedef.push(rz); else engelli.push({ rez: rz, gerekce: u.neden });
+    });
+    if (!hedef.length) {
+      setOneri({ oneriler: [], basarisiz: engelli, sure: 0 });
+      setOnaylanan({});
+      return;
+    }
     const haricSet = new Set(hedef.map(r => r.id));
     const { dolu: d2, temizlik: t2 } = dolulukKur(s.rezervasyonlar.filter(r => !haricSet.has(r.id)));
     const t0 = performance.now();
     const sonuc = yerlestirmeMotoru(hedef, s.yataklar, s.odalar, d2, t2, {});
     sonuc.sure = Math.round(performance.now() - t0);
+    sonuc.basarisiz = [...engelli, ...sonuc.basarisiz];
     setOneri(sonuc);
     const isaret = {}; sonuc.oneriler.forEach(o => isaret[o.rez.id] = true);
     setOnaylanan(isaret);
@@ -2035,6 +2532,8 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
     if (!izin('rezervasyon.yerlestir')) { setUyari({ tip: 'hata', metin: yetkiNotu(s.kullanici, 'rezervasyon.yerlestir') }); return; }
     const rz = s.rezervasyonlar.find(r => r.id === veri.rezId);
     if (!rz) return;
+    const uygunluk = yerlesmeyeUygun(rz, s.kurallar[s.tesis]);
+    if (!uygunluk.ok) { setUyari({ tip: 'hata', metin: uygunluk.neden }); return; }
     const { dolu: d2, temizlik: t2 } = dolulukKur(s.rezervasyonlar.filter(r => r.id !== rz.id));
     if (!yatakMusait(yatak.id, rz.gelis_tarihi, rz.cikis_tarihi, d2, t2)) {
       setUyari({ tip: 'hata', metin: `Oda ${yatak.oda_no} / Yatak ${yatak.yatak_no} — ${tr(rz.gelis_tarihi)} – ${tr(rz.cikis_tarihi)} aralığında müsait değil.` });
@@ -2123,7 +2622,7 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
               <table className="veri w-full">
                 <thead><tr>
                   <th>Adı Soyadı</th><th>Geliş / Çıkış</th><th className="text-center">Kişi</th>
-                  <th className="text-center">Gün</th><th>Oda No</th><th>Statü</th>
+                  <th className="text-center">Gün</th><th className="text-right">Kapora</th><th>Oda No</th><th>Statü</th>
                 </tr></thead>
                 <tbody>
                   {talepler.map(rz => {
@@ -2140,12 +2639,19 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
                         <td className="num">{tr(rz.gelis_tarihi).slice(0, 6)} – {tr(rz.cikis_tarihi)}</td>
                         <td className="num text-center">{rz.kisi_sayisi}{rz.aile && <span title="Aile / birlikte" className="text-amber-600 ml-0.5">⚭</span>}</td>
                         <td className="num text-center">{rz.gun_sayisi}</td>
+                        <td className="num text-right">
+                          {!rz.pesinat_tutari ? <span className="text-slate-400">aranmıyor</span>
+                            : <span className={rz.dekont && rz.dekont.durum === 'ONAYLANDI' ? 'text-emerald-700 font-semibold' : 'text-amber-700 font-semibold'}
+                                title={rz.dekont ? `Dekont: ${rz.dekont.durum === 'ONAYLANDI' ? 'onaylandı' : rz.dekont.durum === 'YUKLENDI' ? 'müdür onayında' : 'reddedildi'}` : 'Dekont yüklenmedi'}>
+                                {para(rz.pesinat_tutari)}{rz.dekont ? (rz.dekont.durum === 'ONAYLANDI' ? ' ✓' : rz.dekont.durum === 'YUKLENDI' ? ' ⏳' : ' ⛔') : ' —'}
+                              </span>}
+                        </td>
                         <td className="num">{rzOdalar.length ? rzOdalar.join(', ') : <span className="text-rose-600 font-semibold">—</span>}</td>
                         <td><StatuRozet kod={rz.statu} kisa /></td>
                       </tr>
                     );
                   })}
-                  {!talepler.length && <tr><td colSpan="6" className="text-center text-slate-400 py-6">Filtreye uyan talep yok.</td></tr>}
+                  {!talepler.length && <tr><td colSpan="7" className="text-center text-slate-400 py-6">Filtreye uyan talep yok.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -2187,6 +2693,40 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
                   </div>
                 </div>
 
+                {/* Kapora / dekont durumu */}
+                {seciliRez.pesinat_tutari > 0 && (() => {
+                  const d = seciliRez.dekont;
+                  const durum = !d ? 'YOK' : d.durum;
+                  const kutu = durum === 'ONAYLANDI' ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                    : durum === 'YUKLENDI' ? 'bg-sky-50 border-sky-300 text-sky-900'
+                    : durum === 'REDDEDILDI' ? 'bg-rose-50 border-rose-300 text-rose-800'
+                    : 'bg-amber-50 border-amber-300 text-amber-900';
+                  return (
+                    <div className={`px-2.5 py-2 rounded border text-xs ${kutu}`}>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <b>Kapora {para(seciliRez.pesinat_tutari)}</b>
+                        {seciliRez.kapora_gece && <span className="text-2xs">({seciliRez.kapora_gece} gecelik)</span>}
+                        <span className="text-2xs">·</span>
+                        <span className="text-2xs font-semibold">
+                          {durum === 'ONAYLANDI' ? `Dekont onaylandı (${tr(d.onay_tarihi)}) — yerleştirmeye açık`
+                            : durum === 'YUKLENDI' ? 'Dekont yüklendi, müdür onayı bekleniyor'
+                            : durum === 'REDDEDILDI' ? `Dekont reddedildi: ${d.red_gerekcesi}`
+                            : `Dekont yüklenmedi · son ödeme ${seciliRez.pesinat_son_odeme_tarihi ? tr(seciliRez.pesinat_son_odeme_tarihi) : '—'}`}
+                        </span>
+                        <span className="ml-auto flex items-center gap-2">
+                          {d && <Buton tur="sessiz" onClick={() => setDekontGoster(seciliRez)}>Dekontu Gör</Buton>}
+                          {durum !== 'ONAYLANDI' && izin('rezervasyon.dekont') &&
+                            <Buton tur="basari" onClick={() => setDekontAcik(seciliRez)}>
+                              {d ? 'Yeni Dekont Yükle' : '↑ Dekont Yükle'}
+                            </Buton>}
+                          {durum === 'YUKLENDI' && izin('rezervasyon.onay') &&
+                            <Buton tur="birincil" onClick={() => git('ONAY')}>Onay Sayfasına Git</Buton>}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-100">
                   <Buton tur="birincil" disabled={!izin('rezervasyon.yerlestir')} onClick={() => otomatikYerlestir([seciliRez])}
                     title={izin('rezervasyon.yerlestir') ? '' : yetkiNotu(s.kullanici, 'rezervasyon.yerlestir')}>⚙ Otomatik Yerleştir</Buton>
@@ -2202,6 +2742,15 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
           </Kart>
         </div>
 
+        {dekontAcik && <DekontYukleme s={s} rz={s.rezervasyonlar.find(r => r.id === dekontAcik.id) || dekontAcik}
+                         gonder={gonder} kapat={() => setDekontAcik(null)} />}
+        {dekontGoster && (
+          <Modal baslik={`Kapora Dekontu — ${dekontGoster.rez_no} · ${dekontGoster.ad_soyad}`} genislik="max-w-3xl"
+            kapat={() => setDekontGoster(null)}>
+            <DekontGoruntule rz={s.rezervasyonlar.find(r => r.id === dekontGoster.id) || dekontGoster}
+              tesisAd={(TESISLER.find(t => t.kod === s.tesis) || {}).ad} />
+          </Modal>
+        )}
         {manuel && <ManuelYerlestirme s={s} rz={s.rezervasyonlar.find(r => r.id === manuel.id) || manuel}
                      gonder={gonder} kapat={() => setManuel(null)} />}
         {oneri && <OneriPenceresi oneri={oneri} onaylanan={onaylanan} setOnaylanan={setOnaylanan}
@@ -2582,7 +3131,7 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
           sag={<span className="text-2xs text-slate-500">
             {izin('pesinat.kural') ? 'değişiklik bu tesisin açık kayıtlarında peşinatı yeniden hesaplar'
                                    : '🔒 salt okunur — kural değiştirme yetkiniz yok'}</span>}>
-          <div className="grid grid-cols-5 gap-4 text-xs">
+          <div className="grid gap-4 text-xs" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(13rem, 1fr))' }}>
             <label className={`col-span-1 flex items-start gap-2 p-2 bg-emerald-50 border border-emerald-200 rounded
               ${izin('pesinat.kural') ? 'cursor-pointer' : 'opacity-60'}`}>
               <input type="checkbox" className="mt-0.5" checked={kural.kurumMisafirindePesinatAranmasin}
@@ -2593,8 +3142,36 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
                 <span className="block text-2xs text-slate-600">Kurum kayıtlarında peşinat 0 kabul edilir, talep doğrudan Onaylı olur.</span>
               </span>
             </label>
-            {[['sahisOran', 'Şahsi misafir peşinat oranı (%)', 0, 100, 5],
-              ['sahisAsgariTutar', 'Asgari peşinat tutarı (₺)', 0, 10000, 250],
+            <div className="col-span-1 space-y-2">
+              <div>
+                <div className="text-slate-600 mb-1">Kapora hesabı</div>
+                <select value={kural.kaporaTuru} disabled={!izin('pesinat.kural')}
+                  onChange={e => kuralGuncelle('kaporaTuru', e.target.value)} className={GIRDI}>
+                  <option value="GECE">İlk N gecenin yatak bedeli</option>
+                  <option value="ORAN">Toplam bedelin yüzdesi</option>
+                </select>
+              </div>
+              {kural.kaporaTuru === 'GECE' && (
+                <div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-slate-600">Kapora olarak alınan gece</span>
+                    <span className="num font-bold text-ttk-800">{kural.kaporaGece}</span>
+                  </div>
+                  <input type="range" min="1" max="7" step="1" value={kural.kaporaGece} disabled={!izin('pesinat.kural')}
+                    onChange={e => kuralGuncelle('kaporaGece', Number(e.target.value))}
+                    className={`w-full accent-ttk-600 ${izin('pesinat.kural') ? '' : 'opacity-50'}`} />
+                </div>
+              )}
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" checked={kural.mudurOnayiZorunlu} disabled={!izin('pesinat.kural')}
+                  onChange={e => kuralGuncelle('mudurOnayiZorunlu', e.target.checked)} />
+                <span title="Kapalıyken dekont onayı beklenmeden yerleştirme yapılabilir">
+                  Müdür onayı olmadan yerleştirme yapılamasın
+                </span>
+              </label>
+            </div>
+            {[['sahisOran', 'Şahsi misafir kapora oranı (%)', 0, 100, 5],
+              ['sahisAsgariTutar', 'Asgari kapora tutarı (₺)', 0, 10000, 250],
               ['odemeSuresiGun', 'Ödeme süresi (talepten itibaren gün)', 1, 30, 1],
               ['gelistenOnceEnGecGun', 'Gelişten en geç kaç gün önce', 0, 15, 1]].map(([alan, etiket, min, max, adim]) => (
               <div key={alan}>
@@ -3015,7 +3592,7 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
       kayit_yapan: s.kullanici.kod, misafirler,
       statu: 'TALEP', uzatma: false, onceki_cikis_tarihi: null,
       pesinat_tutari: 0, pesinat_son_odeme_tarihi: null, tahsil_edilen: 0,
-      makbuz_no: null, hareketler: [],
+      makbuz_no: null, hareketler: [], dekont: null,
     };
     pesinatHesapla(rz, s.odalar, s.kurallar[f.tesis]);
     if (f.pesinatTahsil && rz.pesinat_tutari > 0) {
@@ -3149,7 +3726,7 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
           </fieldset>
 
           <fieldset className="border border-slate-200 rounded p-2.5 space-y-2">
-            <legend className="text-2xs font-bold text-ttk-800 uppercase px-1">Ödeme ve Peşinat</legend>
+            <legend className="text-2xs font-bold text-ttk-800 uppercase px-1">Ödeme ve Kapora</legend>
             <div className="grid grid-cols-2 gap-2">
               <Alan etiket="Kurum-Şahıs" zorunlu>
                 <select value={f.kurum_sahis} onChange={e => setF(x => ({ ...x, kurum_sahis: e.target.value,
@@ -3173,7 +3750,7 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
             <div className="bg-slate-50 border border-slate-200 rounded p-2 text-xs space-y-1">
               <div className="flex justify-between"><span className="text-slate-500">Yatak bedeli ({gunSayisi} gün × {f.misafirler.length} kişi)</span>
                 <b className="num">{para(pesinatOnizleme.yatak_bedeli)}</b></div>
-              <div className="flex justify-between"><span className="text-slate-500">Peşinat tutarı</span>
+              <div className="flex justify-between"><span className="text-slate-500">Kapora tutarı</span>
                 <b className="num text-ttk-800">{pesinatOnizleme.pesinat_tutari ? para(pesinatOnizleme.pesinat_tutari)
                   : <span className="text-emerald-700">aranmıyor</span>}</b></div>
               {pesinatOnizleme.pesinat_son_odeme_tarihi &&
@@ -3181,8 +3758,11 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
                   <b className="num">{tr(pesinatOnizleme.pesinat_son_odeme_tarihi)}</b></div>}
               <div className="text-2xs text-slate-500 border-t border-slate-200 pt-1">
                 {f.kurum_sahis === 'KURUM' && s.kurallar[f.tesis].kurumMisafirindePesinatAranmasin
-                  ? 'Bu tesiste kurum misafirinden peşinat aranmıyor (kural: Peşinat ve Statü ekranı).'
-                  : `Şahsi misafirde peşinat = yatak bedelinin %${s.kurallar[f.tesis].sahisOran}'i, asgari ${para(s.kurallar[f.tesis].sahisAsgariTutar)}.`}
+                  ? 'Bu tesiste kurum misafirinden kapora aranmıyor (kural: Peşinat ve Tahsilat ekranı).'
+                  : s.kurallar[f.tesis].kaporaTuru === 'GECE'
+                    ? `Şahsi misafirde kapora = ilk ${s.kurallar[f.tesis].kaporaGece} gecenin yatak bedeli, asgari ${para(s.kurallar[f.tesis].sahisAsgariTutar)}. ` +
+                      'Kayıt açıldıktan sonra dekont yüklenip müdür onayı alınmadan yatak tahsis edilemez.'
+                    : `Şahsi misafirde kapora = yatak bedelinin %${s.kurallar[f.tesis].sahisOran}'i, asgari ${para(s.kurallar[f.tesis].sahisAsgariTutar)}.`}
               </div>
               {pesinatOnizleme.pesinat_tutari > 0 && (
                 <div className="flex items-center gap-2 pt-1">
@@ -3190,7 +3770,7 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
                     title={yetkiVar(s.kullanici, 'pesinat.tahsilat') ? '' : yetkiNotu(s.kullanici, 'pesinat.tahsilat')}>
                     <input type="checkbox" checked={f.pesinatTahsil} disabled={!yetkiVar(s.kullanici, 'pesinat.tahsilat')}
                       onChange={e => yaz('pesinatTahsil', e.target.checked)} />
-                    <span>Peşinat tahsil edildi</span>
+                    <span>Kapora tahsil edildi</span>
                   </label>
                   <input value={f.makbuz_no} onChange={e => yaz('makbuz_no', e.target.value)}
                     disabled={!f.pesinatTahsil || !yetkiVar(s.kullanici, 'pesinat.tahsilat')}
@@ -3622,11 +4202,13 @@ const SAYFALAR = [
     ikon:'liste',  grup:'Görüntüleme', aciklama:'Oda ve yatak numarasına göre misafir tablosu' },
   { kod:'TALEPLER',  ad:'Rezervasyon Talepleri',kisa:'Talepler',  form:'MSFH-W05', izin:'rezervasyon.goruntule',
     ikon:'talep',  grup:'İşlemler',    aciklama:'Talep listesi, otomatik ve manuel yerleştirme' },
-  { kod:'TAHSILAT',  ad:'Peşinat ve Tahsilat',  kisa:'Tahsilat',  form:'MSFH-W06', izin:'pesinat.goruntule',
+  { kod:'ONAY',      ad:'Dekont ve Onay',       kisa:'Dekont/Onay', form:'MSFH-W06', izin:'rezervasyon.goruntule',
+    ikon:'onay',   grup:'İşlemler',    aciklama:'Kapora dekontlarını inceleyip rezervasyonu onaylama (misafirhane müdürü)' },
+  { kod:'TAHSILAT',  ad:'Peşinat ve Tahsilat',  kisa:'Tahsilat',  form:'MSFH-W07', izin:'pesinat.goruntule',
     ikon:'para',   grup:'İşlemler',    aciklama:'Tahsilat bekleyenler, süresi dolanlar ve peşinat kuralı' },
-  { kod:'STATU',     ad:'Statü Takibi',         kisa:'Statü',     form:'MSFH-W07', izin:'pesinat.goruntule',
+  { kod:'STATU',     ad:'Statü Takibi',         kisa:'Statü',     form:'MSFH-W08', izin:'pesinat.goruntule',
     ikon:'statu',  grup:'İşlemler',    aciklama:'Talepten çıkışa kadar kayıtların statü akışı' },
-  { kod:'KULLANICILAR', ad:'Kullanıcı ve Yetki',kisa:'Kullanıcılar', form:'MSFH-W08', izin:'sistem.kullanici',
+  { kod:'KULLANICILAR', ad:'Kullanıcı ve Yetki',kisa:'Kullanıcılar', form:'MSFH-W09', izin:'sistem.kullanici',
     ikon:'kullanici', grup:'Yönetim',  aciklama:'Kullanıcılar, roller ve yetki matrisi' },
 ];
 const sayfaBul = kod => SAYFALAR.find(x => x.kod === kod);
@@ -3795,6 +4377,7 @@ function Uygulama() {
     const tahsilat = kapsam.filter(r => !['IPTAL', 'CIKIS'].includes(r.statu) &&
       (r.pesinat_tutari || 0) > (r.tahsil_edilen || 0)).length;
     const konaklayan = kapsam.filter(r => r.statu === 'KONAKLIYOR').length;
+    const onayBekleyen = kapsam.filter(r => r.dekont && r.dekont.durum === 'YUKLENDI').length;
     const oran = tesisYatak.length ? Math.round(doluSayi / tesisYatak.length * 100) : 0;
     return {
       OZET:          { deger: '%' + oran, etiket: 'bugünkü doluluk' },
@@ -3803,6 +4386,7 @@ function Uygulama() {
       YATAK_LISTESI: { deger: doluSayi, etiket: 'kayıtlı misafir' },
       TALEPLER:      { deger: bekleyen, etiket: '21 gün içinde yerleştirme bekleyen', renk: bekleyen ? 'text-amber-600' : 'text-slate-400' },
       TAHSILAT:      { deger: tahsilat, etiket: 'tahsilat bekleyen kayıt', renk: tahsilat ? 'text-rose-600' : 'text-slate-400' },
+      ONAY:          { deger: onayBekleyen, etiket: 'dekont müdür onayında', renk: onayBekleyen ? 'text-sky-600' : 'text-slate-400' },
       STATU:         { deger: konaklayan, etiket: 'hâlen konaklayan' },
       KULLANICILAR:  { deger: s.kullanicilar.length, etiket: 'tanımlı kullanıcı' },
     };
@@ -3888,6 +4472,7 @@ function Uygulama() {
               : <>
                   {['OZET', 'TAKVIM', 'YATAK_LISTESI'].includes(s.ekran) && <DolulukPanosu {...ortak} bolum={s.ekran} />}
                   {['TALEPLER', 'ODALAR'].includes(s.ekran) && <RezervasyonEkrani {...ortak} bolum={s.ekran} />}
+                  {s.ekran === 'ONAY' && <OnayEkrani {...ortak} />}
                   {['TAHSILAT', 'STATU'].includes(s.ekran) && <PesinatEkrani {...ortak} bolum={s.ekran} />}
                   {s.ekran === 'KULLANICILAR' && <KullaniciEkrani s={s} gonder={gonder} />}
                 </>}

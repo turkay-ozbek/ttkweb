@@ -50,9 +50,20 @@ Uygulama ana menüden açılan sekiz odaklı sayfadan oluşur; her sayfa tek bir
 | MSFH-W03 | **Oda ve Yatak Durumu** | Oda kartlarında hangi yatakta kimin kaldığı (isimli/kompakt); talep seçiliyken yerleştirme modu (sürükle-bırak veya tıklayarak) |
 | MSFH-W04 | **Yatak Listesi** | Oda ve yatak numarasına göre misafir tablosu; dolu/boş süzgeci ve arama |
 | MSFH-W05 | **Rezervasyon Talepleri** | Talep listesi, seçili talep özeti, otomatik / manuel / haritada yerleştirme |
-| MSFH-W06 | **Peşinat ve Tahsilat** | Dönem filtresi, iş listeleri, ₺ Tahsilat Al, süresi dolanlar, peşinat kuralı |
-| MSFH-W07 | **Statü Takibi** | Talep → Peşinat Bekleniyor → Onaylı → Konaklıyor → Çıkış → İptal akışı ve kayıt listesi |
-| MSFH-W08 | **Kullanıcı ve Yetki** (Admin) | Kullanıcılar, roller, misafirhane yetkisi ve yetki matrisi |
+| MSFH-W06 | **Dekont ve Onay** | Kapora dekontlarının PDF önizlemesiyle incelenip onaylanması (misafirhane müdürü) |
+| MSFH-W07 | **Peşinat ve Tahsilat** | Dönem filtresi, iş listeleri, ₺ Tahsilat Al, süresi dolanlar, peşinat kuralı |
+| MSFH-W08 | **Statü Takibi** | Talep → Peşinat Bekleniyor → Onaylı → Konaklıyor → Çıkış → İptal akışı ve kayıt listesi |
+| MSFH-W09 | **Kullanıcı ve Yetki** (Admin) | Kullanıcılar, roller, misafirhane yetkisi ve yetki matrisi |
+
+## Kapora ve dekont onayı
+
+Şahsi misafirin rezervasyon listesine girebilmesi için konaklama bedelinin bir bölümünü
+(varsayılan: **ilk gecenin yatak bedeli**, asgari 750 ₺) kapora olarak yatırması gerekir.
+Dekont sisteme yüklenir, **misafirhane müdürü** dekontu inceleyip onaylar; onaylanmadan
+yatak tahsis edilemez. Kurum misafiri ve protokol kayıtları kaporadan muaftır.
+
+Ayrıntı: [`docs/kapora-onay-akisi.md`](docs/kapora-onay-akisi.md) ·
+Test senaryoları: [`docs/test-senaryolari-kapora.md`](docs/test-senaryolari-kapora.md)
 
 ## Her çözünürlükte okunur arayüz
 

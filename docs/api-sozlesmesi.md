@@ -118,12 +118,20 @@ Web Prototip (React)  ──► REST API ─┘
 | `MAKBUZ_NO` | VARCHAR2(20) | MSFH0030 "Makbuz No" |
 | `TAHSILAT_TARIHI` | DATE | |
 
+### 2.6.1 MSFH_DEKONT — Kapora dekontu (yeni)
+
+Kapora dekontunun dosyası ve onay durumu burada tutulur; ayrıntılı alan listesi,
+statü geçişleri ve API uçları için bkz. [`kapora-onay-akisi.md`](kapora-onay-akisi.md) § 7.
+
 ### 2.7 MSFH_PESINAT_KURAL — Peşinat kuralı (yeni, tesis bazında)
 
 | Alan | Tip | Açıklama |
 |---|---|---|
 | `MISAFIRHANE_KODU` | VARCHAR2(10) PK | |
 | `KURUM_PESINAT_ARANMASIN` | CHAR(1) | E/H |
+| `KAPORA_TURU` | VARCHAR2(10) | GECE / ORAN |
+| `KAPORA_GECE` | NUMBER | GECE seçiliyken kaç gecelik bedel |
+| `MUDUR_ONAYI_ZORUNLU` | CHAR(1) | E/H — onaysız yerleştirme engellenir |
 | `SAHIS_ORAN` | NUMBER(5,2) | Yatak bedelinin yüzdesi |
 | `SAHIS_ASGARI_TUTAR` | NUMBER(10,2) | |
 | `ODEME_SURESI_GUN` | NUMBER | Talep tarihinden itibaren |
