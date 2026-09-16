@@ -8,6 +8,20 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.3.1] — 16.09.2026
+### Düzeltildi
+- **«Bekleyen talepler» süzgeci kayıt kaybediyordu.** Müdür kapora dekontunu onayladıktan
+  sonra kayıt «Onaylı» statüsüne geçiyor, ancak henüz yatağı olmadığı hâlde talep
+  listesinin varsayılan süzgecinden düşüyordu. Süzgeç artık dekont onayındaki ve
+  onaylanmış olup yatağı olmayan kayıtları da tutuyor; adı «Bekleyen işler
+  (yerleştirilmemiş)» olarak netleştirildi. (Uçtan uca testte bulundu.)
+
+### Eklendi
+- [`docs/test-plani.md`](docs/test-plani.md): 11 bölüm, ~90 adımlık elle test senaryoları —
+  giriş ve yetkilendirme, yeni kayıt, kapora/dekont/onay, yerleştirmenin üç yolu, tahsilat,
+  statü akışı ve zaman, görüntüleme sayfaları, kullanıcı yönetimi, rehber, arayüz ve
+  sınır durumları, kabul ölçütü.
+
 ## [2.3.0] — 16.09.2026
 ### Değişti — arayüz sadeleştirmesi (ikinci tur)
 - **Rehber yalnız üst bandın sağında.** Sayfa şeridinden ve ana menüden «Kullanım Rehberi»

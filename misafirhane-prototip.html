@@ -102,7 +102,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment 
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.3.0';
+const SURUM = '2.3.1';
 const SURUM_TARIHI = '2026-09-16';
 
 const GUN_MS = 86400000;
@@ -2482,7 +2482,13 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
   const talepler = useMemo(() => s.rezervasyonlar.filter(rz => {
     if (rz.tesis !== s.tesis) return false;
     if (rz.gelis_tarihi < filtreBas || rz.gelis_tarihi > filtreSon) return false;
-    if (statuFiltre === 'BEKLEYEN' && !['TALEP', 'PESINAT_BEKLENIYOR'].includes(rz.statu)) return false;
+    /* «Bekleyen talepler» = işi bitmemiş kayıtlar: dekont onayındakiler ve
+       onaylanmış olup henüz yatağı olmayanlar da listede kalır. */
+    if (statuFiltre === 'BEKLEYEN') {
+      const acikIs = ['TALEP', 'PESINAT_BEKLENIYOR', 'ONAY_BEKLIYOR'].includes(rz.statu) ||
+                     (rz.statu === 'ONAYLI' && rz.misafirler.some(g => !g.yatakId));
+      if (!acikIs) return false;
+    }
     if (statuFiltre === 'YERLESMEMIS' && rz.misafirler.every(g => g.yatakId)) return false;
     if (!['HEPSI', 'BEKLEYEN', 'YERLESMEMIS'].includes(statuFiltre) && rz.statu !== statuFiltre) return false;
     if (statuFiltre === 'HEPSI' && rz.statu === 'IPTAL') return false;
@@ -2629,7 +2635,7 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
           </div>
           <select value={statuFiltre} onChange={e => setStatuFiltre(e.target.value)}
             className="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
-            <option value="BEKLEYEN">Bekleyen talepler</option>
+            <option value="BEKLEYEN">Bekleyen işler (yerleştirilmemiş)</option>
             <option value="YERLESMEMIS">Yatağı olmayan kayıtlar</option>
             <option value="HEPSI">Tüm kayıtlar (iptal hariç)</option>
             {STATULER.map(x => <option key={x.kod} value={x.kod}>{x.ad}</option>)}

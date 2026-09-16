@@ -83,6 +83,16 @@ ana menüyü kalabalıklaştırmamak için oralarda görünmez.
 
 Yazılı karşılığı: [`docs/kullanim-rehberi.md`](docs/kullanim-rehberi.md)
 
+## Test
+
+Prototipi baştan sona sınamak için adım adım senaryolar:
+[`docs/test-plani.md`](docs/test-plani.md) — giriş ve yetkilendirme, yeni kayıt,
+kapora/dekont/müdür onayı, yerleştirmenin üç yolu, tahsilat, statü akışı, görüntüleme
+sayfaları, kullanıcı yönetimi, arayüz/okunurluk ve sınır durumları; sonunda kabul ölçütü.
+
+> Veriler bellektedir: **sayfayı yenilemek (F5) her şeyi sıfırlar.** Rol değiştirirken
+> sağ üstteki çıkış simgesini kullanın.
+
 ## Kapora ve dekont onayı
 
 Şahsi misafirin rezervasyon listesine girebilmesi için konaklama bedelinin bir bölümünü
