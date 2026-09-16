@@ -8,6 +8,13 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.0.3] — 16.09.2026
+### Değişti
+- Logonun etrafındaki beyazlık kaldırıldı: SVG içindeki tam alanı kaplayan beyaz dikdörtgen
+  zemin (`path1`) silindi, logo kabındaki beyaz daire (`rounded-full bg-white`) çıkarıldı.
+  Logo artık saydam zeminle doğrudan lacivert üst bantta ve giriş ekranında duruyor.
+  Logonun kendi iç beyaz dolgusu korundu.
+
 ## [2.0.2] — 16.09.2026
 ### Eklendi
 - **Kurum logosu yerleştirildi**: TTK logosu giriş ekranında (64 px) ve üst barda (36 px)
