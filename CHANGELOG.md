@@ -8,6 +8,17 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.0.4] — 16.09.2026
+### Değişti
+- Logonun kırmızı çevre yazısı («Türkiye Taşkömürü Kurumu Genel Müdürlüğü» ve «1848»)
+  artık beyaz zemin üzerinde okunuyor: dış elips ölçüsünde (rx 67,4 · ry 87,3) beyaz bir
+  zemin, tüm çizimlerin altına eklendi. Elips dışı saydam kaldığı için lacivert bantta
+  beyaz kare/halka görünmüyor.
+- Logolar büyütüldü ve oranı korunacak biçimde yerleştirildi (yükseklik sabit, genişlik
+  otomatik): giriş ekranı 96 px, üst bar 44 px. Ana menü başlığının yanına da 56 px logo
+  eklendi.
+- Ana menü kartlarında ekran kodunun (MSFH-W0x) satır kırması giderildi.
+
 ## [2.0.3] — 16.09.2026
 ### Değişti
 - Logonun etrafındaki beyazlık kaldırıldı: SVG içindeki tam alanı kaplayan beyaz dikdörtgen
