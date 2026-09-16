@@ -8,6 +8,14 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.0.1] — 16.09.2026
+### Eklendi
+- Kurum logosu tek bir yerden besleniyor: `LOGO_VERI` sabiti doldurulduğunda giriş ekranı
+  ve üst bardaki logo otomatik değişir. Boş bırakılırsa beyaz daire içinde «TTK» yazılı
+  yedek gösterim kullanılır (mevcut davranış).
+- `TtkLogo` bileşeni: logo hem giriş ekranında (48 px) hem üst barda (32 px) aynı kaynaktan
+  gelir, oranı korunarak (`object-contain`) yerleşir.
+
 ## [2.0.0] — 15.09.2026
 ### Değişti — sayfa mimarisi
 - Arayüz üç yoğun ekrandan **sekiz odaklı sayfaya** bölündü; her sayfa tek bir işi yapar:

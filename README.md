@@ -100,6 +100,25 @@ peşinattan kalan, yatak no, yatak fiyatı, harcırah miktarı, görev sevk no,
 kurum-şahıs, ödeyecek, makbuz no, sicil no, geliş/çıkış tarihi, kaldığı gün* ve
 ödeme türü kodları (KRT, NKT, MSD, BOS).
 
+## Kurum logosunu yerleştirme
+
+Logo tek bir yerden gelir. `misafirhane-prototip.html` içinde `const LOGO_VERI = '';`
+satırını doldurmanız yeterlidir; giriş ekranı ve üst bar otomatik güncellenir.
+
+```js
+// 1) Tek dosya yapısını korumak için (önerilen): base64 veri adresi
+const LOGO_VERI = 'data:image/png;base64,iVBORw0KGgoAAAANS...';
+
+// 2) Ya da logoyu HTML'in yanına koyup dosya adını yazın
+const LOGO_VERI = 'ttk-logo.png';
+```
+
+Windows'ta base64'e çevirmek için PowerShell:
+`[Convert]::ToBase64String([IO.File]::ReadAllBytes("ttk-logo.png"))`
+
+SVG kullanacaksanız dosya içeriğini doğrudan `TtkLogo` bileşenine inline olarak da
+koyabilirsiniz. Önerilen biçim: kare (1:1), en az 128×128 piksel, saydam zemin.
+
 ## Sürüm geçmişi
 
 Her değişiklik sürüm numarası ile [`CHANGELOG.md`](CHANGELOG.md) dosyasına işlenir;

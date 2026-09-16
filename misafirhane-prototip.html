@@ -102,7 +102,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment 
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.0.0';
+const SURUM = '2.0.1';
 const SURUM_TARIHI = '2026-09-15';
 
 const GUN_MS = 86400000;
@@ -1296,6 +1296,27 @@ const GorunumSecici = ({ deger, ayarla, secenekler }) => (
   </div>
 );
 
+
+
+/* ── Kurum logosu ──────────────────────────────────────────────────────────
+   LOGO_VERI doldurulduğunda tüm ekranlarda o görsel kullanılır; boş bırakılırsa
+   yazı tabanlı yedek (beyaz daire içinde «TTK») gösterilir.
+   Doldurmak için iki yol var:
+     1) Tek dosya yapısını korumak için base64 veri adresi:
+        const LOGO_VERI = 'data:image/png;base64,iVBORw0KGgo...';
+        (Windows'ta PowerShell: [Convert]::ToBase64String([IO.File]::ReadAllBytes("ttk-logo.png")) )
+     2) Logoyu HTML dosyasının yanına koyup dosya adını yazmak:
+        const LOGO_VERI = 'ttk-logo.png';
+   Önerilen: kare (1:1) PNG veya SVG, en az 128×128 piksel, saydam zemin. */
+const LOGO_VERI = '';
+
+const TtkLogo = ({ boyut = 'w-8 h-8', sinif = '' }) => (
+  LOGO_VERI
+    ? <img src={LOGO_VERI} alt="Türkiye Taşkömürü Kurumu" title="Türkiye Taşkömürü Kurumu"
+        className={`${boyut} object-contain rounded-full bg-white p-0.5 shrink-0 ${sinif}`} />
+    : <div title="Türkiye Taşkömürü Kurumu"
+        className={`${boyut} rounded-full bg-white text-ttk-800 flex items-center justify-center font-black text-2xs shrink-0 ${sinif}`}>TTK</div>
+);
 
 /* ── Basit çizgi ikon seti (kurumsal görünüm için emoji yerine) ───────────── */
 const IKON_YOLLARI = {
@@ -3315,7 +3336,7 @@ function GirisEkrani({ kullanicilar, gonder }) {
         {/* Sol tanıtım */}
         <div className="col-span-5 bg-ttk-800 text-white p-6 flex flex-col">
           <div className="flex items-center gap-2.5">
-            <div className="w-11 h-11 rounded-full bg-white text-ttk-800 flex items-center justify-center font-black">TTK</div>
+            <TtkLogo boyut="w-12 h-12" />
             <div className="leading-tight">
               <div className="font-bold text-sm">TÜRKİYE TAŞKÖMÜRÜ KURUMU</div>
               <div className="text-2xs text-ttk-200">Bilgi İşlem Şube Müdürlüğü</div>
@@ -3795,7 +3816,7 @@ function Uygulama() {
       <header className="bg-ttk-800 text-white">
         <div className="sayfa-govde px-3 py-2 flex items-center gap-3 flex-wrap">
           <button onClick={() => git('ANA_MENU')} className="flex items-center gap-2 hover:opacity-90" title="Ana menüye dön">
-            <div className="w-8 h-8 rounded-full bg-white text-ttk-800 flex items-center justify-center font-black text-2xs">TTK</div>
+            <TtkLogo boyut="w-8 h-8" />
             <div className="leading-tight text-left">
               <div className="font-bold text-sm tracking-wide">TTKNET</div>
               <div className="text-2xs text-ttk-200">Misafirhane Bilgi Sistemi</div>
