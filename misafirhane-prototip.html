@@ -102,11 +102,16 @@ const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment 
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.1.0';
-const SURUM_TARIHI = '2026-09-15';
+const SURUM = '2.2.0';
+const SURUM_TARIHI = '2026-09-16';
 
 const GUN_MS = 86400000;
-const SISTEM_TARIHI_BASLANGIC = '2026-09-14';   // MSFH ekranlarındaki 14/09/2026
+/* Uygulama, çalıştırıldığı günün tarihini sistem tarihi olarak kullanır;
+   demo verisi de bu tarihe göre (3 ay geçmiş + 3 ay gelecek) üretilir. */
+const SISTEM_TARIHI_BASLANGIC = (() => {
+  const d = new Date();
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString().slice(0, 10);
+})();
 
 const D    = s => new Date(s + 'T00:00:00Z');
 const iso  = dt => dt.toISOString().slice(0, 10);
@@ -1517,6 +1522,11 @@ const IKON_YOLLARI = {
   onay:      'M6 3h8l4 4v14H6zM14 3v4h4M9 13l2.5 2.5L16 11',
   geri:      'M15 5l-7 7 7 7',
   yeni:      'M12 5v14M5 12h14',
+  buyut:     'M10.5 3a7.5 7.5 0 100 15 7.5 7.5 0 000-15zM21 21l-5.2-5.2M10.5 7.5v6M7.5 10.5h6',
+  kucult:    'M10.5 3a7.5 7.5 0 100 15 7.5 7.5 0 000-15zM21 21l-5.2-5.2M7.5 10.5h6',
+  guc:       'M12 3.5v8M7.6 6.3a7 7 0 108.8 0',
+  rehber:    'M4 5.5A1.5 1.5 0 015.5 4H10a2 2 0 012 2v13a2 2 0 00-2-2H5.5A1.5 1.5 0 014 15.5zM20 5.5A1.5 1.5 0 0018.5 4H14a2 2 0 00-2 2v13a2 2 0 012-2h4.5a1.5 1.5 0 001.5-1.5z',
+  kisi:      'M12 21.5a9.5 9.5 0 100-19 9.5 9.5 0 000 19zM12 11.8a2.75 2.75 0 100-5.5 2.75 2.75 0 000 5.5zM6.6 18.7a5.9 5.9 0 0110.8 0',
 };
 const Ikon = ({ ad, sinif = 'w-4 h-4' }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
@@ -1690,6 +1700,18 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolu
       {/* ── BUGÜNKÜ DURUM ─────────────────────────────────────────────── */}
       {bolum === 'OZET' && (
         <div className="space-y-3">
+          {izin('sistem.tarih') && (
+            <div className="flex items-center gap-2 flex-wrap bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs">
+              <span className="px-1.5 py-0.5 rounded bg-amber-400 text-amber-950 font-bold text-2xs">DEMO ARACI</span>
+              <span className="text-slate-600">Sistem tarihi</span>
+              <span className="num font-bold text-ttk-800">{tr(s.bugun)}</span>
+              <span className="text-slate-500">— ilerleterek peşinat süresi dolan taleplerin otomatik iptalini görebilirsiniz.</span>
+              <span className="ml-auto flex items-center gap-1">
+                <Buton tur="sessiz" onClick={() => gonder({ tip: 'GUN_ILERLET', adet: 1 })}>+1 gün</Buton>
+                <Buton tur="sessiz" onClick={() => gonder({ tip: 'GUN_ILERLET', adet: 7 })}>+7 gün</Buton>
+              </span>
+            </div>
+          )}
           <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(10rem, 1fr))' }}>
             <Kpi etiket="Dolu Yatak" deger={bugunIst.dolu} alt={`${bugunIst.kapasite} yatak kapasite`} />
             <Kpi etiket="Boş Yatak" deger={bugunIst.bos} alt={`%${100 - bugunIst.oran} boşluk`} renk="text-emerald-700" />
@@ -4210,6 +4232,8 @@ const SAYFALAR = [
     ikon:'statu',  grup:'İşlemler',    aciklama:'Talepten çıkışa kadar kayıtların statü akışı' },
   { kod:'KULLANICILAR', ad:'Kullanıcı ve Yetki',kisa:'Kullanıcılar', form:'MSFH-W09', izin:'sistem.kullanici',
     ikon:'kullanici', grup:'Yönetim',  aciklama:'Kullanıcılar, roller ve yetki matrisi' },
+  { kod:'REHBER',    ad:'Kullanım Rehberi',     kisa:'Rehber',    form:'MSFH-W10', izin:'pano.goruntule',
+    ikon:'rehber', grup:'Yardım',      aciklama:'Adım adım: kayıt açma, kapora, yerleştirme, tahsilat, giriş-çıkış ve iptal işlemleri' },
 ];
 const sayfaBul = kod => SAYFALAR.find(x => x.kod === kod);
 
@@ -4261,37 +4285,315 @@ function BilgiPenceresi({ kapat }) {
               <h4 className="font-bold text-ttk-800 uppercase text-2xs mb-1">Statü akışı</h4>
               <p>Talep → Peşinat Bekleniyor → Onaylı → Konaklıyor → Çıkış (her aşamadan İptal mümkün).
                  Kurum misafirinde peşinat aranmaması tesis bazında açılıp kapatılabilir. Peşinat son ödeme tarihi geçen talep
-                 otomatik olarak İptal statüsüne düşer ve yatağı serbest bırakır — üst bantdaki «+1 / +7 gün» düğmeleriyle
-                 bu kuralı canlı olarak görebilirsiniz.</p>
+                 otomatik olarak İptal statüsüne düşer ve yatağı serbest bırakır — «Bugünkü Durum» sayfasındaki
+                 «+1 / +7 gün» düğmeleriyle bu kuralı canlı olarak görebilirsiniz.</p>
             </div>
           </div>
         </Modal>
   );
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+  11b) KULLANIM REHBERİ  (MSFH-W10)
+   Her iş için «hangi sayfa → hangi düğme → ne olur» sırasıyla anlatım.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Rehber içeriği: adımlar, gereken yetki ve ilgili sayfa kodları. */
+const REHBER_KONULARI = [
+  {
+    kod: 'BASLANGIC', baslik: 'Başlarken — ekranı tanıyın', ikon: 'menu',
+    ozet: 'Üst bant, sayfa şeridi, ana menü ve yazı boyutu ayarı nerede?',
+    roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
+    adimlar: [
+      { b: 'Oturum açın', m: 'Giriş ekranında YBS kullanıcı adınızı ve şifrenizi yazıp «BAĞLAN» düğmesine basın. Rolünüz (Müdür, Resepsiyon, Muhasebe, Admin) hangi sayfaları ve düğmeleri görebileceğinizi belirler.' },
+      { b: 'Misafirhaneyi seçin', m: 'Üst bandın solundaki açılır listeden çalışacağınız misafirhaneyi seçin. Listede yalnız yetkili olduğunuz misafirhaneler görünür; yaptığınız her işlem seçili misafirhane için geçerlidir.' },
+      { b: 'Sayfalar arasında gezinin', m: 'Üst banttaki logoya veya «Ana Menü» düğmesine basınca bütün sayfaların kart görünümü açılır. Kartların üzerindeki sayılar (boş yatak, bekleyen talep, onaydaki dekont…) canlıdır. Sürekli kullandığınız sayfalara logonun altındaki sayfa şeridinden tek tıkla geçebilirsiniz.' },
+      { b: 'Yazılar küçük geliyorsa', m: 'Ekranın sağ alt köşesindeki dikey büyüteç kutusunu kullanın: «+» büyütür, «−» küçültür, ortadaki yüzde düğmesi %100\'e döndürür. Ayar tarayıcınızda saklanır, bir daha girdiğinizde aynı boyutla açılır.' },
+      { b: 'Kim olduğunuzu görün', m: 'Üst bandın sağındaki yuvarlak kişi simgesine tıklayın; adınız, unvanınız, kullanıcı adınız, rolünüz ve yetkili olduğunuz misafirhaneler açılır. En sağdaki güç simgesi oturumu kapatır.' },
+    ],
+    notlar: ['Bir düğme soluk (pasif) görünüyorsa üzerine gelin: o işlem için hangi yetkinin gerektiği ipucu olarak yazar.'],
+  },
+  {
+    kod: 'YENI_KAYIT', baslik: 'Yeni rezervasyon kaydı nasıl açılır?', ikon: 'yeni', sayfa: 'TALEPLER',
+    ozet: 'Telefonla veya kapıdan gelen misafirin kaydını açma, kişi ekleme ve kapora tutarını görme.',
+    yetki: 'rezervasyon.olustur', roller: ['ADMIN', 'YONETICI', 'RESEPSIYON'],
+    adimlar: [
+      { b: 'Formu açın', m: '«Rezervasyon Talepleri» sayfasının sağ üstündeki yeşil «+ Yeni Kayıt» düğmesine basın. Aynı düğme «Peşinat ve Tahsilat» sayfasında ve ana menünün sağ üstünde de («+ Yeni Rezervasyon / Kayıt») bulunur.', sayfa: 'TALEPLER' },
+      { b: 'Rezervasyon bilgilerini girin', m: 'Sol sütunda misafirhane, rezervasyonu yaptıranın adı soyadı, telefonu ve geliş nedeni (harcırahlı görev, kurum misafiri, personel, protokol…) alanlarını doldurun. Görev sevkli gelişlerde «Görev Sevk No» alanını da yazın.' },
+      { b: 'Tarih ve kişi sayısını girin', m: 'Geliş ve çıkış tarihini seçin; «Kaldığı Gün» otomatik hesaplanır. Kişi sayısını değiştirdiğinizde sağdaki misafir satırları kendiliğinden artar veya azalır.' },
+      { b: 'Misafirleri yazın', m: 'Sağ sütunda her misafir için ad soyad, 11 haneli Tc kimlik no ve cinsiyet girin. Aile ya da birlikte kalacak grup ise «Birlikte kalsın» kutusunu işaretleyin; yerleştirme bu grubu bölmemeye çalışır.' },
+      { b: 'Ödeme ve kaporayı kontrol edin', m: '«Kurum-Şahıs» seçimini yapın. Şahıs kayıtlarında kapora tutarı, misafirhanenin kapora kuralına göre otomatik hesaplanır ve formun altında gösterilir. Kurum misafirlerinde kapora aranmayabilir (tesis kuralına bağlıdır).' },
+      { b: 'İsterseniz yatağı hemen bulun', m: 'Formun altındaki «⚙ Uygun Yatağı Otomatik Bul» düğmesi, girilen tarih aralığında boş yatakları bulup misafirlere atar. Yatak atamadan da kaydı açabilirsiniz; kayıt «Talep» statüsünde bekler.' },
+      { b: 'Kaydedin', m: 'Yeşil «Kaydet» düğmesine basın. Eksik alan varsa düğme pasif kalır ve altta kaç alanın hatalı olduğu yazar. Kayıt açıldığında statünün ne olacağı («Talep», «Kapora Bekleniyor», «Onaylı», «Konaklıyor») kaydetmeden önce altta gösterilir.' },
+    ],
+    notlar: [
+      'Kapora tahsilatını kayıt açarken aldıysanız «Kapora tahsil edildi» kutusunu işaretleyip makbuz numarasını yazın; tutar tamamlanmışsa kayıt doğrudan «Onaylı» olur.',
+      'Kayıt açıldıktan sonra rezervasyon numarası (MSFH-…) otomatik verilir; arama kutularında bu numarayla da arayabilirsiniz.',
+    ],
+  },
+  {
+    kod: 'KAPORA', baslik: 'Kapora / peşinat alındığında ne yapılır?', ikon: 'para', sayfa: 'TAHSILAT',
+    ozet: 'Tahsilatı sisteme işleme, makbuz numarası, dekont yükleme ve süresi dolan talepler.',
+    yetki: 'pesinat.tahsilat', roller: ['ADMIN', 'YONETICI', 'MUHASEBE'],
+    adimlar: [
+      { b: 'Tahsilat bekleyenleri listeleyin', m: '«Peşinat ve Tahsilat» sayfasını açın, üstteki iş listelerinden «Tahsilat bekleyen» kutusuna tıklayın. Üstteki dönem filtresiyle (Bugün / Bu hafta / Bu ay / Gelecek 30 gün / Tüm dönem) hangi tarih aralığına bakacağınızı seçebilirsiniz.', sayfa: 'TAHSILAT' },
+      { b: 'Kaydı bulun', m: 'Arama kutusuna ad soyad, Tc kimlik no, rezervasyon no veya makbuz no yazın. Kırmızı satırlar ödeme süresi dolmuş, sarı satırlar tahsilat bekleyen kayıtlardır.' },
+      { b: 'Tahsilatı girin', m: 'Satırın başındaki yeşil «₺ Tahsilat Al» düğmesine basın. Açılan pencerede tutarı yazın — «Tamamı» ve «Yarısı» kısayolları vardır — ve makbuz numarasını girin. Tahsilat tarihi ile işlemi yapan kullanıcı otomatik kaydedilir.' },
+      { b: 'Sonucu doğrulayın', m: 'Kapora tutarının tamamı tahsil edildiğinde statü kendiliğinden «Onaylı» olur. Kısmi tahsilatta kayıt «Kapora Bekleniyor» statüsünde kalır ve kalan tutar tabloda görünür.' },
+      { b: 'Banka dekontu geldiyse', m: 'Misafir parayı bankadan yatırdıysa tahsilatın yanı sıra dekontunun da sisteme yüklenmesi gerekir. Dekont yükleme «Rezervasyon Talepleri» sayfasındaki kapora şeridinden veya «Dekont ve Onay» sayfasından yapılır — bir sonraki başlıkta anlatılmıştır.' },
+      { b: 'Süresi dolanları temizleyin', m: '«Süresi dolan» iş listesinde son ödeme tarihi geçmiş talepler toplanır. «İptal» düğmesiyle tek tek, üstteki toplu iptal seçeneğiyle hepsini birden iptal edebilirsiniz; iptal edilen kaydın yatağı anında serbest kalır.' },
+    ],
+    notlar: [
+      'Kapora kuralı (kaç gecelik, yüzde kaç, asgari tutar, kaç gün ödeme süresi) misafirhane bazlıdır ve «Peşinat ve Tahsilat» sayfasının alt bölümünden müdür tarafından değiştirilir.',
+      'Bu prototipte tahsilat yalnız statü ve kayıt seviyesinde modellenir; gerçek ödeme veya muhasebe entegrasyonu yoktur.',
+    ],
+  },
+  {
+    kod: 'DEKONT', baslik: 'Dekont yükleme ve müdür onayı', ikon: 'onay', sayfa: 'ONAY',
+    ozet: 'Kapora dekontunu sisteme ekleme, müdürün inceleyip onaylaması veya reddetmesi.',
+    yetki: 'rezervasyon.dekont', roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
+    adimlar: [
+      { b: 'Kaydı açın', m: '«Rezervasyon Talepleri» sayfasında ilgili kaydı seçin. Sağdaki panelde kapora şeridi görünür: tutar, kaç gecelik olduğu ve dekontun durumu («Dekont yüklenmedi», «Dekont yüklendi, müdür onayı bekleniyor», «Dekont onaylandı», «Dekont reddedildi»).', sayfa: 'TALEPLER' },
+      { b: 'Dekontu yükleyin', m: 'Şeritteki «↑ Dekont Yükle» düğmesine basın. Açılan pencerede dekont no, yatırılan tutar, yatırma tarihi ve banka bilgisini yazıp PDF veya görsel dosyayı seçin. Denemek için «Örnek dekont üret (demo)» düğmesiyle örnek bir PDF oluşturabilirsiniz.' },
+      { b: 'Onaya gönderin', m: '«Dekontu Kaydet ve Onaya Gönder» düğmesine basın. Kayıt «Müdür Onayı Bekliyor» statüsüne geçer ve «Dekont ve Onay» sayfasındaki onay kuyruğuna düşer.' },
+      { b: 'Müdür dekontu inceler', m: '«Dekont ve Onay» sayfasında bekleyen kaydı seçin; dekont belgesi sağ tarafta görüntülenir. Tutar ve tarih doğruysa «✓ Onayla ve Rezervasyon Listesine Al» düğmesine basın — kayıt «Onaylı» olur ve artık yatak tahsis edilebilir.', sayfa: 'ONAY' },
+      { b: 'Gerekirse reddedin', m: 'Dekont okunmuyor, tutar eksik veya farklı hesaba yatmışsa «Reddet» düğmesine basıp gerekçesini yazın. Kayıt kapora beklemeye döner; gerekçe kayıt geçmişinde ve talep ekranında görünür.' },
+    ],
+    notlar: [
+      'Kapora tutarı olan bir kayda, dekontu onaylanmadan yatak tahsis edilemez. Otomatik yerleştirme, manuel yerleştirme ve harita üzerinden yerleştirmenin üçünde de bu kural uygulanır ve gerekçesi ekranda yazar.',
+      'Dekont onayı yalnız Misafirhane Müdürü (ve Admin) yetkisindedir. Resepsiyon ve Muhasebe dekont yükleyebilir, onaylayamaz.',
+    ],
+  },
+  {
+    kod: 'YERLESTIRME', baslik: 'Oda ve yatak yerleştirmesi nasıl yapılır?', ikon: 'oda', sayfa: 'TALEPLER',
+    ozet: 'Otomatik öneri, manuel seçim ve oda haritasında sürükleyerek yerleştirme.',
+    yetki: 'rezervasyon.yerlestir', roller: ['ADMIN', 'YONETICI', 'RESEPSIYON'],
+    adimlar: [
+      { b: 'Yerleştirilecek talebi seçin', m: '«Rezervasyon Talepleri» sayfasında soldaki listeden kaydı seçin. Sağ panelin altında üç yerleştirme düğmesi bulunur.', sayfa: 'TALEPLER' },
+      { b: 'Yol 1 — Otomatik', m: '«⚙ Otomatik Yerleştir» düğmesi; kapasite, aile birlikteliği, cinsiyet ayrımı, protokol önceliği, ardışık gecelerde aynı oda ve temizlik boşluğu kurallarını gözeterek bir öneri üretir. Öneri doğrudan uygulanmaz: onay penceresinde hangi misafirin hangi oda/yatağa verildiğini görür, isterseniz onaylarsınız. Yerleşemeyen talep için okunabilir gerekçe yazılır.' },
+      { b: 'Yol 2 — Manuel', m: '«✋ Manuel Yerleştir» düğmesiyle açılan pencerede her misafir için oda ve yatak numarasını kendiniz seçersiniz. Listede yalnız seçili tarih aralığının tüm gecelerinde boş olan yataklar çıkar. «Yerleşimi Kaydet» ile tahsis işlenir.' },
+      { b: 'Yol 3 — Harita üzerinde', m: '«🗺 Haritada Yerleştir» düğmesi sizi «Oda ve Yatak Durumu» sayfasına yerleştirme modunda götürür. Misafiri boş bir yatağın üzerine sürükleyip bırakın ya da yatağa tıklayın. Uygun olmayan yatağa bıraktığınızda nedeni ekranda yazar. Bitirince «Yerleştirmeyi Bitir» düğmesine basın.', sayfa: 'ODALAR' },
+      { b: 'Yerleşimi doğrulayın', m: '«Oda ve Yatak Durumu» sayfasında her yatağın üzerinde misafirin adı yazar. «Yatak Listesi» sayfasında ise oda ve yatak numarasına göre «hangi yatakta kim yatıyor» tablosu bulunur; tarih değiştirerek ileri günlere de bakabilirsiniz.', sayfa: 'YATAK_LISTESI' },
+      { b: 'Yanlış tahsisi geri alın', m: 'Talep kaydı seçiliyken «Tahsisi Kaldır» düğmesi o kaydın bütün yatak tahsislerini iptal eder ve yatakları serbest bırakır.' },
+    ],
+    notlar: [
+      'Çıkıştan sonra her yatak için bir gün temizlik boşluğu bloklanır; o gün yatak yeni misafire verilemez.',
+      'Karma oda oluşmaması için bir odada farklı cinsiyetten misafir bulunamaz (aile / birlikte kalma talepleri hariç).',
+    ],
+  },
+  {
+    kod: 'DOLULUK', baslik: 'Doluluğu görme ve boş yatak arama', ikon: 'takvim', sayfa: 'TAKVIM',
+    ozet: 'Bugünkü durum, 30 günlük takvim ve belirli bir tarih aralığında kaç yatak kaldığı.',
+    roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
+    adimlar: [
+      { b: 'Günlük özet', m: '«Bugünkü Durum» sayfası dolu/boş yatak, bugün giriş ve çıkış yapacak misafir sayısı, temizlikteki yatak ve doluluk oranını gösterir; altta dört misafirhanenin karşılaştırması vardır. Tesis adına tıklayarak o misafirhaneye geçebilirsiniz.', sayfa: 'OZET' },
+      { b: '30 günlük takvim', m: '«Doluluk Takvimi» sayfasında her gün için doluluk çubuğu, giriş (▲) ve çıkış (▼) sayıları görünür. «◀ Önceki 30 gün» ve «Sonraki 30 gün ▶» düğmeleriyle dönemi kaydırabilirsiniz.', sayfa: 'TAKVIM' },
+      { b: 'Aralıkta kalan yatağı hesaplayın', m: 'Takvim sayfasındaki tarih aralığı kutularına geliş ve çıkış tarihini yazın; seçtiğiniz aralığın bütün gecelerinde kesintisiz boş kalan yatak sayısı hesaplanır. Telefonda misafire «yeriniz var mı?» sorusunu buradan yanıtlayabilirsiniz.', sayfa: 'TAKVIM' },
+      { b: 'Oda oda bakın', m: '«Oda ve Yatak Durumu» sayfasında oda kartları üzerinde yatak yatak durum (dolu / boş / temizlikte) ve kalan misafirin adı yazar. Tarihi değiştirerek ileri bir günün durumunu da görebilirsiniz.', sayfa: 'ODALAR' },
+    ],
+  },
+  {
+    kod: 'STATU', baslik: 'Giriş, çıkış, uzatma ve iptal', ikon: 'statu', sayfa: 'STATU',
+    ozet: 'Kaydın statüsünü ilerletme: Talep → Kapora → Onay → Konaklıyor → Çıkış.',
+    roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
+    adimlar: [
+      { b: 'Statü akışını görün', m: '«Statü Takibi» sayfasında kayıtlar statülerine göre gruplanır: Talep, Kapora Bekleniyor, Müdür Onayı Bekliyor, Onaylı, Konaklıyor, Çıkış, İptal. Üstteki rozetlere tıklayarak listeyi süzebilirsiniz.', sayfa: 'STATU' },
+      { b: 'Misafir giriş yaptığında', m: 'Onaylı ve yatağı tahsis edilmiş kayıt, geliş tarihi geldiğinde «Konaklıyor» statüsüne geçer. Erken gelen misafiri kaydın satırındaki statü düğmesiyle elle de «Konaklıyor» yapabilirsiniz.' },
+      { b: 'Çıkış işlemi', m: 'Çıkış tarihi gelen kaydı «Çıkış» statüsüne alın; yatak serbest kalır ve bir günlük temizlik boşluğu başlar. «Peşinat ve Tahsilat» sayfasındaki «Bugün çıkış» iş listesi o günkü çıkışları toplu olarak gösterir.', sayfa: 'TAHSILAT' },
+      { b: 'Kalış uzatma', m: 'Misafir uzatmak isterse kaydın çıkış tarihini ileri alın. Aynı yatak boşsa misafir yerinde kalır; değilse sistem uyarır ve yeniden yerleştirme gerekir.' },
+      { b: 'İptal', m: 'Herhangi bir aşamadaki kayıt «İptal» edilebilir; tahsis edilmiş yataklar anında boşa düşer. Ödeme süresi dolan kapora talepleri sistem tarafından kendiliğinden iptal edilir.' },
+    ],
+    notlar: ['«Bugünkü Durum» sayfasındaki «+1 gün» / «+7 gün» demo düğmeleriyle sistem tarihini ilerletip süresi dolan taleplerin otomatik iptalini canlı olarak görebilirsiniz.'],
+  },
+  {
+    kod: 'ROLLER', baslik: 'Hangi rol neyi yapabilir?', ikon: 'kullanici',
+    ozet: 'Müdür, resepsiyon, muhasebe ve admin yetkilerinin kısa karşılaştırması.',
+    roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
+    matris: [
+      ['Kayıt açma (yeni rezervasyon)',        'Müdür, Resepsiyon, Admin'],
+      ['Yatak tahsisi / yerleştirme',          'Müdür, Resepsiyon, Admin'],
+      ['Kapora dekontu yükleme',               'Müdür, Resepsiyon, Muhasebe, Admin'],
+      ['Dekontu onaylama veya reddetme',       'Müdür, Admin'],
+      ['Peşinat / kapora tahsilatı girme',     'Müdür, Muhasebe, Admin'],
+      ['Kapora kuralını değiştirme',           'Müdür, Admin'],
+      ['Kayıt iptali',                         'Müdür, Admin'],
+      ['Süresi dolan talepleri toplu iptal',   'Müdür, Muhasebe, Admin'],
+      ['Kullanıcı ve yetki yönetimi',          'Admin'],
+    ],
+    notlar: [
+      'Her kullanıcı yalnız yetkili olduğu misafirhaneleri görür ve orada işlem yapar.',
+      'Yetkiniz olmayan sayfalar menüde görünmez; yetkiniz olmayan düğmeler pasif kalır ve üzerine gelince gerekçesi yazar.',
+    ],
+  },
+  {
+    kod: 'SSS', baslik: 'Sık sorulan sorular', ikon: 'talep',
+    ozet: 'Günlük işte en çok takılınan noktalar.',
+    roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
+    sss: [
+      ['Yerleştir düğmesi neden pasif / neden yatak veremiyorum?',
+       'Ya rolünüzün yerleştirme yetkisi yoktur (düğmenin üzerine gelince yazar), ya da kaydın kaporası tahsil edilip dekontu müdürce onaylanmamıştır. İkinci durumda önce «Dekont ve Onay» sayfasından onay alınmalıdır.'],
+      ['Boş görünen yatağa neden misafir koyamıyorum?',
+       'Yatak, geliş–çıkış arasındaki her gecede boş olmalıdır; aradaki bir gece doluysa yatak listelenmez. Ayrıca çıkıştan sonraki bir gün temizlik için bloklanır ve odada farklı cinsiyetten misafir varsa karma oda kuralı engeller.'],
+      ['Kapora tutarını kim belirliyor?',
+       'Misafirhanenin kapora kuralı belirler: kaç gecelik ya da yüzde kaç, asgari tutar ne, kaç gün içinde ödenmeli. Kuralı «Peşinat ve Tahsilat» sayfasının altındaki bölümden müdür değiştirir. Kurum misafirlerinde kapora aranmaması seçeneği tesis bazında açılıp kapatılabilir.'],
+      ['Rezervasyon listemde göremediğim kayıt nerede?',
+       'Üstteki dönem filtresi ve statü süzgecini kontrol edin; varsayılan olarak yalnız seçili tarih aralığıyla kesişen kayıtlar listelenir. «Tüm dönem» ve «Tüm statüler» seçerek hepsini görebilirsiniz.'],
+      ['Yanlış tahsilat girdim, ne yapmalıyım?',
+       'Kaydı «Detay» düğmesiyle açın; bütün hareketler (tahsilat, dekont, onay, statü değişikliği) tarih ve kullanıcı bilgisiyle listelenir. Bu prototipte düzeltme, doğru tutarla yeni bir tahsilat hareketi girilerek gösterilir.'],
+      ['Ekrana sığmıyor / yazılar küçük.',
+       'Sağ alt köşedeki dikey büyüteç kutusundan yazı boyutunu %85 ile %135 arasında ayarlayın. Bütün sayfalar bu ayarla birlikte yeniden düzenlenir; tarayıcı yakınlaştırmasına gerek yoktur.'],
+    ],
+  },
+];
+
+function RehberEkrani({ s, git, izin }) {
+  const [acik, setAcik] = useState('BASLANGIC');
+  const sayfa = sayfaBul('REHBER');
+  const rol = s.kullanici.rol;
+  const konu = REHBER_KONULARI.find(x => x.kod === acik) || REHBER_KONULARI[0];
+  const benimIsim = (x) => x.roller.includes(rol);
+
+  return (
+    <div>
+      <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad} aciklama={sayfa.aciklama}
+        sag={<Buton tur="sessiz" onClick={() => window.print()}>Rehberi yazdır</Buton>} />
+
+      <div className="bg-ttk-50 border border-ttk-200 rounded-lg px-3 py-2.5 mb-3 flex items-center gap-3 flex-wrap text-xs">
+        <span className="w-9 h-9 rounded-full bg-white text-ttk-700 flex items-center justify-center shrink-0 border border-ttk-200">
+          <Ikon ad="kisi" sinif="w-5 h-5" />
+        </span>
+        <div className="min-w-0">
+          <div className="font-bold text-ttk-900">{s.kullanici.ad} · <Rozet sinif={ROLLER[rol].renk}>{rolAd(rol)}</Rozet></div>
+          <div className="text-slate-600">{ROLLER[rol].aciklama}</div>
+        </div>
+        <span className="ml-auto text-2xs text-slate-500 max-w-md">
+          Aşağıdaki başlıklarda rolünüze kapalı adımlar <b>gri rozetle</b> işaretlenmiştir. Her adımın sonundaki
+          bağlantı sizi doğrudan ilgili sayfaya götürür.
+        </span>
+      </div>
+
+      <div className="flex items-start gap-3 flex-wrap">
+        {/* Sol: konu listesi */}
+        <div className="min-w-0 grow basis-72 max-w-md space-y-1.5">
+          {REHBER_KONULARI.map((x, i) => (
+            <button key={x.kod} onClick={() => setAcik(x.kod)}
+              className={`w-full text-left rounded-lg border px-3 py-2 transition-colors flex items-start gap-2.5
+                ${acik === x.kod ? 'bg-ttk-600 border-ttk-700 text-white shadow-sm'
+                                 : 'bg-white border-slate-200 hover:border-ttk-400 text-slate-700'}`}>
+              <span className={`num w-6 h-6 rounded shrink-0 flex items-center justify-center text-2xs font-bold
+                ${acik === x.kod ? 'bg-white/20 text-white' : 'bg-ttk-50 text-ttk-700'}`}>{i + 1}</span>
+              <span className="min-w-0">
+                <span className={`block text-sm font-bold ${acik === x.kod ? 'text-white' : 'text-ttk-900'}`}>{x.baslik}</span>
+                <span className={`block text-2xs leading-snug ${acik === x.kod ? 'text-ttk-100' : 'text-slate-500'}`}>{x.ozet}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Sağ: seçili konunun adımları */}
+        <div className="min-w-0 grow-[3] basis-[30rem] space-y-3">
+          <Kart baslik={konu.baslik}
+            sag={<span className="flex items-center gap-2">
+              {!benimIsim(konu) && <Rozet sinif="bg-slate-100 text-slate-600 border-slate-300">rolünüze kapalı</Rozet>}
+              {konu.sayfa && izin((sayfaBul(konu.sayfa) || {}).izin) &&
+                <Buton tur="birincil" onClick={() => git(konu.sayfa)}>
+                  <span className="flex items-center gap-1">
+                    <Ikon ad={(sayfaBul(konu.sayfa) || {}).ikon} sinif="w-3.5 h-3.5" />
+                    {(sayfaBul(konu.sayfa) || {}).ad} sayfasına git
+                  </span>
+                </Buton>}
+            </span>}>
+            {konu.adimlar && (
+              <ol className="space-y-2.5">
+                {konu.adimlar.map((a, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span className="num w-7 h-7 rounded-full bg-ttk-600 text-white flex items-center justify-center
+                                     text-xs font-bold shrink-0 mt-0.5">{i + 1}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-bold text-ttk-900">{a.b}</div>
+                      <p className="text-xs text-slate-700 leading-relaxed mt-0.5">{a.m}</p>
+                      {a.sayfa && sayfaBul(a.sayfa) && izin(sayfaBul(a.sayfa).izin) && (
+                        <button onClick={() => git(a.sayfa)}
+                          className="mt-1 inline-flex items-center gap-1 text-2xs font-semibold text-ttk-700 hover:underline">
+                          <Ikon ad={sayfaBul(a.sayfa).ikon} sinif="w-3 h-3" />
+                          {sayfaBul(a.sayfa).ad} ({sayfaBul(a.sayfa).form})
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+
+            {konu.matris && (
+              <table className="w-full text-xs">
+                <thead><tr className="text-2xs uppercase text-slate-500 text-left">
+                  <th className="py-1">İşlem</th><th className="py-1">Yetkili roller</th>
+                </tr></thead>
+                <tbody>
+                  {konu.matris.map(([is_, roller], i) => (
+                    <tr key={i} className="border-t border-slate-100">
+                      <td className="py-1.5 pr-3 text-slate-700">{is_}</td>
+                      <td className="py-1.5 font-semibold text-ttk-800">{roller}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {konu.sss && (
+              <dl className="space-y-2.5">
+                {konu.sss.map(([soru, cevap], i) => (
+                  <div key={i} className="border-l-2 border-ttk-300 pl-2.5">
+                    <dt className="text-sm font-bold text-ttk-900">{soru}</dt>
+                    <dd className="text-xs text-slate-700 leading-relaxed mt-0.5">{cevap}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </Kart>
+
+          {konu.notlar && konu.notlar.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+              <h3 className="text-2xs font-bold text-amber-900 uppercase tracking-wide mb-1">Dikkat edilecekler</h3>
+              <ul className="text-xs text-amber-900 space-y-1 list-disc ml-4 leading-relaxed">
+                {konu.notlar.map((n, i) => <li key={i}>{n}</li>)}
+              </ul>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-2 text-xs">
+            <Buton tur="sessiz" disabled={REHBER_KONULARI[0].kod === konu.kod}
+              onClick={() => setAcik(REHBER_KONULARI[REHBER_KONULARI.findIndex(x => x.kod === konu.kod) - 1].kod)}>
+              ◀ Önceki başlık
+            </Buton>
+            <span className="num text-2xs text-slate-500">
+              {REHBER_KONULARI.findIndex(x => x.kod === konu.kod) + 1} / {REHBER_KONULARI.length}
+            </span>
+            <Buton tur="sessiz" disabled={REHBER_KONULARI[REHBER_KONULARI.length - 1].kod === konu.kod}
+              onClick={() => setAcik(REHBER_KONULARI[REHBER_KONULARI.findIndex(x => x.kod === konu.kod) + 1].kod)}>
+              Sonraki başlık ▶
+            </Buton>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Ana menü: her sayfa ayrı bir karttan açılır ──────────────────────────── */
 function AnaMenu({ s, sayfalar, sayilar, git, acYeniKayit, izin }) {
   const gruplar = [...new Set(sayfalar.map(x => x.grup))];
-  const tesisAd = (TESISLER.find(t => t.kod === s.tesis) || {}).ad;
   return (
     <div className="space-y-5">
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <TtkLogo boyut="h-14 w-auto" />
-          <div>
-          <h1 className="text-xl font-bold text-ttk-900">Misafirhane Bilgi Sistemi</h1>
-          <p className="text-sm text-slate-500">
-            {tesisAd} · {tr(s.bugun)} · {s.kullanici.ad} ({ROLLER[s.kullanici.rol].ad})
-          </p>
-          </div>
-        </div>
-        {izin('rezervasyon.olustur') && (
+      {izin('rezervasyon.olustur') && (
+        <div className="flex justify-end">
           <button onClick={() => acYeniKayit({ tesis: s.tesis })}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm">
             <Ikon ad="yeni" sinif="w-4 h-4" /> Yeni Rezervasyon / Kayıt
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {gruplar.map(grup => (
         <section key={grup}>
@@ -4330,17 +4632,80 @@ function AnaMenu({ s, sayfalar, sayilar, git, acYeniKayit, izin }) {
   );
 }
 
-/* ── Arayüz ölçeği (her kullanıcı kendi ekranına göre ayarlar) ─────────────── */
+/* ── Arayüz ölçeği — ekranın sağ altında, dikey ve yarı saydam ─────────────── */
 const OlcekKontrol = ({ olcek, gonder }) => (
-  <div className="flex items-center gap-0.5 bg-ttk-700/70 rounded px-1 py-0.5" title="Yazı boyutunu ekranınıza göre ayarlayın">
-    <button onClick={() => gonder({ tip: 'OLCEK', olcek: olcek - 0.05 })} disabled={olcek <= 0.85}
-      className="px-1.5 rounded hover:bg-ttk-600 disabled:opacity-40 font-bold" aria-label="Yazıyı küçült">A−</button>
-    <button onClick={() => gonder({ tip: 'OLCEK', olcek: 1 })}
-      className="num px-1 text-2xs hover:bg-ttk-600 rounded" aria-label="Varsayılan boyut">%{Math.round(olcek * 100)}</button>
+  <div className="fixed right-3 bottom-12 z-40 flex flex-col items-center gap-0.5 rounded-full
+                  bg-ttk-800/55 hover:bg-ttk-800/85 backdrop-blur-sm text-white shadow-lg
+                  px-1 py-1.5 transition-colors print:hidden"
+    title="Yazı boyutunu ekranınıza göre ayarlayın">
     <button onClick={() => gonder({ tip: 'OLCEK', olcek: olcek + 0.05 })} disabled={olcek >= 1.35}
-      className="px-1.5 rounded hover:bg-ttk-600 disabled:opacity-40 font-bold" aria-label="Yazıyı büyüt">A+</button>
+      className="p-1.5 rounded-full hover:bg-white/20 disabled:opacity-35" aria-label="Yazıyı büyüt" title="Yazıyı büyüt">
+      <Ikon ad="buyut" sinif="w-5 h-5" />
+    </button>
+    <button onClick={() => gonder({ tip: 'OLCEK', olcek: 1 })}
+      className="num text-[0.62rem] leading-none px-1 py-0.5 rounded hover:bg-white/20"
+      aria-label="Varsayılan boyuta dön" title="Varsayılan boyuta dön">%{Math.round(olcek * 100)}</button>
+    <button onClick={() => gonder({ tip: 'OLCEK', olcek: olcek - 0.05 })} disabled={olcek <= 0.85}
+      className="p-1.5 rounded-full hover:bg-white/20 disabled:opacity-35" aria-label="Yazıyı küçült" title="Yazıyı küçült">
+      <Ikon ad="kucult" sinif="w-5 h-5" />
+    </button>
   </div>
 );
+
+/* ── Kullanıcı sekmesi: yuvarlak kişi simgesi, tıklayınca bilgiler açılır ───── */
+function KullaniciMenusu({ k, tesisler }) {
+  const [acik, setAcik] = useState(false);
+  const kutu = useRef(null);
+  useEffect(() => {
+    if (!acik) return;
+    const kapat = (e) => { if (kutu.current && !kutu.current.contains(e.target)) setAcik(false); };
+    document.addEventListener('mousedown', kapat);
+    return () => document.removeEventListener('mousedown', kapat);
+  }, [acik]);
+  return (
+    <div className="relative" ref={kutu}>
+      <button onClick={() => setAcik(x => !x)} aria-expanded={acik}
+        title={`${k.ad} · ${rolAd(k.rol)}`} aria-label="Kullanıcı bilgileri"
+        className={`p-1.5 rounded-full transition-colors ${acik ? 'bg-ttk-600' : 'hover:bg-ttk-700'}`}>
+        <Ikon ad="kisi" sinif="w-5 h-5" />
+      </button>
+      {acik && (
+        <div className="absolute right-0 top-full mt-1 w-64 bg-white text-slate-800 rounded-lg shadow-2xl
+                        border border-slate-200 p-3 z-50 bel">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <span className="w-9 h-9 rounded-full bg-ttk-100 text-ttk-700 flex items-center justify-center shrink-0">
+              <Ikon ad="kisi" sinif="w-5 h-5" />
+            </span>
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-ttk-900 truncate">{k.ad}</div>
+              <div className="text-2xs text-slate-500 truncate">{k.unvan}</div>
+            </div>
+          </div>
+          <dl className="text-2xs mt-2 space-y-1.5">
+            <div className="flex justify-between gap-2">
+              <dt className="text-slate-500">Kullanıcı adı</dt><dd className="num font-bold text-ttk-800">{k.kod}</dd>
+            </div>
+            <div className="flex justify-between gap-2 items-center">
+              <dt className="text-slate-500">Rol</dt><dd><Rozet sinif={ROLLER[k.rol].renk}>{rolAd(k.rol)}</Rozet></dd>
+            </div>
+            <div>
+              <dt className="text-slate-500 mb-0.5">Yetkili misafirhaneler</dt>
+              <dd className="text-ttk-900">{tesisler.map(t => t.ad).join(', ')}</dd>
+            </div>
+            {k.sonGiris && (
+              <div className="flex justify-between gap-2">
+                <dt className="text-slate-500">Son giriş</dt><dd className="num">{tr(k.sonGiris)}</dd>
+              </div>
+            )}
+          </dl>
+          <div className="mt-2 pt-2 border-t border-slate-100 text-2xs text-slate-500">
+            {ROLLER[k.rol].aciklama}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
   12) KABUK VE UYGULAMA
@@ -4389,6 +4754,7 @@ function Uygulama() {
       ONAY:          { deger: onayBekleyen, etiket: 'dekont müdür onayında', renk: onayBekleyen ? 'text-sky-600' : 'text-slate-400' },
       STATU:         { deger: konaklayan, etiket: 'hâlen konaklayan' },
       KULLANICILAR:  { deger: s.kullanicilar.length, etiket: 'tanımlı kullanıcı' },
+      REHBER:        { deger: REHBER_KONULARI.length, etiket: 'anlatım başlığı', renk: 'text-slate-500' },
     };
   }, [s.rezervasyonlar, s.yataklar, s.tesis, s.bugun, dolu, s.kullanicilar.length]);
 
@@ -4415,31 +4781,19 @@ function Uygulama() {
             {tesisler.map(t => <option key={t.kod} value={t.kod} className="text-slate-900">{t.ad} — {t.sehir}</option>)}
           </select>
 
-          <div className="ml-auto flex items-center gap-2 flex-wrap justify-end text-xs">
-            {izin('rezervasyon.olustur') &&
-              <button onClick={() => setYeniForm({ tesis: s.tesis })}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-2xs whitespace-nowrap">
-                <Ikon ad="yeni" sinif="w-3.5 h-3.5" /> Yeni Kayıt
-              </button>}
+          <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end text-xs">
             <span className="px-2 py-1 rounded bg-amber-400 text-amber-950 font-bold text-2xs">DEMO</span>
-            <OlcekKontrol olcek={s.olcek} gonder={gonder} />
-            <div className="flex items-center gap-1 bg-ttk-700/70 rounded px-2 py-1">
-              <span className="text-ttk-200 text-2xs">Tarih</span>
-              <span className="num font-bold">{tr(s.bugun)}</span>
-              {izin('sistem.tarih') && <>
-                <button title="1 gün ilerlet" onClick={() => gonder({ tip: 'GUN_ILERLET', adet: 1 })} className="px-1 hover:bg-ttk-600 rounded font-bold">+1</button>
-                <button title="7 gün ilerlet" onClick={() => gonder({ tip: 'GUN_ILERLET', adet: 7 })} className="px-1 hover:bg-ttk-600 rounded font-bold">+7</button>
-              </>}
-            </div>
+            <button onClick={() => git('REHBER')} title="Kullanım rehberi — adım adım nasıl yapılır?"
+              className={`flex items-center gap-1 px-2 py-1 rounded text-2xs font-semibold transition-colors
+                ${s.ekran === 'REHBER' ? 'bg-ttk-600 text-white' : 'text-ttk-100 hover:bg-ttk-700'}`}>
+              <Ikon ad="rehber" sinif="w-4 h-4" /> Rehber
+            </button>
             <button onClick={() => setBilgiAcik(true)} className="px-2 py-1 rounded hover:bg-ttk-700 text-ttk-100" title="Prototip ve yetkiler hakkında">?</button>
-            <div className="flex items-center gap-2 bg-ttk-700/70 rounded pl-2 pr-1 py-1">
-              <div className="leading-tight text-right hidden sm:block">
-                <div className="num font-bold">{k.kod}</div>
-                <div className="text-2xs text-ttk-200">{ROLLER[k.rol].kisa}</div>
-              </div>
-              <button onClick={() => gonder({ tip: 'CIKIS' })} title="Oturumu kapat"
-                className="px-2 py-1 rounded hover:bg-rose-500/80 text-ttk-100 hover:text-white text-2xs font-semibold">Çıkış</button>
-            </div>
+            <KullaniciMenusu k={k} tesisler={tesisler} />
+            <button onClick={() => gonder({ tip: 'CIKIS' })} title="Oturumu kapat" aria-label="Oturumu kapat"
+              className="p-1.5 rounded-full text-ttk-100 hover:bg-rose-500/80 hover:text-white transition-colors">
+              <Ikon ad="guc" sinif="w-5 h-5" />
+            </button>
           </div>
         </div>
 
@@ -4475,6 +4829,7 @@ function Uygulama() {
                   {s.ekran === 'ONAY' && <OnayEkrani {...ortak} />}
                   {['TAHSILAT', 'STATU'].includes(s.ekran) && <PesinatEkrani {...ortak} bolum={s.ekran} />}
                   {s.ekran === 'KULLANICILAR' && <KullaniciEkrani s={s} gonder={gonder} />}
+                  {s.ekran === 'REHBER' && <RehberEkrani s={s} git={git} izin={izin} />}
                 </>}
         </div>
       </main>
@@ -4492,6 +4847,8 @@ function Uygulama() {
           <span className="num text-slate-500">v{SURUM}</span>
         </div>
       </footer>
+
+      <OlcekKontrol olcek={s.olcek} gonder={gonder} />
 
       {yeniForm && (
         <YeniRezervasyonFormu s={s} gonder={gonder} dolu={dolu} temizlik={temizlik}

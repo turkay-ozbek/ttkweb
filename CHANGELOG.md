@@ -8,6 +8,29 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.2.0] — 16.09.2026
+### Eklendi — kullanım rehberi
+- **Kullanım Rehberi sayfası (MSFH-W10)**: dokuz başlıkta adım adım anlatım — başlarken,
+  yeni rezervasyon kaydı açma, kapora/peşinat tahsilatı, dekont yükleme ve müdür onayı,
+  oda-yatak yerleştirme (otomatik / manuel / haritada), doluluk ve boş yatak arama,
+  giriş-çıkış-uzatma-iptal, rol yetkileri tablosu ve sık sorulan sorular.
+- Rehberdeki her adımın sonunda ilgili sayfayı açan bağlantı; rolünüze kapalı başlıklar
+  rozetle işaretlenir; «Rehberi yazdır» düğmesi.
+- Üst bantta **Rehber** kısayolu ve ana menüde «Yardım» grubu altında rehber kartı.
+- Belge karşılığı: [`docs/kullanim-rehberi.md`](docs/kullanim-rehberi.md).
+- Üst bandın sağına **kullanıcı sekmesi**: yuvarlak kişi simgesine tıklanınca ad, unvan,
+  kullanıcı adı, rol, yetkili misafirhaneler ve son giriş bilgisi açılır (dışarı tıklayınca kapanır).
+
+### Değişti — arayüz sadeleştirmesi
+- **Sistem tarihi artık gerçek günle başlıyor**; uygulama açıldığı günün tarihini kullanır.
+- Arayüz ölçeği kontrolü üst banttan alınıp **ekranın sağ alt köşesine**, dikey ve yarı saydam
+  bir kutu olarak taşındı; büyüteç (+) ve büyüteç (−) simgeleri kullanılıyor.
+- Üst banttan **+ Yeni Kayıt** düğmesi, tarih göstergesi ve **+1 / +7 gün** düğmeleri kaldırıldı.
+  Gün ilerletme, «Bugünkü Durum» sayfasındaki demo aracı şeridine taşındı.
+- **Çıkış** yazısı yerine kapatma (güç) simgesi kullanılıyor.
+- Ana menüden başlık bloğu (logo + «Misafirhane Bilgi Sistemi» + tesis/tarih/kullanıcı satırı)
+  kaldırıldı; sayfa doğrudan kart listesiyle açılıyor.
+
 ## [2.1.0] — 16.09.2026
 ### Eklendi — kapora ve dekont onay akışı
 - **Kapora zorunluluğu**: şahsi misafirin rezervasyon listesine girebilmesi için konaklama

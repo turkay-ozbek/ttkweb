@@ -41,7 +41,7 @@ ekranındadır; ayrıntısı [`docs/api-sozlesmesi.md`](docs/api-sozlesmesi.md) 
 
 ## Sayfalar
 
-Uygulama ana menüden açılan sekiz odaklı sayfadan oluşur; her sayfa tek bir işi yapar.
+Uygulama ana menüden açılan on odaklı sayfadan oluşur; her sayfa tek bir işi yapar.
 
 | Kod | Sayfa | İçerik |
 |---|---|---|
@@ -54,6 +54,22 @@ Uygulama ana menüden açılan sekiz odaklı sayfadan oluşur; her sayfa tek bir
 | MSFH-W07 | **Peşinat ve Tahsilat** | Dönem filtresi, iş listeleri, ₺ Tahsilat Al, süresi dolanlar, peşinat kuralı |
 | MSFH-W08 | **Statü Takibi** | Talep → Peşinat Bekleniyor → Onaylı → Konaklıyor → Çıkış → İptal akışı ve kayıt listesi |
 | MSFH-W09 | **Kullanıcı ve Yetki** (Admin) | Kullanıcılar, roller, misafirhane yetkisi ve yetki matrisi |
+| MSFH-W10 | **Kullanım Rehberi** | Adım adım anlatım: kayıt açma, kapora, dekont onayı, yerleştirme, tahsilat, giriş-çıkış, rol yetkileri ve SSS |
+
+## Kullanım rehberi
+
+Uygulamanın nasıl kullanılacağı, **her iş için hangi sayfada hangi düğmeye basılacağı**
+sırasıyla anlatılmıştır. Rehbere üst banttaki **Rehber** düğmesinden, ana menüdeki
+**Kullanım Rehberi** kartından veya sayfa şeridinden ulaşılır.
+
+- Dokuz başlık: başlarken · yeni kayıt · kapora tahsilatı · dekont ve müdür onayı ·
+  oda/yatak yerleştirme · doluluk ve boş yatak arama · giriş-çıkış-uzatma-iptal ·
+  rol yetkileri · sık sorulan sorular.
+- Her adımın sonundaki bağlantı doğrudan ilgili sayfayı açar; rolünüze kapalı başlıklar
+  rozetle işaretlenir.
+- «Rehberi yazdır» düğmesiyle çıktı alınabilir.
+
+Yazılı karşılığı: [`docs/kullanim-rehberi.md`](docs/kullanim-rehberi.md)
 
 ## Kapora ve dekont onayı
 
