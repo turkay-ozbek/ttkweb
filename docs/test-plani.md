@@ -1,8 +1,14 @@
 # Test Planı — TTK Misafirhane Bilgi Sistemi (Web Prototipi)
 
-Sürüm 2.3.1 · Bu belge, prototipi **elle baştan sona sınamak** için hazırlanmıştır.
+Sürüm 2.4.0 · Bu belge, prototipi **elle baştan sona sınamak** için hazırlanmıştır.
 Her senaryo `Hazırlık → Adımlar → Beklenen sonuç` düzenindedir. Sonuç beklenenden
 farklıysa satırın soluna ✗ koyup ekran görüntüsüyle birlikte bildirin.
+
+> **Bu senaryoların çoğu artık otomatik koşuyor.** Aşağıdaki başlıkların yanındaki
+> `[oto: NN]` işareti, o bölümü koşturan test dosyasını gösterir
+> ([`testler/`](../testler/), tamamı için `node testler/tumu.mjs`). İşaretsiz başlıklar
+> insan gözü isteyen ya da otomatikleştirilmesi anlamlı olmayan adımlardır; elle test
+> ederken öncelik onlardır.
 
 ---
 
@@ -40,7 +46,7 @@ yazarsanız kutu eski değerine döner — bu beklenen davranıştır.
 
 ---
 
-## 1. Giriş ve yetkilendirme
+## 1. Giriş ve yetkilendirme  `[oto: 01, 03, 06]`
 
 ### 1.1 Doğru giriş
 1. `MSF1001` / `1234` ile **BAĞLAN**.
@@ -86,7 +92,7 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
 
 ---
 
-## 2. Yeni rezervasyon kaydı
+## 2. Yeni rezervasyon kaydı  `[oto: 07]`
 
 ### 2.1 Zorunlu alan denetimi
 1. `MSF2001` ile girin → **Talepler** → **+ Yeni Kayıt**.
@@ -120,7 +126,7 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
 
 ---
 
-## 3. Kapora, dekont ve müdür onayı
+## 3. Kapora, dekont ve müdür onayı  `[oto: 03, 04, 05, 08]`
 
 ### 3.1 Kapora onaylanmadan yerleştirme engeli
 1. 2.2'de açtığınız **şahıs** kaydını Talepler'de seçin.
@@ -165,7 +171,7 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
 
 ---
 
-## 4. Yerleştirme
+## 4. Yerleştirme  `[oto: 03, 04, 05, 09]`
 
 ### 4.1 Otomatik (tek talep)
 1. Kaporası kapanmış ya da kapora aranmayan bir talebi seçin → **⚙ Otomatik Yerleştir**.
@@ -205,7 +211,7 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
 
 ---
 
-## 5. Tahsilat
+## 5. Tahsilat  `[oto: 04, 08]`
 
 ### 5.1 Tam tahsilat
 1. `MSF3001` ile girin → **Tahsilat** → **Tüm dönem** → kaydı arayın.
@@ -239,7 +245,7 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
 
 ---
 
-## 6. Statü akışı ve zaman
+## 6. Statü akışı ve zaman  `[oto: 08]`
 
 ### 6.1 Statü sayaçları
 1. **Statü** sayfasını açın.
@@ -261,7 +267,7 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
 
 ---
 
-## 7. Görüntüleme sayfaları
+## 7. Görüntüleme sayfaları  `[oto: 09]`
 
 ### 7.1 Bugünkü Durum
 - ✔ Dolu + Boş = kapasite.
@@ -286,7 +292,7 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
 
 ---
 
-## 8. Kullanıcı ve yetki yönetimi (yalnız Admin)
+## 8. Kullanıcı ve yetki yönetimi (yalnız Admin)  `[oto: 06]`
 
 1. `TTK7719` ile **Kullanıcılar**.
 2. **Yetki matrisini göster**.
@@ -302,7 +308,7 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
 
 ---
 
-## 9. Kullanım rehberi
+## 9. Kullanım rehberi  `[oto: 02, 10]`
 
 1. Üst bandın sağındaki **Rehber** düğmesi.
    - ✔ Rehber açılır. Sayfa şeridinde ve ana menüde rehber **görünmez** (tasarım gereği).
@@ -317,7 +323,7 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
 
 ---
 
-## 10. Arayüz, okunurluk ve dayanıklılık
+## 10. Arayüz, okunurluk ve dayanıklılık  `[oto: 01, 10]`
 
 ### 10.1 Çözünürlük
 Tarayıcı penceresini sırayla **1280 / 1366 / 1440 / 1600 / 1920** piksel genişliğe getirip
@@ -368,31 +374,37 @@ Aşağıdakilerin tamamı sağlanıyorsa sürüm kabul edilebilir:
 
 ---
 
-## Ek — otomatik koşulan testler
+## Ek — otomatik test takımı
 
-Aşağıdaki senaryolar [`testler/`](../testler/) altında Playwright ile otomatik koşar;
-elle test sırasında aynı sonuçları görmeniz beklenir. Koşturma yönergesi
-[`testler/README.md`](../testler/README.md) dosyasındadır.
+Bütün senaryolar [`testler/`](../testler/) altında Playwright ile koşar. Kurulum ve
+koşturma yönergesi [`testler/README.md`](../testler/README.md) dosyasındadır.
 
-| Dosya | Kapsam |
+```bash
+node testler/tumu.mjs          # tamamı, sonunda özet tablo
+node testler/tumu.mjs 05 09    # yalnız seçilen dosyalar
+```
+
+| Dosya | Plandaki karşılığı |
 |---|---|
-| `01-arayuz-ve-roller.mjs` | Dört çözünürlükte (1280/1440/1600/1920) dokuz sayfada taşma, başlıkta misafirhane adı, üst bant, form kodu olmaması, misafirhane değiştirme |
-| `02-rehber-rolleri.mjs` | Dört rolle rehber erişimi, başlıklar arası gezinme, «rolünüze kapalı» rozetleri |
-| `03-uctan-uca-kapora.mjs` | Kayıt açma → kapora engeli → dekont → müdür onayı → otomatik yerleştirme → yatak listesi → tahsilat → gün ilerletme |
-| `04-red-manuel-tahsilat.mjs` | Dekont reddi, manuel yerleştirme, tahsis kaldırma, iptal, kısmi tahsilat, kullanıcı ekleme, ölçek |
-| `05-surukle-birak-ve-dekont.mjs` | **Sürükle-bırak** (4.4) ve **dekont önizlemesi** (3.2) — aşağıda ayrıntılı |
+| `01-arayuz-ve-roller.mjs` | 1.5, 10.1, 10.3 — dört çözünürlükte dokuz sayfa, başlıkta misafirhane adı, üst bant, form kodu olmaması, misafirhane değiştirme |
+| `02-rehber-rolleri.mjs` | 9.1–9.3 — dört rolle rehber erişimi, başlıklar arası gezinme, «rolünüze kapalı» rozetleri |
+| `03-uctan-uca-kapora.mjs` | 1.2, 1.3, 1.5, 2.2, 3.1–3.4, 4.1, 5.x, 6.2 — uçtan uca ana akış |
+| `04-red-manuel-tahsilat.mjs` | 3.5, 4.3, 4.6, 5.2, 5.5, 7.2, 8.5, 10.2 |
+| `05-surukle-birak-ve-dekont.mjs` | 3.1, 3.2, 4.4 — sürükle-bırak ve dekont önizlemesi; kapora tutarlılık taraması |
+| `06-yetki-matrisi.mjs` | 1.4 tablosunun tamamı ve 8.1–8.6 |
+| `07-yeni-kayit-dogrulama.mjs` | 2.1–2.5 ve 10.5'in tarih/kayıt sınır durumları |
+| `08-tahsilat-statu-zaman.mjs` | 3.6, 5.1–5.6, 6.1–6.3 |
+| `09-goruntuleme-tutarlilik.mjs` | 7.1–7.4 ve 4.2, 4.5 |
+| `10-arayuz-ve-sinir-durumlari.mjs` | 1.6, 9.4, 10.1–10.5 |
 
-### Sürükle-bırak (4.4'ün otomatik karşılığı)
+### Elle bakılması gerekenler
 
-Hedef yatağın dragover'da vurgulanması · dolu yatağa bırakmanın gerekçeyle reddi ·
-müsait yatağa bırakınca tahsisin işlenmesi ve adın yatakta görünmesi · kart üzerindeki
-× ile tahsisin kalkması · kart seçip yatağa tıklayarak yerleştirme · «Yerleştirmeyi
-Bitir» ile modun kapanması · **kapora kuralının sürükle-bırak yolunda da uygulanması**.
+Otomatik testler davranışı doğrular; şunlar için insan gözü gerekir:
 
-### Dekont önizlemesi (3.2'nin otomatik karşılığı)
-
-Üretilen örnek PDF'in yapısı (`%PDF-1.4`, `xref`, `trailer`, `%%EOF`, Helvetica) ve
-içeriği (dekont no, rezervasyon no, banka) · önizlemenin `data:application/pdf`
-kaynağıyla iframe'de açılması · PNG dekontun `<img>` ile gerçekten yüklenmesi
-(`naturalWidth > 0`) · «demo» rozeti · «Yeni sekmede aç» bağlantısı · 5 MB dosya sınırı ·
-dört misafirhanede kapora statüsü/tutarı tutarlılık taraması.
+- **Görsel denge:** renk, boşluk, hizalama — özellikle %85 ve %135 ölçeklerde.
+- **Dekont belgesinin okunabilirliği:** üretilen PDF'in yapısı sınanıyor, ama sayfanın
+  gerçekten düzgün göründüğünü siz görün.
+- **Metinlerin anlaşılırlığı:** uyarı ve gerekçe cümleleri kullanıcıya yeterince açık mı?
+- **Sürükle-bırak hissi:** otomatik test olayları sentetik gönderir; fareyle gerçek
+  sürüklemenin akıcılığını siz deneyin.
+- **Yazıcı çıktısı:** «Rehberi yazdır» çıktısının sayfa düzeni.

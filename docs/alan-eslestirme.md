@@ -103,7 +103,7 @@ yatağa tıklayıp **«Bu yatağa yeni kayıt aç»**.
 
 Kaydetmeden önce form; zorunlu alanları, Tc kimlik no biçimini, tarih tutarlılığını,
 aynı yatağın iki kişiye verilmesini ve karma oda kısıtını denetler. Statü, girilen
-bilgilere göre otomatik belirlenir (Talep / Peşinat Bekleniyor / Onaylı / Konaklıyor).
+bilgilere göre otomatik belirlenir (Talep / Kapora Bekleniyor / Onaylı / Konaklıyor).
 
 ## 4. MSFH0030 — Şartname Makbuzları
 
@@ -118,7 +118,7 @@ bilgilere göre otomatik belirlenir (Talep / Peşinat Bekleniyor / Onaylı / Kon
 
 | Yeni alan | Nerede | Neden gerekli |
 |---|---|---|
-| **Statü** (Talep → Peşinat Bekleniyor → Onaylı → Konaklıyor → Çıkış → İptal) | Tüm ekranlar | Talep ile konaklamayı ayırır; süre takibini mümkün kılar |
+| **Statü** (Talep → Kapora Bekleniyor → Müdür Onayı Bekliyor → Onaylı → Konaklıyor → Çıkış → İptal) | Tüm ekranlar | Talep ile konaklamayı ayırır; süre takibini mümkün kılar |
 | **Cinsiyet** (E/K) | Misafir kaydı | Karma oda kısıtı olmadan otomatik yerleştirme yapılamaz |
 | **Protokol işareti** (talep ve oda) | Talep, oda tanımı | Öncelik ve oda ayırma kuralı |
 | **Aile / birlikte kalma talebi** | Talep | Grubun bölünmemesi kuralı |

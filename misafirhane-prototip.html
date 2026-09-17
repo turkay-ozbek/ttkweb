@@ -102,7 +102,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment 
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.3.2';
+const SURUM = '2.4.0';
 const SURUM_TARIHI = '2026-09-16';
 
 const GUN_MS = 86400000;
@@ -1721,10 +1721,14 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolu
           )}
           <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(10rem, 1fr))' }}>
             <Kpi etiket="Dolu Yatak" deger={bugunIst.dolu} alt={`${bugunIst.kapasite} yatak kapasite`} />
-            <Kpi etiket="Boş Yatak" deger={bugunIst.bos} alt={`%${100 - bugunIst.oran} boşluk`} renk="text-emerald-700" />
+            {/* Yüzde, kartın kendi sayısından hesaplanır: temizlikteki yatak «boş» sayılmaz
+                (dolu + boş + temizlik = kapasite). */}
+            <Kpi etiket="Boş Yatak" deger={bugunIst.bos} renk="text-emerald-700"
+              alt={`kapasitenin %${bugunIst.kapasite ? Math.round(bugunIst.bos / bugunIst.kapasite * 100) : 0}'i`} />
             <Kpi etiket="Giriş Yapacak" deger={bugunIst.giris} alt={tr(s.bugun)} renk="text-sky-700" />
             <Kpi etiket="Çıkış Yapacak" deger={bugunIst.cikis} alt={tr(s.bugun)} renk="text-orange-600" />
-            <Kpi etiket="Temizlikte" deger={bugunIst.temizlik} alt={`${TEMIZLIK_GUN} gün blok`} renk="text-violet-700" />
+            <Kpi etiket="Temizlikte" deger={bugunIst.temizlik} renk="text-violet-700"
+              alt={`${TEMIZLIK_GUN} gün blok · dolu+boş+temizlik = ${bugunIst.kapasite}`} />
             <Kpi etiket="Doluluk" deger={'%' + bugunIst.oran} alt={ayAdi(s.bugun) + ' ' + s.bugun.slice(0, 4)} />
           </div>
 
@@ -3669,12 +3673,14 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
           {hatalar.length
             ? <b className="text-rose-700">{hatalar.length} eksik/hatalı alan var — kayıt açılamaz</b>
             : <>Kayıt açıldığında statü: <b className="text-ttk-800">{(() => {
+                /* Statü adları tek kaynaktan (STATULER) okunur; buraya elle yazılırsa
+                   «Kapora Bekleniyor» gibi yeniden adlandırmalar formda eski kalır. */
                 const hepsi = f.misafirler.every(g => g.yatakId);
                 const kalan = Math.max(0, pesinatOnizleme.pesinat_tutari - (f.pesinatTahsil ? pesinatOnizleme.pesinat_tutari : 0));
-                if (kalan > 0) return 'Peşinat Bekleniyor';
-                if (!hepsi) return 'Talep';
-                if (f.gelis_tarihi <= s.bugun) return 'Konaklıyor';
-                return 'Onaylı';
+                if (kalan > 0) return statuAd('PESINAT_BEKLENIYOR');
+                if (!hepsi) return statuAd('TALEP');
+                if (f.gelis_tarihi <= s.bugun) return statuAd('KONAKLIYOR');
+                return statuAd('ONAYLI');
               })()}</b></>}
         </span>
         <Buton tur="sessiz" onClick={kapat}>Vazgeç</Buton>

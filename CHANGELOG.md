@@ -8,6 +8,40 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.4.0] — 17.09.2026
+### Eklendi — elle test planı otomatikleştirildi
+- `testler/` altına beş yeni test dosyası ve ortak yardımcı modül (`ortak.mjs`) eklendi;
+  `tumu.mjs` hepsini sırayla koşturup özet tablo basıyor ve kalan denetim varsa 1 ile çıkıyor.
+  - `06-yetki-matrisi.mjs` — dört rol × beş düğme beklenti tablosu, pasif düğmelerin gerekçe
+    ipucu, 14×4 yetki matrisi, kullanıcı ekleme, yinelenen kullanıcı adının engellenmesi,
+    rol ve misafirhane değişikliğinin kullanıcıya yansıması, pasife alınan hesabın reddi.
+  - `07-yeni-kayit-dogrulama.mjs` — zorunlu alan ve Tc denetimi, geçersiz tarih, ok tuşları,
+    çıkış tarihinin gelişten öne alınamaması, kişi sayısı ve aile, kurum/şahıs statü
+    önizlemesi, formdan otomatik yatak bulma, «Vazgeç», üç alanla arama.
+  - `08-tahsilat-statu-zaman.mjs` — kapora kuralı değişikliği, altı dönem filtresi, iş
+    listelerinin sayı/satır tutarlılığı, tam ve kısmi tahsilat, kayıt hareketleri, yedi statü
+    kutusu ve süzme, gün ilerletme, toplu iptal, muhasebe yetki sınırı.
+  - `09-goruntuleme-tutarlilik.mjs` — dört misafirhanede dolu+boş+temizlik=kapasite ve yüzde
+    tutarlılığı, takvim dönem kaydırma ve aralık mantığı, oda haritası lejantı/ipuçları/
+    görünüm/tarih değişimi, yatak listesi sıralama ve süzgeçleri, toplu yerleştirme
+    önerisinin onaylanmadan uygulanmaması.
+  - `10-arayuz-ve-sinir-durumlari.mjs` — ölçek sınırları ve kalıcılığı, üç çözünürlük ×
+    dokuz sayfa taşma, 1280px + %135 birlikte, ekranda form kodu olmaması, «Rehberi yazdır»,
+    oturum kapatınca verinin korunması, geçmiş tarihli kayıt, kişi sayısı oynatma, kapora
+    üstü tahsilat, arama sınırları.
+- `docs/test-plani.md` bölüm başlıklarına `[oto: NN]` işaretleri ve «elle bakılması
+  gerekenler» listesi eklendi.
+
+### Düzeltildi
+- **Yeni kayıt formunda eski terim:** statü önizlemesi «Peşinat Bekleniyor» yazıyordu; statü
+  adları artık tek kaynaktan (`STATULER`) okunuyor, «Kapora Bekleniyor» görünüyor.
+- **«Boş Yatak» kartındaki yanıltıcı yüzde:** kart 5 boş yatak gösterirken alt satırında
+  «%16 boşluk» yazıyordu, çünkü yüzde doluluk oranından türetiliyor ve temizlikteki yatakları
+  da boş sayıyordu. Yüzde artık kartın kendi sayısından hesaplanıyor; «Temizlikte» kartı da
+  dolu+boş+temizlik = kapasite ilişkisini yazıyor.
+- README ve `docs/alan-eslestirme.md` içinde kalmış «Peşinat Bekleniyor» statü adları
+  güncel akışa göre düzeltildi.
+
 ## [2.3.2] — 17.09.2026
 ### Düzeltildi
 - **Çelişkili statü:** demo verisinde kaporası aranmayan kayıtlar (kurum misafiri, protokol,

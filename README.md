@@ -52,7 +52,7 @@ Uygulama ana menüden açılan on odaklı sayfadan oluşur; her sayfa tek bir i�
 | MSFH-W05 | **Rezervasyon Talepleri** | Talep listesi, seçili talep özeti, otomatik / manuel / haritada yerleştirme |
 | MSFH-W06 | **Dekont ve Onay** | Kapora dekontlarının PDF önizlemesiyle incelenip onaylanması (misafirhane müdürü) |
 | MSFH-W07 | **Peşinat ve Tahsilat** | Dönem filtresi, iş listeleri, ₺ Tahsilat Al, süresi dolanlar, peşinat kuralı |
-| MSFH-W08 | **Statü Takibi** | Talep → Peşinat Bekleniyor → Onaylı → Konaklıyor → Çıkış → İptal akışı ve kayıt listesi |
+| MSFH-W08 | **Statü Takibi** | Talep → Kapora Bekleniyor → Müdür Onayı Bekliyor → Onaylı → Konaklıyor → Çıkış → İptal akışı |
 | MSFH-W09 | **Kullanıcı ve Yetki** (Admin) | Kullanıcılar, roller, misafirhane yetkisi ve yetki matrisi |
 | MSFH-W10 | **Kullanım Rehberi** | Adım adım anlatım: kayıt açma, kapora, dekont onayı, yerleştirme, tahsilat, giriş-çıkış, rol yetkileri ve SSS (yalnız üst banttaki «Rehber» düğmesinden açılır) |
 
@@ -98,12 +98,13 @@ doğrudan `file://` ile açar):
 
 ```bash
 npm install -D playwright && npx playwright install chromium
-node testler/01-arayuz-ve-roller.mjs      # dört çözünürlükte sayfa/taşma/rol kapsamı
-node testler/02-rehber-rolleri.mjs        # rehber erişimi ve rol rozetleri
-node testler/03-uctan-uca-kapora.mjs      # kayıt → kapora → dekont → onay → yerleştirme → tahsilat
-node testler/04-red-manuel-tahsilat.mjs   # dekont reddi, manuel yerleştirme, iptal, kısmi tahsilat
-node testler/05-surukle-birak-ve-dekont.mjs  # sürükle-bırak ve dekont önizlemesi
+node testler/tumu.mjs          # on test dosyasının tamamı, sonunda özet tablo
+node testler/tumu.mjs 05 09    # yalnız numarası verilen dosyalar
 ```
+
+Test planındaki senaryoların çoğu bu takımla otomatik koşar; hangi bölümü hangi dosyanın
+kapsadığı [`docs/test-plani.md`](docs/test-plani.md) sonundaki tabloda, elle bakılması
+gereken başlıklar da aynı yerdedir.
 
 ## Kapora ve dekont onayı
 
