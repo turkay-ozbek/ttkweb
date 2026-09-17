@@ -93,6 +93,18 @@ sayfaları, kullanıcı yönetimi, arayüz/okunurluk ve sınır durumları; sonu
 > Veriler bellektedir: **sayfayı yenilemek (F5) her şeyi sıfırlar.** Rol değiştirirken
 > sağ üstteki çıkış simgesini kullanın.
 
+Otomatik testler [`testler/`](testler/) altındadır (Playwright, kurulum yok — dosyayı
+doğrudan `file://` ile açar):
+
+```bash
+npm install -D playwright && npx playwright install chromium
+node testler/01-arayuz-ve-roller.mjs      # dört çözünürlükte sayfa/taşma/rol kapsamı
+node testler/02-rehber-rolleri.mjs        # rehber erişimi ve rol rozetleri
+node testler/03-uctan-uca-kapora.mjs      # kayıt → kapora → dekont → onay → yerleştirme → tahsilat
+node testler/04-red-manuel-tahsilat.mjs   # dekont reddi, manuel yerleştirme, iptal, kısmi tahsilat
+node testler/05-surukle-birak-ve-dekont.mjs  # sürükle-bırak ve dekont önizlemesi
+```
+
 ## Kapora ve dekont onayı
 
 Şahsi misafirin rezervasyon listesine girebilmesi için konaklama bedelinin bir bölümünü

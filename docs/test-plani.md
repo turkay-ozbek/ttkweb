@@ -370,12 +370,29 @@ Aşağıdakilerin tamamı sağlanıyorsa sürüm kabul edilebilir:
 
 ## Ek — otomatik koşulan testler
 
-Aşağıdakiler geliştirme sırasında Playwright ile otomatik koşturulmuştur; elle test
-sırasında aynı sonuçları görmeniz beklenir:
+Aşağıdaki senaryolar [`testler/`](../testler/) altında Playwright ile otomatik koşar;
+elle test sırasında aynı sonuçları görmeniz beklenir. Koşturma yönergesi
+[`testler/README.md`](../testler/README.md) dosyasındadır.
 
-- Dört çözünürlükte (1280/1440/1600/1920) dokuz sayfada taşma ve başlık denetimi.
-- Dört rolle giriş, menü kapsamı ve rehber erişimi.
-- Uçtan uca akış: kayıt açma → kapora engeli → dekont yükleme → müdür onayı →
-  otomatik yerleştirme → yatak listesinde doğrulama → tahsilat → gün ilerletme.
-- İkinci akış: dekont reddi → statü dönüşü → manuel yerleştirme → tahsis kaldırma →
-  kayıt iptali → kısmi tahsilat → kullanıcı ekleme → ölçek değiştirme.
+| Dosya | Kapsam |
+|---|---|
+| `01-arayuz-ve-roller.mjs` | Dört çözünürlükte (1280/1440/1600/1920) dokuz sayfada taşma, başlıkta misafirhane adı, üst bant, form kodu olmaması, misafirhane değiştirme |
+| `02-rehber-rolleri.mjs` | Dört rolle rehber erişimi, başlıklar arası gezinme, «rolünüze kapalı» rozetleri |
+| `03-uctan-uca-kapora.mjs` | Kayıt açma → kapora engeli → dekont → müdür onayı → otomatik yerleştirme → yatak listesi → tahsilat → gün ilerletme |
+| `04-red-manuel-tahsilat.mjs` | Dekont reddi, manuel yerleştirme, tahsis kaldırma, iptal, kısmi tahsilat, kullanıcı ekleme, ölçek |
+| `05-surukle-birak-ve-dekont.mjs` | **Sürükle-bırak** (4.4) ve **dekont önizlemesi** (3.2) — aşağıda ayrıntılı |
+
+### Sürükle-bırak (4.4'ün otomatik karşılığı)
+
+Hedef yatağın dragover'da vurgulanması · dolu yatağa bırakmanın gerekçeyle reddi ·
+müsait yatağa bırakınca tahsisin işlenmesi ve adın yatakta görünmesi · kart üzerindeki
+× ile tahsisin kalkması · kart seçip yatağa tıklayarak yerleştirme · «Yerleştirmeyi
+Bitir» ile modun kapanması · **kapora kuralının sürükle-bırak yolunda da uygulanması**.
+
+### Dekont önizlemesi (3.2'nin otomatik karşılığı)
+
+Üretilen örnek PDF'in yapısı (`%PDF-1.4`, `xref`, `trailer`, `%%EOF`, Helvetica) ve
+içeriği (dekont no, rezervasyon no, banka) · önizlemenin `data:application/pdf`
+kaynağıyla iframe'de açılması · PNG dekontun `<img>` ile gerçekten yüklenmesi
+(`naturalWidth > 0`) · «demo» rozeti · «Yeni sekmede aç» bağlantısı · 5 MB dosya sınırı ·
+dört misafirhanede kapora statüsü/tutarı tutarlılık taraması.

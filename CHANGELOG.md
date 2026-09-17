@@ -8,6 +8,27 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.3.2] — 17.09.2026
+### Düzeltildi
+- **Çelişkili statü:** demo verisinde kaporası aranmayan kayıtlar (kurum misafiri, protokol,
+  bedelsiz) da «Kapora Bekleniyor» statüsüne düşebiliyordu; ekranda «Kapora: aranmıyor ·
+  Statü: Kapora Bekleniyor» gibi kendi kendisiyle çelişen satırlar oluşuyordu. Peşinat
+  tutarı sıfır olan kayıt artık «Talep» statüsünde üretiliyor. (Sürükle-bırak testinde bulundu.)
+
+### Eklendi — otomatik test takımı
+- [`testler/`](testler/) altında Playwright ile koşan beş uçtan uca test ve
+  [`testler/README.md`](testler/README.md) (kurulum, koşturma, kapsam tablosu).
+- **Sürükle-bırak yerleştirme otomatik sınanıyor:** hedef yatağın vurgulanması, dolu yatağın
+  gerekçeli reddi, müsait yatağa bırakınca tahsis, kart üzerindeki × ile tahsisin kalkması,
+  tıklayarak yerleştirme, yerleştirme modunun kapanması ve kapora kuralının sürükle-bırak
+  yolunda da uygulanması. Gerçek fare olayları HTML5 sürükleme üretmediği için ortak bir
+  `DataTransfer` üzerinden sentetik `DragEvent` zinciri gönderiliyor.
+- **Dekont önizlemesi otomatik sınanıyor:** üretilen örnek PDF'in yapısı (`%PDF-1.4`, `xref`,
+  `trailer`, `%%EOF`, Helvetica) ve içeriği (dekont no, rezervasyon no, banka), önizlemenin
+  `data:application/pdf` kaynağıyla iframe'de açılması, PNG dekontun `<img>` ile gerçekten
+  yüklenmesi, «demo» rozeti, «Yeni sekmede aç» bağlantısı ve 5 MB dosya sınırı.
+- Dört misafirhanede kapora statüsü/tutarı tutarlılık taraması (regresyon koruması).
+
 ## [2.3.1] — 16.09.2026
 ### Düzeltildi
 - **«Bekleyen talepler» süzgeci kayıt kaybediyordu.** Müdür kapora dekontunu onayladıktan

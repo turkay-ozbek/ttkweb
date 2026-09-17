@@ -102,7 +102,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment 
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.3.1';
+const SURUM = '2.3.2';
 const SURUM_TARIHI = '2026-09-16';
 
 const GUN_MS = 86400000;
@@ -524,6 +524,10 @@ function rezervasyonlariUret(r, yataklar, odalar, bugun) {
 
         // ── Peşinat alanları
         pesinatHesapla(rz, odalar, kural);
+        /* Kapora aranmayan kayıt (kurum misafiri, protokol, bedelsiz) «Kapora Bekleniyor»
+           statüsünde kalamaz — ekranda «Kapora: aranmıyor · statü: Kapora Bekleniyor»
+           gibi çelişkili satır oluşurdu. */
+        if (rz.statu === 'PESINAT_BEKLENIYOR' && !rz.pesinat_tutari) rz.statu = 'TALEP';
         if (['ONAYLI','KONAKLIYOR','CIKIS'].includes(rz.statu)) {
           rz.tahsil_edilen = rz.pesinat_tutari;
           if (rz.pesinat_tutari > 0) rz.makbuz_no = String(tamsayi(r, 1000, 9999));
