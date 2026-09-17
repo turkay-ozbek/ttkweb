@@ -29,7 +29,9 @@ for (const [w, h] of [[1280,800],[1440,900],[1600,1000],[1920,1080]]) {
   // metin değil, düğmenin erişilebilir adı denetleniyor)
   if (await p.locator('header').getByRole('button', { name: '?', exact: true }).count())
     hata.push(`${w}: «?» düğmesi hâlâ var`);
-  if (!ust.includes('Hangi işlemi yapmak istiyorsunuz?')) hata.push(`${w}: üst bantta işlem arama kutusu yok`);
+  // arama kutusu sayfa şeridinde, çıkış düğmesiyle sağdan hizalı
+  const basliktaki = await p.locator('header').innerText();
+  if (!basliktaki.includes('Hangi işlemi yapmak istiyorsunuz?')) hata.push(`${w}: işlem arama kutusu yok`);
   if (await p.locator('header select').count()) hata.push(`${w}: üst barda misafirhane seçicisi hâlâ var`);
   if (await p.locator('header button[aria-label="Kullanıcı bilgileri"]').count()) hata.push(`${w}: kişi simgesi hâlâ var`);
   if (!(await p.locator('header button[aria-label="Oturumu kapat"]').isVisible())) hata.push(`${w}: çıkış düğmesi yok`);

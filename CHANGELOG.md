@@ -8,6 +8,20 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.5.1] — 17.09.2026
+### Düzeltildi
+- **İpucu açılırken sola kayıyordu.** Balon `transform: translate(-50%)` ile ortalanıyor,
+  beliriş animasyonu (`.bel`) ise kendi `transform`'unu uyguladığı için animasyon boyunca
+  ortalama iptal oluyor, sonunda yerine sıçrıyordu. Balon artık önce görünmez çizilip
+  ölçülüyor, konumu piksel olarak veriliyor ve yalnız saydamlığı değişen ayrı bir animasyon
+  (`.ipucu-bel`) kullanılıyor. Dar ekranda kenardan taşmaması da aynı ölçümle sağlanıyor.
+
+### Değişti
+- Yardımcı botun adı **«Bareti» yerine «Madenci»** oldu (pencere başlığı, ipucu, rehber ve belgeler).
+- Arama kutusundaki **«Ctrl K» rozeti kaldırıldı**; kısayol kutunun ipucunda yazıyor.
+- **Arama kutusu sayfa şeridine taşındı**; sağ kenarı üstteki oturum kapatma düğmesiyle
+  tam hizalı, «Ana Menü · Özet · Takvim …» düğmeleriyle aynı satırda.
+
 ## [2.5.0] — 17.09.2026
 ### Eklendi — üç yardım öğesi
 - **İpucu (tooltip) katmanı.** Düğmenin ne yaptığı, üzerine gelince okunaklı bir balonda

@@ -28,7 +28,7 @@ arayüzünde gösterilmez.
 6. **Aradığınız işlemi yazarak bulun.** Üst bandın ortasındaki **«Hangi işlemi yapmak
    istiyorsunuz?»** kutusu ya da her yerden **Ctrl + K**. Sayfa adı, işlem, misafir adı,
    Tc kimlik no veya rezervasyon no yazabilirsiniz; ↑ ↓ ile gezinip ↵ ile seçersiniz.
-7. **Yardımcıya sorun.** Sağ alt köşedeki baretli maskot **Bareti**'dir. Doluluk gibi
+7. **Yardımcıya sorun.** Sağ alt köşedeki baretli maskot **Madenci**'dir. Doluluk gibi
    soruları canlı veriyle, «kapora nasıl işlenir?» gibi soruları bu rehberden adım adım
    yanıtlar ve ilgili sayfaya bağlantı verir. Bir **demo asistandır**: kural tabanlı çalışır,
    dış bir yapay zekâ servisine bağlanılmaz.

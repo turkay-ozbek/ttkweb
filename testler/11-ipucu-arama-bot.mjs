@@ -28,9 +28,34 @@ try {
   const metin = await balon.innerText();
   d.bekle(/kapasite|öneri/i.test(metin), 'ipucu düğmenin ne yaptığını anlatıyor', metin.slice(0, 70));
   const kutu = await balon.boundingBox();
+  const hedefKutu = await oto.boundingBox();
   d.bekle(kutu.x >= 0 && kutu.x + kutu.width <= 1680, 'ipucu ekran dışına taşmıyor');
+  d.bekle(Math.abs((kutu.x + kutu.width / 2) - (hedefKutu.x + hedefKutu.width / 2)) <= 2,
+    'ipucu düğmenin ortasına hizalı');
   await uzaklas();
   d.bekle(await balon.count() === 0, 'imleç ayrılınca ipucu kayboluyor');
+
+  /* Açılırken kaymamalı: balon konumu betikte ölçülüp piksel olarak veriliyor,
+     beliriş animasyonu yalnız saydamlığı değiştiriyor. */
+  const manuel = p.getByRole('button', { name: '✋ Manuel Yerleştir', exact: true });
+  const mk = await manuel.boundingBox();
+  await p.mouse.move(mk.x + 2, mk.y + 2);
+  await p.mouse.move(mk.x + mk.width / 2, mk.y + mk.height / 2);
+  await p.waitForTimeout(250);
+  const ilkKonum = await balon.boundingBox();
+  await p.waitForTimeout(500);
+  const sonKonum = await balon.boundingBox();
+  d.bekle(Math.abs(sonKonum.x - ilkKonum.x) <= 1 && Math.abs(sonKonum.y - ilkKonum.y) <= 1,
+    'ipucu açılırken yerinden kaymıyor', `kayma: ${Math.round(sonKonum.x - ilkKonum.x)} px`);
+  await uzaklas();
+
+  /* Ekranın sağ ucundaki düğmede balon kenardan taşmamalı */
+  const cikisD = p.locator('header button[aria-label="Oturumu kapat"]');
+  await uzerineGel(cikisD);
+  const sagKutu = await balon.boundingBox();
+  d.bekle(sagKutu.x + sagKutu.width <= 1680 - 6, 'sağ kenardaki düğmede balon ekran içinde kalıyor',
+    `sağ kenar: ${Math.round(sagKutu.x + sagKutu.width)}`);
+  await uzaklas();
 
   /* title'ı olan öğede tarayıcının kendi balonu değil, bizimki çıkmalı */
   const tarihKutusu = p.getByPlaceholder('GG.AA.YYYY').first();
@@ -54,8 +79,16 @@ try {
   await rolDegistir(p, HESAP.mudur);
 
   /* ═══ 2) İŞLEM ARAMASI ═══ */
-  const ustBar = await p.locator('header > div').first().innerText();
-  d.bekle(ustBar.includes('Hangi işlemi yapmak istiyorsunuz?'), 'üst bantta arama kutusu duruyor');
+  const aramaDugmesi = p.locator('nav button').filter({ hasText: 'Hangi işlemi' }).first();
+  d.bekle(await aramaDugmesi.count() === 1, 'arama kutusu sayfa şeridinde duruyor');
+  d.bekle(!(await aramaDugmesi.innerText()).includes('Ctrl'), 'arama kutusunda Ctrl K rozeti yok');
+  d.bekle(/Ctrl \+ K/.test(await aramaDugmesi.getAttribute('data-ipucu') || ''),
+    'kısayol arama kutusunun ipucunda yazıyor');
+  const ak = await aramaDugmesi.boundingBox();
+  const ck = await p.locator('header button[aria-label="Oturumu kapat"]').boundingBox();
+  d.bekle(Math.abs((ak.x + ak.width) - (ck.x + ck.width)) <= 2,
+    'arama kutusu çıkış düğmesiyle sağdan hizalı',
+    `arama: ${Math.round(ak.x + ak.width)} · çıkış: ${Math.round(ck.x + ck.width)}`);
 
   await p.keyboard.press('Control+k'); await p.waitForTimeout(400);
   const pencere = p.locator('input[aria-label="İşlem ara"]');
@@ -118,10 +151,14 @@ try {
   const acDugmesi = p.locator('button[aria-label="Yardımcıyı aç"]');
   d.bekle(await acDugmesi.count() === 1, 'yardımcı düğmesi ekranda duruyor');
   d.bekle(await acDugmesi.locator('svg').count() === 1, 'yardımcı düğmesinde maskot simgesi var');
+  await uzerineGel(acDugmesi);
+  d.bekle(/^Madenci/.test(await balon.innerText()), 'yardımcının ipucunda adı «Madenci» yazıyor',
+    await balon.innerText());
+  await uzaklas();
   await acDugmesi.click(); await p.waitForTimeout(500);
   const panel = p.locator('[role=dialog][aria-label="Yardımcı bot"]');
   d.bekle(await panel.count() === 1, 'yardımcı penceresi açılıyor');
-  d.bekle((await panel.innerText()).includes('Bareti'), 'yardımcının adı başlıkta yazıyor');
+  d.bekle((await panel.innerText()).includes('Madenci'), 'yardımcının adı başlıkta yazıyor');
   d.bekle(/demo asistan|yapay zekâ servisine bağlanılmaz/i.test(await panel.innerText()),
     'demo asistan olduğu açıkça yazıyor');
   d.bekle(await acDugmesi.count() === 0, 'pencere açıkken açma düğmesi gizleniyor');

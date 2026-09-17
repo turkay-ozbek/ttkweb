@@ -76,10 +76,10 @@ canlı veri) kullanır:
 | Öğe | Nerede | Ne işe yarar |
 |---|---|---|
 | **İpucu** | Her düğme ve simgede | Üzerine gelince düğmenin ne yaptığını yazar. Pasif düğmelerde hangi yetkinin gerektiğini söyler. `data-ipucu` yazılan her öğede çıkar; eski `title` değerleri de devralınır |
-| **İşlem araması** | Üst bandın ortası · **Ctrl + K** | «Hangi işlemi yapmak istiyorsunuz?» — sayfa, işlem, rehber başlığı, misafirhane ve kayıt (ad soyad / Tc kimlik / rezervasyon no) tek kutudan aranır. ↑ ↓ ile gezilir, ↵ ile seçilir |
-| **Bareti** (yardımcı bot) | Sağ alt köşe, baretli maskot | Doluluk, bekleyen talep, onaydaki dekont, tahsilat gibi soruları **canlı veriyle** yanıtlar; «kapora nasıl işlenir?» gibi soruları rehberden adım adım anlatır ve ilgili sayfaya bağlantı verir |
+| **İşlem araması** | Sayfa şeridinin sağ ucu · **Ctrl + K** | «Hangi işlemi yapmak istiyorsunuz?» — sayfa, işlem, rehber başlığı, misafirhane ve kayıt (ad soyad / Tc kimlik / rezervasyon no) tek kutudan aranır. ↑ ↓ ile gezilir, ↵ ile seçilir |
+| **Madenci** (yardımcı bot) | Sağ alt köşe, baretli maskot | Doluluk, bekleyen talep, onaydaki dekont, tahsilat gibi soruları **canlı veriyle** yanıtlar; «kapora nasıl işlenir?» gibi soruları rehberden adım adım anlatır ve ilgili sayfaya bağlantı verir |
 
-> Bareti bir **demo asistandır**: yanıtlar ekrandaki veriden ve kullanım rehberinden kural
+> Madenci bir **demo asistandır**: yanıtlar ekrandaki veriden ve kullanım rehberinden kural
 > tabanlı üretilir, dış bir yapay zekâ servisine bağlanılmaz. Kurulumda yerine kurumsal bir
 > dil modeli servisi konabilir; soru–yanıt eşleştirmesi `botYanit()` işlevindedir.
 

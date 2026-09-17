@@ -344,7 +344,7 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
    - `zzz` → ✔ «sonuç yok» açıklaması ve ne yazılabileceği gösterilir.
 3. ↑ ↓ ok tuşları ✔ seçimi taşır, ↵ ✔ seçer, **Esc** ✔ kapatır.
 
-### 10.3 Yardımcı bot (Bareti)
+### 10.3 Yardımcı bot (Madenci)
 1. Sağ alt köşedeki baretli maskota tıklayın. ✔ Pencere açılır, açma düğmesi gizlenir.
 2. Önerilen sorulardan **Bugün kaç yatak boş?** → ✔ canlı sayılarla yanıt verir.
 3. Şunları sorun:

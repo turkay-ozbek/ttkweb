@@ -75,6 +75,10 @@ tailwind.config = {
                 font:14px Segoe UI, sans-serif; color:#173c6d; }
   @keyframes bel { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
   .bel { animation: bel .16s ease-out; }
+  /* İpucu balonu yalnız saydamlıkla belirir: konumu betikte ölçülüp piksel olarak
+     verildiği için transform kullanan bir animasyon onu yerinden oynatırdı. */
+  @keyframes ipucuBel { from{opacity:0;} to{opacity:1;} }
+  .ipucu-bel { animation: ipucuBel .12s ease-out; }
 </style>
 </head>
 <body>
@@ -96,13 +100,13 @@ tailwind.config = {
   });
 </script>
 <script type="text/babel" data-presets="react">
-const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment } = React;
+const { useState, useMemo, useReducer, useRef, useEffect, useLayoutEffect, useCallback, Fragment } = React;
 
 /* ══════════════════════════════════════════════════════════════════════════
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.5.0';
+const SURUM = '2.5.1';
 const SURUM_TARIHI = '2026-09-16';
 
 const GUN_MS = 86400000;
@@ -4301,11 +4305,11 @@ const REHBER_KONULARI = [
       { b: 'Yazılar küçük geliyorsa', m: 'Ekranın sağ alt köşesindeki dikey büyüteç kutusunu kullanın: «+» büyütür, «−» küçültür, ortadaki yüzde düğmesi %100\'e döndürür. Ayar tarayıcınızda saklanır, bir daha girdiğinizde aynı boyutla açılır.' },
       { b: 'Bir düğmenin ne yaptığını öğrenin', m: 'Herhangi bir düğmenin üzerine gelip bekleyin; ne işe yaradığı küçük bir balonda yazar. Düğme soluk (pasif) ise balon hangi yetkinin gerektiğini söyler.' },
       { b: 'Aradığınız işlemi yazarak bulun', m: 'Üst bandın ortasındaki «Hangi işlemi yapmak istiyorsunuz?» kutusuna tıklayın ya da her yerden Ctrl + K tuşlayın. Sayfa adı, işlem (örn. «tahsilat», «dekont»), misafir adı, Tc kimlik no ya da rezervasyon no yazabilirsiniz; ↑ ↓ ile gezinip ↵ ile seçersiniz.' },
-      { b: 'Yardımcıya sorun', m: 'Sağ alt köşedeki baretli maskot «Bareti»dir. «Bugün kaç yatak boş?» gibi soruları ekrandaki canlı veriyle, «kapora nasıl işlenir?» gibi soruları bu rehberden adım adım yanıtlar ve ilgili sayfaya bağlantı verir.' },
+      { b: 'Yardımcıya sorun', m: 'Sağ alt köşedeki baretli maskot «Madenci»dir. «Bugün kaç yatak boş?» gibi soruları ekrandaki canlı veriyle, «kapora nasıl işlenir?» gibi soruları bu rehberden adım adım yanıtlar ve ilgili sayfaya bağlantı verir.' },
       { b: 'Rehber ve oturum', m: 'Üst bandın sağındaki «Rehber» düğmesi bu sayfayı her ekrandan açar; en sağdaki güç simgesi oturumu kapatır. Kullanıcı adınız alt bilgi çubuğunun solunda yazar.' },
     ],
     notlar: ['Bir düğme soluk (pasif) görünüyorsa üzerine gelin: o işlem için hangi yetkinin gerektiği ipucu olarak yazar.',
-              'Yardımcı «Bareti» bir demo asistandır: yanıtlar ekrandaki veriden ve bu rehberden kural tabanlı üretilir, dış bir yapay zekâ servisine bağlanılmaz.'],
+              'Yardımcı «Madenci» bir demo asistandır: yanıtlar ekrandaki veriden ve bu rehberden kural tabanlı üretilir, dış bir yapay zekâ servisine bağlanılmaz.'],
   },
   {
     anahtarlar: ['yeni kayit', 'kayit ac', 'rezervasyon ac', 'yeni rezervasyon', 'kayit olustur', 'talep olustur', 'kayit girisi'],
@@ -4677,6 +4681,7 @@ const OlcekKontrol = ({ olcek, gonder }) => (
    elementFromPoint ile bulunur, çünkü disabled düğmeler fare olayı yaymaz.  */
 function IpucuKatmani() {
   const [ipucu, setIpucu] = useState(null);
+  const kutuRef = useRef(null);
   useEffect(() => {
     let zamanlayici = null, sonHedef = null, bekliyor = false;
     const gizle = () => { clearTimeout(zamanlayici); sonHedef = null; setIpucu(null); };
@@ -4691,9 +4696,7 @@ function IpucuKatmani() {
       const metin = hedef.getAttribute('data-ipucu');
       if (!metin) return gizle();
       const r = hedef.getBoundingClientRect();
-      const altta = r.bottom + 46 < window.innerHeight;
-      setIpucu({ metin, x: Math.min(Math.max(r.left + r.width / 2, 130), window.innerWidth - 130),
-                 y: altta ? r.bottom + 8 : r.top - 8, altta });
+      setIpucu({ metin, hedef: { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width } });
     };
     const kipirda = (e) => {
       if (bekliyor) return;
@@ -4732,12 +4735,26 @@ function IpucuKatmani() {
     };
   }, []);
 
+  /* Balon önce görünmez çizilir, ölçülür, sonra tam yerine oturtulur; böylece
+     açılırken kaymaz ve dar ekranda kenardan taşmaz. */
+  useLayoutEffect(() => {
+    const el = kutuRef.current;
+    if (!el || !ipucu) return;
+    const g = el.getBoundingClientRect();
+    const r = ipucu.hedef, bosluk = 8;
+    const altta = r.bottom + g.height + bosluk <= window.innerHeight;
+    const sol = Math.min(Math.max(r.left + r.width / 2 - g.width / 2, bosluk), window.innerWidth - g.width - bosluk);
+    const ust = altta ? r.bottom + bosluk : Math.max(bosluk, r.top - g.height - bosluk);
+    el.style.left = Math.round(sol) + 'px';
+    el.style.top = Math.round(ust) + 'px';
+    el.style.visibility = 'visible';
+  }, [ipucu]);
+
   if (!ipucu) return null;
   return (
-    <div role="tooltip" id="ipucu-balonu"
-      style={{ left: ipucu.x, top: ipucu.y, transform: `translate(-50%, ${ipucu.altta ? '0' : '-100%'})` }}
-      className="fixed z-[60] pointer-events-none max-w-[16rem] px-2.5 py-1.5 rounded-md
-                 bg-ttk-900 text-white text-2xs leading-snug shadow-xl bel print:hidden">
+    <div ref={kutuRef} role="tooltip" id="ipucu-balonu" style={{ left: 0, top: 0, visibility: 'hidden' }}
+      className="fixed z-[60] pointer-events-none w-max max-w-[16rem] px-2.5 py-1.5 rounded-md
+                 bg-ttk-900 text-white text-2xs leading-snug shadow-xl ipucu-bel print:hidden">
       {ipucu.metin}
     </div>
   );
@@ -5112,7 +5129,7 @@ function YardimBotu({ s, izin, git, dolu, temizlik, acik, setAcik }) {
       <header className="flex items-center gap-2 px-3 py-2 bg-ttk-800 text-white shrink-0">
         <Maskot sinif="w-8 h-8 shrink-0" />
         <div className="leading-tight min-w-0 flex-1">
-          <div className="text-sm font-bold">Bareti — Misafirhane Yardımcısı</div>
+          <div className="text-sm font-bold">Madenci — Misafirhane Yardımcısı</div>
           <div className="text-2xs text-ttk-200 truncate">{tesisAd} · demo asistan</div>
         </div>
         <button onClick={() => setAcik(false)} aria-label="Yardımcıyı kapat" data-ipucu="Yardımcıyı kapat"
@@ -5261,16 +5278,6 @@ function Uygulama() {
             </div>
           </button>
 
-          {/* İşlem araması — her yerden Ctrl + K */}
-          <button onClick={() => setKomutAcik(true)}
-            data-ipucu="Sayfa, işlem, misafir ya da rezervasyon no arayın (Ctrl + K)"
-            className="flex-1 min-w-[12rem] max-w-md flex items-center gap-2 px-2.5 py-1.5 rounded-lg
-                       bg-ttk-700/60 hover:bg-ttk-700 border border-ttk-600 text-ttk-100 transition-colors">
-            <Ikon ad="ara" sinif="w-4 h-4 shrink-0" />
-            <span className="text-xs truncate">Hangi işlemi yapmak istiyorsunuz?</span>
-            <kbd className="num ml-auto text-2xs border border-ttk-500 rounded px-1 py-0.5 shrink-0 hidden sm:inline">Ctrl K</kbd>
-          </button>
-
           <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end text-xs">
             <span className="px-2 py-1 rounded bg-amber-400 text-amber-950 font-bold text-2xs"
               data-ipucu="Bu bir demo prototiptir; gerçek misafir verisi kullanılmaz">DEMO</span>
@@ -5287,9 +5294,10 @@ function Uygulama() {
           </div>
         </div>
 
-        {/* Sayfa şeridi */}
+        {/* Sayfa şeridi ve işlem araması (arama, üstteki çıkış düğmesiyle sağdan hizalı) */}
         <nav className="bg-ttk-900/40 border-t border-ttk-700">
-          <div className="sayfa-govde px-3 flex items-center gap-1 overflow-x-auto kaydir">
+          <div className="sayfa-govde px-3 flex items-center gap-3">
+          <div className="flex items-center gap-1 overflow-x-auto kaydir min-w-0 flex-1">
             <button onClick={() => git('ANA_MENU')} data-ipucu="Bütün sayfaların kart görünümü"
               className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors
                 ${s.ekran === 'ANA_MENU' ? 'border-white text-white' : 'border-transparent text-ttk-200 hover:text-white'}`}>
@@ -5303,6 +5311,16 @@ function Uygulama() {
                 <Ikon ad={x.ikon} sinif="w-3.5 h-3.5" /> {x.kisa}
               </button>
             ))}
+          </div>
+
+          {/* İşlem araması — her yerden Ctrl + K */}
+          <button onClick={() => setKomutAcik(true)}
+            data-ipucu="Sayfa, işlem, misafir ya da rezervasyon no arayın (Ctrl + K)"
+            className="shrink-0 w-64 min-w-[9rem] my-1 flex items-center gap-2 px-2.5 py-1 rounded-lg
+                       bg-ttk-800/70 hover:bg-ttk-700 border border-ttk-600 text-ttk-100 transition-colors">
+            <Ikon ad="ara" sinif="w-4 h-4 shrink-0" />
+            <span className="text-xs truncate">Hangi işlemi yapmak istiyorsunuz?</span>
+          </button>
           </div>
         </nav>
       </header>
@@ -5344,7 +5362,7 @@ function Uygulama() {
       <YardimBotu s={s} izin={izin} git={git} dolu={dolu} temizlik={temizlik} acik={botAcik} setAcik={setBotAcik} />
       {!botAcik && (
         <button onClick={() => setBotAcik(true)} aria-label="Yardımcıyı aç"
-          data-ipucu="Bareti — doluluk sorun, bir işlemin nasıl yapıldığını öğrenin"
+          data-ipucu="Madenci — doluluk sorun, bir işlemin nasıl yapıldığını öğrenin"
           className="fixed right-3 bottom-[9.5rem] z-40 w-14 h-14 rounded-full bg-white border-2 border-ttk-600
                      shadow-xl flex items-center justify-center hover:scale-105 transition-transform print:hidden">
           <Maskot sinif="w-10 h-10" />
