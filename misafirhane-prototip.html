@@ -102,7 +102,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useCallback, Fragment 
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.4.0';
+const SURUM = '2.5.0';
 const SURUM_TARIHI = '2026-09-16';
 
 const GUN_MS = 86400000;
@@ -1048,7 +1048,7 @@ function baslangicDurumu() {
     bugun: SISTEM_TARIHI_BASLANGIC,
     tesis: 'ANKARA',
     ekran: 'ANA_MENU',
-    odakRezId: null,
+    odakRezId: null, odakTip: null,
     seciliRezId: null,
     olcek: (() => { try { return Number(localStorage.getItem('msfh_olcek')) || 1; } catch (_) { return 1; } })(),
     kullanici: null,
@@ -1327,14 +1327,21 @@ function indirgeyici(s, a) {
       const rz = a.rez;
       const yerlesik = rz.misafirler.filter(g => g.yatakId).length;
       return { ...s, rezervasyonlar: [...s.rezervasyonlar, rz],
-        ekran: 'TALEPLER', odakRezId: rz.id, seciliRezId: rz.id, tesis: rz.tesis,
+        ekran: 'TALEPLER', odakRezId: rz.id, seciliRezId: rz.id, tesis: rz.tesis, odakTip: 'YENI',
         gunluk: [{ tarih: s.bugun, tip: 'basari',
           metin: `Yeni kayıt açıldı: ${rz.rez_no} — ${rz.ad_soyad} · ${tr(rz.gelis_tarihi)} – ${tr(rz.cikis_tarihi)} · ` +
                  `${rz.kisi_sayisi} kişi · ${yerlesik ? [...new Set(rz.misafirler.filter(g => g.oda_no).map(g => 'Oda ' + g.oda_no + '/' + g.yatak_no))].join(', ') : 'yatak tahsisi yapılmadı'} · statü ${statuAd(rz.statu)}` },
           ...s.gunluk] };
     }
 
-    case 'ODAK_TEMIZLE': return { ...s, odakRezId: null };
+    case 'ODAK_TEMIZLE': return { ...s, odakRezId: null, odakTip: null };
+
+    /* Komut aramasından ya da yardımcı bottan bir kaydı açma */
+    case 'REZ_ODAKLA': {
+      const rz = s.rezervasyonlar.find(r => r.id === a.rezId);
+      if (!rz) return s;
+      return { ...s, ekran: 'TALEPLER', tesis: rz.tesis, odakRezId: rz.id, seciliRezId: rz.id, odakTip: 'ARAMA' };
+    }
 
     case 'GUNLUK': return { ...s, gunluk: [{ tarih: s.bugun, tip: a.gunlukTip || 'bilgi', metin: a.metin }, ...s.gunluk] };
 
@@ -1529,6 +1536,8 @@ const IKON_YOLLARI = {
   buyut:     'M10.5 3a7.5 7.5 0 100 15 7.5 7.5 0 000-15zM21 21l-5.2-5.2M10.5 7.5v6M7.5 10.5h6',
   kucult:    'M10.5 3a7.5 7.5 0 100 15 7.5 7.5 0 000-15zM21 21l-5.2-5.2M7.5 10.5h6',
   guc:       'M12 3.5v8M7.6 6.3a7 7 0 108.8 0',
+  ara:       'M11 4a7 7 0 100 14 7 7 0 000-14zM20.5 20.5l-4.6-4.6',
+  bot:       'M12 3v3M7.5 6h9A2.5 2.5 0 0119 8.5v7A2.5 2.5 0 0116.5 18h-9A2.5 2.5 0 015 15.5v-7A2.5 2.5 0 017.5 6zM9.5 11v1.5M14.5 11v1.5',
   rehber:    'M4 5.5A1.5 1.5 0 015.5 4H10a2 2 0 012 2v13a2 2 0 00-2-2H5.5A1.5 1.5 0 014 15.5zM20 5.5A1.5 1.5 0 0018.5 4H14a2 2 0 00-2 2v13a2 2 0 012-2h4.5a1.5 1.5 0 001.5-1.5z',
   kisi:      'M12 21.5a9.5 9.5 0 100-19 9.5 9.5 0 000 19zM12 11.8a2.75 2.75 0 100-5.5 2.75 2.75 0 000 5.5zM6.6 18.7a5.9 5.9 0 0110.8 0',
 };
@@ -2242,9 +2251,9 @@ function OnayEkrani({ s, gonder, izin, git, acYeniKayit }) {
                     </Alan>
                     <div className="flex gap-2 justify-end">
                       <Buton tur="tehlike" disabled={!yetkili} onClick={() => setRedAcik(true)}
-                        title={yetkili ? '' : yetkiNotu(s.kullanici, 'rezervasyon.onay')}>Reddet</Buton>
+                        data-ipucu={yetkili ? 'Dekontu reddet — kayıt kapora beklemeye döner, gerekçe kayıt geçmişine yazılır' : yetkiNotu(s.kullanici, 'rezervasyon.onay')}>Reddet</Buton>
                       <Buton tur="basari" disabled={!yetkili}
-                        title={yetkili ? '' : yetkiNotu(s.kullanici, 'rezervasyon.onay')}
+                        data-ipucu={yetkili ? 'Kaydı rezervasyon listesine alır; yatak tahsisi bundan sonra yapılabilir' : yetkiNotu(s.kullanici, 'rezervasyon.onay')}
                         onClick={() => gonder({ tip: 'DEKONT_ONAY', rezId: seciliRez.id, aciklama: onayNotu.trim() })}>
                         ✓ Onayla ve Rezervasyon Listesine Al
                       </Buton>
@@ -2482,8 +2491,10 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
     setStatuFiltre('HEPSI'); setArama('');
     if (rz.gelis_tarihi < filtreBas) setFiltreBas(rz.gelis_tarihi);
     if (rz.gelis_tarihi > filtreSon) setFiltreSon(rz.gelis_tarihi);
-    setUyari({ tip: 'bilgi', metin: `${rz.rez_no} — ${rz.ad_soyad} kaydı açıldı (${statuAd(rz.statu)}). ` +
-      (rz.misafirler.every(g => g.yatakId) ? 'Yatak tahsisi yapıldı.' : 'Yerleştirme için «Otomatik» veya «Manuel» düğmesini kullanabilirsiniz.') });
+    setUyari(s.odakTip === 'ARAMA'
+      ? { tip: 'bilgi', metin: `${rz.rez_no} — ${rz.ad_soyad} aramadan açıldı (${statuAd(rz.statu)}).` }
+      : { tip: 'bilgi', metin: `${rz.rez_no} — ${rz.ad_soyad} kaydı açıldı (${statuAd(rz.statu)}). ` +
+          (rz.misafirler.every(g => g.yatakId) ? 'Yatak tahsisi yapıldı.' : 'Yerleştirme için «Otomatik» veya «Manuel» düğmesini kullanabilirsiniz.') });
     gonder({ tip: 'ODAK_TEMIZLE' });
   }, [s.odakRezId]);
 
@@ -2625,10 +2636,10 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
           sag={<>
             {izin('rezervasyon.olustur') &&
               <Buton tur="basari" onClick={() => acYeniKayit({ tesis: s.tesis })}>
-                <span className="flex items-center gap-1"><Ikon ad="yeni" sinif="w-3.5 h-3.5" /> Yeni Kayıt</span>
+                <span className="flex items-center gap-1" data-ipucu="Yeni misafir kaydı / rezervasyon formunu açar"><Ikon ad="yeni" sinif="w-3.5 h-3.5" /> Yeni Kayıt</span>
               </Buton>}
             <Buton tur="birincil" onClick={() => otomatikYerlestir()} disabled={!izin('rezervasyon.yerlestir')}
-              title={izin('rezervasyon.yerlestir') ? 'Listedeki bekleyen talepler için öneri üret' : yetkiNotu(s.kullanici, 'rezervasyon.yerlestir')}>
+              data-ipucu={izin('rezervasyon.yerlestir') ? 'Listedeki bütün bekleyen talepler için tek seferde öneri üretir' : yetkiNotu(s.kullanici, 'rezervasyon.yerlestir')}>
               ⚙ Tümünü Otomatik Yerleştir
             </Buton>
           </>} />
@@ -2756,7 +2767,8 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
                         <span className="ml-auto flex items-center gap-2">
                           {d && <Buton tur="sessiz" onClick={() => setDekontGoster(seciliRez)}>Dekontu Gör</Buton>}
                           {durum !== 'ONAYLANDI' && izin('rezervasyon.dekont') &&
-                            <Buton tur="basari" onClick={() => setDekontAcik(seciliRez)}>
+                            <Buton tur="basari" onClick={() => setDekontAcik(seciliRez)}
+                              data-ipucu="Kapora dekontunu (PDF veya görsel) ekleyip müdür onayına gönderin">
                               {d ? 'Yeni Dekont Yükle' : '↑ Dekont Yükle'}
                             </Buton>}
                           {durum === 'YUKLENDI' && izin('rezervasyon.onay') &&
@@ -2769,13 +2781,20 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
 
                 <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-100">
                   <Buton tur="birincil" disabled={!izin('rezervasyon.yerlestir')} onClick={() => otomatikYerlestir([seciliRez])}
-                    title={izin('rezervasyon.yerlestir') ? '' : yetkiNotu(s.kullanici, 'rezervasyon.yerlestir')}>⚙ Otomatik Yerleştir</Buton>
+                    data-ipucu={izin('rezervasyon.yerlestir')
+                      ? 'Kapasite, aile birlikteliği, cinsiyet ve temizlik kurallarına göre öneri üretir; onaylamadan uygulanmaz'
+                      : yetkiNotu(s.kullanici, 'rezervasyon.yerlestir')}>⚙ Otomatik Yerleştir</Buton>
                   <Buton disabled={!izin('rezervasyon.yerlestir')} onClick={() => setManuel(seciliRez)}
-                    title={izin('rezervasyon.yerlestir') ? 'Oda ve yatakları elle seç' : yetkiNotu(s.kullanici, 'rezervasyon.yerlestir')}>✋ Manuel Yerleştir</Buton>
+                    data-ipucu={izin('rezervasyon.yerlestir')
+                      ? 'Oda ve yatakları listeden elle seçin — yalnız tüm gecelerde boş yataklar listelenir'
+                      : yetkiNotu(s.kullanici, 'rezervasyon.yerlestir')}>✋ Manuel Yerleştir</Buton>
                   <Buton disabled={!izin('rezervasyon.yerlestir')} onClick={() => git('ODALAR')}
-                    title="Oda haritasında sürükleyerek yerleştir">🗺 Haritada Yerleştir</Buton>
+                    data-ipucu={izin('rezervasyon.yerlestir')
+                      ? 'Oda haritasını yerleştirme modunda açar; misafiri yatağa sürükleyin ya da tıklayın'
+                      : yetkiNotu(s.kullanici, 'rezervasyon.yerlestir')}>🗺 Haritada Yerleştir</Buton>
                   {izin('rezervasyon.tahsis_kaldir') &&
-                    <Buton tur="tehlike" onClick={() => gonder({ tip: 'ATAMA_KALDIR', rezId: seciliRez.id })}>Tahsisi Kaldır</Buton>}
+                    <Buton tur="tehlike" onClick={() => gonder({ tip: 'ATAMA_KALDIR', rezId: seciliRez.id })}
+                      data-ipucu="Bu kaydın bütün yatak tahsislerini kaldırır, yataklar serbest kalır">Tahsisi Kaldır</Buton>}
                 </div>
               </div>
             )}
@@ -2828,7 +2847,8 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
             <div className="ml-auto flex items-center gap-2 flex-wrap">
               <Buton onClick={() => setManuel(seciliRez)} disabled={!izin('rezervasyon.yerlestir')}>✋ Listeden Seç</Buton>
               <Buton tur="birincil" onClick={() => otomatikYerlestir([seciliRez])} disabled={!izin('rezervasyon.yerlestir')}>⚙ Otomatik</Buton>
-              <Buton tur="sessiz" onClick={() => setSecili(null)}>Yerleştirmeyi Bitir</Buton>
+              <Buton tur="sessiz" onClick={() => setSecili(null)}
+                data-ipucu="Yerleştirme modundan çık — yapılan tahsisler korunur">Yerleştirmeyi Bitir</Buton>
             </div>
           </div>
           <div className="text-2xs uppercase font-semibold text-slate-500">
@@ -3119,7 +3139,7 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
       <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad} aciklama={sayfa.aciklama} tesis={tesisAd}
         sag={izin('rezervasyon.olustur') &&
           <Buton tur="basari" onClick={() => acYeniKayit({ tesis: s.tesis })}>
-            <span className="flex items-center gap-1"><Ikon ad="yeni" sinif="w-3.5 h-3.5" /> Yeni Kayıt</span>
+            <span className="flex items-center gap-1" data-ipucu="Yeni misafir kaydı / rezervasyon formunu açar"><Ikon ad="yeni" sinif="w-3.5 h-3.5" /> Yeni Kayıt</span>
           </Buton>} />
 
       {/* ── Zaman filtresi ve iş listeleri */}
@@ -3325,7 +3345,7 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
                       <div className="flex gap-1">
                         {kalan > 0 && acikMi(rz)
                           ? <Buton tur="basari" className="!py-0.5" disabled={!izin('pesinat.tahsilat')}
-                              title={izin('pesinat.tahsilat') ? 'Peşinat tahsilatı gir' : yetkiNotu(s.kullanici, 'pesinat.tahsilat')}
+                              data-ipucu={izin('pesinat.tahsilat') ? 'Tahsil edilen tutarı ve makbuz numarasını girin; tutar tamamlanınca statü Onaylı olur' : yetkiNotu(s.kullanici, 'pesinat.tahsilat')}
                               onClick={() => setTahsilat({ rz, tutar: kalan, makbuz_no: rz.makbuz_no || '' })}>
                               ₺ Tahsilat Al
                             </Buton>
@@ -3334,7 +3354,7 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
                             </span>}
                         {acikMi(rz) && izin('rezervasyon.iptal') &&
                           <Buton tur="tehlike" className="!py-0.5" onClick={() => gonder({ tip: 'STATU', rezId: rz.id, statu: 'IPTAL' })}>İptal</Buton>}
-                        <Buton tur="sessiz" className="!py-0.5" title="Kayıt detayı ve hareketler" onClick={() => setDetay(rz)}>Detay</Buton>
+                        <Buton tur="sessiz" className="!py-0.5" data-ipucu="Kaydın bütün hareketleri: tahsilat, dekont, onay ve statü değişiklikleri" onClick={() => setDetay(rz)}>Detay</Buton>
                       </div>
                     </td>
                     <td className="num" title={rz.rez_no}>{rz.rez_no.slice(4)}</td>
@@ -3683,12 +3703,13 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
                 return statuAd('ONAYLI');
               })()}</b></>}
         </span>
-        <Buton tur="sessiz" onClick={kapat}>Vazgeç</Buton>
+        <Buton tur="sessiz" onClick={kapat} data-ipucu="Formu kapat — hiçbir kayıt oluşmaz">Vazgeç</Buton>
         <Buton onClick={otomatikYerlestir} disabled={!yetkiVar(s.kullanici, 'rezervasyon.yerlestir')}
           title={yetkiVar(s.kullanici, 'rezervasyon.yerlestir') ? '' : yetkiNotu(s.kullanici, 'rezervasyon.yerlestir')}>
           ⚙ Uygun Yatağı Otomatik Bul
         </Buton>
-        <Buton tur="basari" onClick={kaydet} disabled={hatalar.length > 0}>Kaydet</Buton>
+        <Buton tur="basari" onClick={kaydet} disabled={hatalar.length > 0}
+          data-ipucu={hatalar.length ? 'Eksik veya hatalı alanlar var; düzeltilmeden kayıt açılamaz' : 'Kaydı aç ve talep listesine ekle'}>Kaydet</Buton>
       </>}>
       <div className="grid grid-cols-12 gap-3">
         {/* Sol: talep ve ödeme bilgileri */}
@@ -4269,6 +4290,7 @@ const sayfaBul = kod => SAYFALAR.find(x => x.kod === kod);
 /* Rehber içeriği: adımlar, gereken yetki ve ilgili sayfa kodları. */
 const REHBER_KONULARI = [
   {
+    anahtarlar: ['oturum', 'sifre', 'baglan', 'ekran', 'menu', 'gezin', 'yazi boyut', 'olcek', 'buyut', 'kucult', 'okunmuyor'],
     kod: 'BASLANGIC', baslik: 'Başlarken — ekranı tanıyın', ikon: 'menu',
     ozet: 'Üst bant, sayfa şeridi, ana menü ve yazı boyutu ayarı nerede?',
     roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
@@ -4277,11 +4299,16 @@ const REHBER_KONULARI = [
       { b: 'Hangi misafirhanede çalıştığınızı görün', m: 'Üst bandın solunda «<Misafirhane> Bilgi Sistemi» yazar; yaptığınız her işlem bu misafirhane için geçerlidir. Çalışılan misafirhane her sayfanın başlığında da yazar (örn. «Ankara Misafirhanesi Rezervasyon Talepleri»). Birden çok misafirhaneye yetkiliyseniz Ana Menü\'nün üstündeki misafirhane düğmelerinden ya da «Bugünkü Durum» sayfasındaki karşılaştırma tablosundan geçiş yaparsınız.' },
       { b: 'Sayfalar arasında gezinin', m: 'Üst banttaki logoya veya «Ana Menü» düğmesine basınca bütün sayfaların kart görünümü açılır. Kartların üzerindeki sayılar (boş yatak, bekleyen talep, onaydaki dekont…) canlıdır. Sürekli kullandığınız sayfalara logonun altındaki sayfa şeridinden tek tıkla geçebilirsiniz.' },
       { b: 'Yazılar küçük geliyorsa', m: 'Ekranın sağ alt köşesindeki dikey büyüteç kutusunu kullanın: «+» büyütür, «−» küçültür, ortadaki yüzde düğmesi %100\'e döndürür. Ayar tarayıcınızda saklanır, bir daha girdiğinizde aynı boyutla açılır.' },
+      { b: 'Bir düğmenin ne yaptığını öğrenin', m: 'Herhangi bir düğmenin üzerine gelip bekleyin; ne işe yaradığı küçük bir balonda yazar. Düğme soluk (pasif) ise balon hangi yetkinin gerektiğini söyler.' },
+      { b: 'Aradığınız işlemi yazarak bulun', m: 'Üst bandın ortasındaki «Hangi işlemi yapmak istiyorsunuz?» kutusuna tıklayın ya da her yerden Ctrl + K tuşlayın. Sayfa adı, işlem (örn. «tahsilat», «dekont»), misafir adı, Tc kimlik no ya da rezervasyon no yazabilirsiniz; ↑ ↓ ile gezinip ↵ ile seçersiniz.' },
+      { b: 'Yardımcıya sorun', m: 'Sağ alt köşedeki baretli maskot «Bareti»dir. «Bugün kaç yatak boş?» gibi soruları ekrandaki canlı veriyle, «kapora nasıl işlenir?» gibi soruları bu rehberden adım adım yanıtlar ve ilgili sayfaya bağlantı verir.' },
       { b: 'Rehber ve oturum', m: 'Üst bandın sağındaki «Rehber» düğmesi bu sayfayı her ekrandan açar; en sağdaki güç simgesi oturumu kapatır. Kullanıcı adınız alt bilgi çubuğunun solunda yazar.' },
     ],
-    notlar: ['Bir düğme soluk (pasif) görünüyorsa üzerine gelin: o işlem için hangi yetkinin gerektiği ipucu olarak yazar.'],
+    notlar: ['Bir düğme soluk (pasif) görünüyorsa üzerine gelin: o işlem için hangi yetkinin gerektiği ipucu olarak yazar.',
+              'Yardımcı «Bareti» bir demo asistandır: yanıtlar ekrandaki veriden ve bu rehberden kural tabanlı üretilir, dış bir yapay zekâ servisine bağlanılmaz.'],
   },
   {
+    anahtarlar: ['yeni kayit', 'kayit ac', 'rezervasyon ac', 'yeni rezervasyon', 'kayit olustur', 'talep olustur', 'kayit girisi'],
     kod: 'YENI_KAYIT', baslik: 'Yeni rezervasyon kaydı nasıl açılır?', ikon: 'yeni', sayfa: 'TALEPLER',
     ozet: 'Telefonla veya kapıdan gelen misafirin kaydını açma, kişi ekleme ve kapora tutarını görme.',
     yetki: 'rezervasyon.olustur', roller: ['ADMIN', 'YONETICI', 'RESEPSIYON'],
@@ -4300,6 +4327,7 @@ const REHBER_KONULARI = [
     ],
   },
   {
+    anahtarlar: ['kapora', 'pesinat', 'tahsilat', 'tahsil', 'makbuz', 'odeme', 'para yatir', 'bedel'],
     kod: 'KAPORA', baslik: 'Kapora / peşinat alındığında ne yapılır?', ikon: 'para', sayfa: 'TAHSILAT',
     ozet: 'Tahsilatı sisteme işleme, makbuz numarası, dekont yükleme ve süresi dolan talepler.',
     yetki: 'pesinat.tahsilat', roller: ['ADMIN', 'YONETICI', 'MUHASEBE'],
@@ -4317,6 +4345,7 @@ const REHBER_KONULARI = [
     ],
   },
   {
+    anahtarlar: ['dekont', 'onay', 'reddet', 'mudur onayi', 'banka belgesi'],
     kod: 'DEKONT', baslik: 'Dekont yükleme ve müdür onayı', ikon: 'onay', sayfa: 'ONAY',
     ozet: 'Kapora dekontunu sisteme ekleme, müdürün inceleyip onaylaması veya reddetmesi.',
     yetki: 'rezervasyon.dekont', roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
@@ -4333,6 +4362,7 @@ const REHBER_KONULARI = [
     ],
   },
   {
+    anahtarlar: ['yerlestir', 'yerlesim', 'yatak ver', 'oda', 'yatak tahsis', 'harita', 'surukle', 'manuel', 'otomatik'],
     kod: 'YERLESTIRME', baslik: 'Oda ve yatak yerleştirmesi nasıl yapılır?', ikon: 'oda', sayfa: 'TALEPLER',
     ozet: 'Otomatik öneri, manuel seçim ve oda haritasında sürükleyerek yerleştirme.',
     yetki: 'rezervasyon.yerlestir', roller: ['ADMIN', 'YONETICI', 'RESEPSIYON'],
@@ -4350,6 +4380,7 @@ const REHBER_KONULARI = [
     ],
   },
   {
+    anahtarlar: ['doluluk', 'bos yatak', 'takvim', 'musait', 'yer var', 'kapasite', 'bos yer'],
     kod: 'DOLULUK', baslik: 'Doluluğu görme ve boş yatak arama', ikon: 'takvim', sayfa: 'TAKVIM',
     ozet: 'Bugünkü durum, 30 günlük takvim ve belirli bir tarih aralığında kaç yatak kaldığı.',
     roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
@@ -4361,6 +4392,7 @@ const REHBER_KONULARI = [
     ],
   },
   {
+    anahtarlar: ['statu', 'cikis', 'giris yap', 'uzat', 'iptal', 'konakla', 'akis'],
     kod: 'STATU', baslik: 'Giriş, çıkış, uzatma ve iptal', ikon: 'statu', sayfa: 'STATU',
     ozet: 'Kaydın statüsünü ilerletme: Talep → Kapora → Onay → Konaklıyor → Çıkış.',
     roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
@@ -4374,6 +4406,7 @@ const REHBER_KONULARI = [
     notlar: ['«Bugünkü Durum» sayfasındaki «+1 gün» / «+7 gün» demo düğmeleriyle sistem tarihini ilerletip süresi dolan taleplerin otomatik iptalini canlı olarak görebilirsiniz.'],
   },
   {
+    anahtarlar: ['rol', 'yetki', 'kim yapabilir', 'ne yapabilir', 'resepsiyon', 'muhasebe', 'admin'],
     kod: 'ROLLER', baslik: 'Hangi rol neyi yapabilir?', ikon: 'kullanici',
     ozet: 'Müdür, resepsiyon, muhasebe ve admin yetkilerinin kısa karşılaştırması.',
     roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
@@ -4394,6 +4427,7 @@ const REHBER_KONULARI = [
     ],
   },
   {
+    anahtarlar: ['neden', 'calismiyor', 'pasif', 'sik sorulan', 'sorun', 'hata'],
     kod: 'SSS', baslik: 'Sık sorulan sorular', ikon: 'talep',
     ozet: 'Günlük işte en çok takılınan noktalar.',
     roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
@@ -4414,8 +4448,9 @@ const REHBER_KONULARI = [
   },
 ];
 
-function RehberEkrani({ s, git, izin }) {
-  const [acik, setAcik] = useState('BASLANGIC');
+function RehberEkrani({ s, git, izin, baslangicKonu }) {
+  const [acik, setAcik] = useState(baslangicKonu || 'BASLANGIC');
+  useEffect(() => { if (baslangicKonu) setAcik(baslangicKonu); }, [baslangicKonu]);
   const sayfa = sayfaBul('REHBER');
   const rol = s.kullanici.rol;
   const konu = REHBER_KONULARI.find(x => x.kod === acik) || REHBER_KONULARI[0];
@@ -4631,6 +4666,515 @@ const OlcekKontrol = ({ olcek, gonder }) => (
 );
 
 /* ══════════════════════════════════════════════════════════════════════════
+  11c) İPUCU KATMANI, KOMUT ARAMASI VE YARDIMCI BOT
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Tek merkezden yönetilen ipucu (tooltip) ───────────────────────────────
+   Bir öğeye data-ipucu="..." yazmak yeterlidir; öğede yalnız title varsa o da
+   devralınır (title kaldırılır ki tarayıcının kendi sarı balonu çıkmasın).
+   Tarayıcının title balonundan farkı: gecikmesi tutarlı, okunaklı, ekran
+   dışına taşmaz ve PASİF düğmelerde de çıkar — imlecin altındaki öğe
+   elementFromPoint ile bulunur, çünkü disabled düğmeler fare olayı yaymaz.  */
+function IpucuKatmani() {
+  const [ipucu, setIpucu] = useState(null);
+  useEffect(() => {
+    let zamanlayici = null, sonHedef = null, bekliyor = false;
+    const gizle = () => { clearTimeout(zamanlayici); sonHedef = null; setIpucu(null); };
+    /* title'ı olan öğeyi data-ipucu'ya çevirir; boş title'lar yok sayılır. */
+    const devral = (hedef) => {
+      const yerel = hedef.getAttribute('title');
+      if (yerel && yerel.trim()) hedef.setAttribute('data-ipucu', yerel.trim());
+      if (yerel !== null) hedef.removeAttribute('title');
+    };
+    const hesapla = (hedef) => {
+      devral(hedef);
+      const metin = hedef.getAttribute('data-ipucu');
+      if (!metin) return gizle();
+      const r = hedef.getBoundingClientRect();
+      const altta = r.bottom + 46 < window.innerHeight;
+      setIpucu({ metin, x: Math.min(Math.max(r.left + r.width / 2, 130), window.innerWidth - 130),
+                 y: altta ? r.bottom + 8 : r.top - 8, altta });
+    };
+    const kipirda = (e) => {
+      if (bekliyor) return;
+      bekliyor = true;
+      requestAnimationFrame(() => {
+        bekliyor = false;
+        const alt = document.elementFromPoint(e.clientX, e.clientY);
+        const hedef = alt && alt.closest ? alt.closest('[data-ipucu],[title]') : null;
+        if (hedef === sonHedef) return;
+        clearTimeout(zamanlayici);
+        sonHedef = hedef;
+        if (!hedef) return setIpucu(null);
+        zamanlayici = setTimeout(() => hesapla(hedef), 400);
+      });
+    };
+    const odak = (e) => {
+      const hedef = e.target.closest ? e.target.closest('[data-ipucu],[title]') : null;
+      clearTimeout(zamanlayici);
+      if (!hedef) return setIpucu(null);
+      sonHedef = hedef; hesapla(hedef);
+    };
+    document.addEventListener('mousemove', kipirda, { passive: true });
+    document.addEventListener('mousedown', gizle);
+    document.addEventListener('focusin', odak);
+    document.addEventListener('focusout', gizle);
+    window.addEventListener('scroll', gizle, true);
+    window.addEventListener('blur', gizle);
+    return () => {
+      clearTimeout(zamanlayici);
+      document.removeEventListener('mousemove', kipirda);
+      document.removeEventListener('mousedown', gizle);
+      document.removeEventListener('focusin', odak);
+      document.removeEventListener('focusout', gizle);
+      window.removeEventListener('scroll', gizle, true);
+      window.removeEventListener('blur', gizle);
+    };
+  }, []);
+
+  if (!ipucu) return null;
+  return (
+    <div role="tooltip" id="ipucu-balonu"
+      style={{ left: ipucu.x, top: ipucu.y, transform: `translate(-50%, ${ipucu.altta ? '0' : '-100%'})` }}
+      className="fixed z-[60] pointer-events-none max-w-[16rem] px-2.5 py-1.5 rounded-md
+                 bg-ttk-900 text-white text-2xs leading-snug shadow-xl bel print:hidden">
+      {ipucu.metin}
+    </div>
+  );
+}
+
+/* Türkçe duyarlı arama anahtarı: küçük harfe indirir, şapka/noktaları sadeleştirir */
+const aramaAnahtari = (x) => (x || '').toLocaleLowerCase('tr-TR')
+  .replace(/[çğıöşüâî]/g, c => ({ 'ç':'c','ğ':'g','ı':'i','ö':'o','ş':'s','ü':'u','â':'a','î':'i' }[c]))
+  .replace(/\s+/g, ' ').trim();
+
+/* ── Komut araması: «Hangi işlemi yapmak istiyorsunuz?» ────────────────────
+   Sayfalar, işlemler, rehber başlıkları ve kayıtlar tek kutudan aranır.    */
+function KomutArama({ s, izin, git, gonder, acYeniKayit, tesisler, kapat }) {
+  const [sorgu, setSorgu] = useState('');
+  const [secili, setSecili] = useState(0);
+  const girdiRef = useRef(null);
+  useEffect(() => { girdiRef.current && girdiRef.current.focus(); }, []);
+
+  const komutlar = useMemo(() => {
+    const liste = [];
+    /* Sayfalar */
+    SAYFALAR.filter(x => izin(x.izin) && !x.gizli).forEach(x => liste.push({
+      tur: 'Sayfa', ad: x.ad, aciklama: x.aciklama, ikon: x.ikon,
+      anahtarlar: [x.kisa, x.grup, x.aciklama].join(' '),
+      calistir: () => git(x.kod),
+    }));
+    liste.push({ tur: 'Sayfa', ad: 'Ana Menü', aciklama: 'Bütün sayfaların kart görünümü', ikon: 'menu',
+      anahtarlar: 'anasayfa başlangıç menü', calistir: () => git('ANA_MENU') });
+
+    /* İşlemler */
+    if (izin('rezervasyon.olustur')) liste.push({
+      tur: 'İşlem', ad: 'Yeni rezervasyon / kayıt aç', aciklama: 'Misafir kaydı girişi formunu açar', ikon: 'yeni',
+      anahtarlar: 'ekle giris misafir kayit rezervasyon olustur yeni',
+      calistir: () => { git('TALEPLER'); acYeniKayit({ tesis: s.tesis }); } });
+    if (izin('pesinat.tahsilat')) liste.push({
+      tur: 'İşlem', ad: 'Tahsilat bekleyenleri listele', aciklama: 'Peşinat ve Tahsilat sayfasını açar', ikon: 'para',
+      anahtarlar: 'kapora pesinat para makbuz odeme tahsil', calistir: () => git('TAHSILAT') });
+    if (izin('rezervasyon.dekont')) liste.push({
+      tur: 'İşlem', ad: 'Kapora dekontu yükle', aciklama: 'Talebi seçip kapora şeridinden dekont ekleyin', ikon: 'onay',
+      anahtarlar: 'dekont banka pdf belge yukle kapora', calistir: () => git('TALEPLER') });
+    if (izin('rezervasyon.onay')) liste.push({
+      tur: 'İşlem', ad: 'Onay bekleyen dekontlar', aciklama: 'Müdür onayı kuyruğunu açar', ikon: 'onay',
+      anahtarlar: 'onayla reddet dekont mudur kuyruk', calistir: () => git('ONAY') });
+    if (izin('rezervasyon.yerlestir')) liste.push({
+      tur: 'İşlem', ad: 'Haritada yerleştirme', aciklama: 'Oda ve yatak haritasını açar', ikon: 'oda',
+      anahtarlar: 'yatak oda yerlestir surukle harita tahsis', calistir: () => git('ODALAR') });
+    liste.push({ tur: 'İşlem', ad: 'Kullanım rehberini aç', aciklama: 'Adım adım nasıl yapılır', ikon: 'rehber',
+      anahtarlar: 'yardim nasil rehber kilavuz ogren', calistir: () => git('REHBER') });
+
+    /* Misafirhane değiştirme */
+    if (tesisler.length > 1) tesisler.forEach(t => liste.push({
+      tur: 'Misafirhane', ad: t.ad + ' misafirhanesine geç', aciklama: `${t.sehir} · çalışılan misafirhaneyi değiştirir`,
+      ikon: 'oda', anahtarlar: `${t.ad} ${t.sehir} tesis degistir gec`,
+      calistir: () => gonder({ tip: 'TESIS', tesis: t.kod }) }));
+
+    /* Rehber başlıkları */
+    REHBER_KONULARI.forEach(k => liste.push({
+      tur: 'Rehber', ad: k.baslik, aciklama: k.ozet, ikon: 'rehber',
+      anahtarlar: k.ozet + ' ' + (k.adimlar || []).map(a => a.b).join(' '),
+      calistir: () => git('REHBER', k.kod) }));
+
+    /* Görünüm */
+    liste.push({ tur: 'Görünüm', ad: 'Yazıyı büyüt', aciklama: 'Arayüz ölçeğini bir kademe artırır', ikon: 'buyut',
+      anahtarlar: 'buyut zoom olcek yazi boyut okunmuyor kucuk',
+      calistir: () => gonder({ tip: 'OLCEK', olcek: s.olcek + 0.05 }) });
+    liste.push({ tur: 'Görünüm', ad: 'Yazıyı küçült', aciklama: 'Arayüz ölçeğini bir kademe azaltır', ikon: 'kucult',
+      anahtarlar: 'kucult zoom olcek sigmiyor tasiyor',
+      calistir: () => gonder({ tip: 'OLCEK', olcek: s.olcek - 0.05 }) });
+    liste.push({ tur: 'Oturum', ad: 'Oturumu kapat', aciklama: 'Giriş ekranına döner', ikon: 'guc',
+      anahtarlar: 'cikis logout kapat oturum', calistir: () => gonder({ tip: 'CIKIS' }) });
+    return liste;
+  }, [s.tesis, s.olcek, tesisler, izin]);
+
+  const sonuclar = useMemo(() => {
+    const q = aramaAnahtari(sorgu);
+    if (!q) return komutlar.slice(0, 8);
+    const puanla = (k) => {
+      const ad = aramaAnahtari(k.ad), hepsi = aramaAnahtari(k.ad + ' ' + k.aciklama + ' ' + k.anahtarlar);
+      if (ad.startsWith(q)) return 3;
+      if (ad.includes(q)) return 2;
+      if (q.split(' ').every(p => hepsi.includes(p))) return 1;
+      return 0;
+    };
+    const bulunan = komutlar.map(k => ({ k, p: puanla(k) })).filter(x => x.p > 0)
+      .sort((a, b) => b.p - a.p).map(x => x.k).slice(0, 8);
+
+    /* Kayıt araması — ad soyad, Tc kimlik no, rezervasyon no */
+    if (q.length >= 3) {
+      const kayitlar = s.rezervasyonlar.filter(rz => tesisler.some(t => t.kod === rz.tesis))
+        .filter(rz => aramaAnahtari(rz.ad_soyad + ' ' + rz.rez_no + ' ' +
+                        rz.misafirler.map(g => g.adi_soyadi + ' ' + g.tc_kimlik_no).join(' ')).includes(q))
+        .slice(0, 5)
+        .map(rz => ({
+          tur: 'Kayıt', ad: rz.ad_soyad, ikon: 'talep',
+          aciklama: `${rz.rez_no} · ${tr(rz.gelis_tarihi)} – ${tr(rz.cikis_tarihi)} · ${statuAd(rz.statu)}`,
+          calistir: () => gonder({ tip: 'REZ_ODAKLA', rezId: rz.id }),
+        }));
+      return [...bulunan, ...kayitlar];
+    }
+    return bulunan;
+  }, [sorgu, komutlar, s.rezervasyonlar, tesisler]);
+
+  useEffect(() => { setSecili(0); }, [sorgu]);
+
+  const sec = (k) => { if (!k) return; k.calistir(); kapat(); };
+  const tus = (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setSecili(i => Math.min(i + 1, sonuclar.length - 1)); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); setSecili(i => Math.max(i - 1, 0)); }
+    if (e.key === 'Enter')     { e.preventDefault(); sec(sonuclar[secili]); }
+    if (e.key === 'Escape')    { e.preventDefault(); kapat(); }
+  };
+
+  let oncekiTur = null;
+  return (
+    <div className="fixed inset-0 z-50 bg-ttk-900/40 flex items-start justify-center p-6 overflow-auto"
+      onMouseDown={e => { if (e.target === e.currentTarget) kapat(); }}>
+      <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl mt-10 bel overflow-hidden"
+        onMouseDown={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-slate-200">
+          <Ikon ad="ara" sinif="w-5 h-5 text-ttk-600" />
+          <input ref={girdiRef} value={sorgu} onChange={e => setSorgu(e.target.value)} onKeyDown={tus}
+            placeholder="Hangi işlemi yapmak istiyorsunuz?" aria-label="İşlem ara"
+            className="flex-1 text-sm outline-none placeholder:text-slate-400" />
+          <kbd className="text-2xs num text-slate-400 border border-slate-300 rounded px-1.5 py-0.5">Esc</kbd>
+        </div>
+        <div className="max-h-[52vh] overflow-auto kaydir py-1">
+          {!sonuclar.length && (
+            <div className="px-4 py-6 text-center text-xs text-slate-500">
+              «{sorgu}» için sonuç yok. Sayfa adı, işlem (örn. <b>tahsilat</b>, <b>dekont</b>),
+              misafir adı, Tc kimlik no veya rezervasyon no yazabilirsiniz.
+            </div>
+          )}
+          {sonuclar.map((k, i) => {
+            const baslik = k.tur !== oncekiTur ? (oncekiTur = k.tur) : null;
+            return (
+              <Fragment key={k.tur + k.ad + i}>
+                {baslik && <div className="px-3 pt-2 pb-1 text-2xs font-bold uppercase tracking-wider text-slate-400">{baslik}</div>}
+                <button onClick={() => sec(k)} onMouseEnter={() => setSecili(i)}
+                  aria-selected={i === secili}
+                  className={`w-full text-left px-3 py-2 flex items-center gap-2.5 transition-colors
+                    ${i === secili ? 'bg-ttk-50' : 'hover:bg-slate-50'}`}>
+                  <span className={`w-7 h-7 rounded shrink-0 flex items-center justify-center
+                    ${i === secili ? 'bg-ttk-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                    <Ikon ad={k.ikon} sinif="w-4 h-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-ttk-900 truncate">{k.ad}</span>
+                    <span className="block text-2xs text-slate-500 truncate">{k.aciklama}</span>
+                  </span>
+                  {i === secili && <kbd className="text-2xs num text-slate-400 border border-slate-300 rounded px-1.5 py-0.5">↵</kbd>}
+                </button>
+              </Fragment>
+            );
+          })}
+        </div>
+        <div className="px-3 py-1.5 border-t border-slate-200 bg-slate-50 text-2xs text-slate-500 flex gap-3 flex-wrap">
+          <span><b>↑ ↓</b> gezin</span><span><b>↵</b> seç</span><span><b>Esc</b> kapat</span>
+          <span className="ml-auto">Her yerden <b>Ctrl + K</b> ile açılır</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Maskot: madenci bareti takan yardımcı ─────────────────────────────── */
+const Maskot = ({ sinif = 'w-8 h-8' }) => (
+  <svg viewBox="0 0 48 48" className={sinif} aria-hidden="true">
+    {/* yüz */}
+    <circle cx="24" cy="28" r="12.5" fill="#fcd9b6" stroke="#8a5a34" strokeWidth="1.2" />
+    {/* gözler ve gülümseme */}
+    <circle cx="19.5" cy="27" r="1.7" fill="#3d2a1b" />
+    <circle cx="28.5" cy="27" r="1.7" fill="#3d2a1b" />
+    <path d="M19 33.2c1.6 1.8 3.2 2.6 5 2.6s3.4-.8 5-2.6" fill="none" stroke="#8a5a34"
+      strokeWidth="1.6" strokeLinecap="round" />
+    {/* baret siperliği */}
+    <path d="M6.5 19.5h35c0 2.6-2.2 4.2-5.4 4.2H11.9c-3.2 0-5.4-1.6-5.4-4.2z" fill="#e0a500" />
+    {/* baret kubbesi */}
+    <path d="M9.5 19.5C9.5 11.6 15.9 5.5 24 5.5s14.5 6.1 14.5 14z" fill="#f5b800" stroke="#c98f00" strokeWidth="1.1" />
+    <path d="M24 5.7v13.6M16.6 7.6l3.3 11.7M31.4 7.6l-3.3 11.7" stroke="#d99f00" strokeWidth="1" opacity=".8" />
+    {/* baret lambası ve ışığı */}
+    <circle cx="24" cy="12.4" r="4.1" fill="#fffbe6" stroke="#b8860b" strokeWidth="1.3" />
+    <circle cx="24" cy="12.4" r="1.9" fill="#ffd94a" />
+    <path d="M24 3.6v2.2M16.6 12.4h-2.2M31.4 12.4h2.2" stroke="#ffd94a" strokeWidth="1.4" strokeLinecap="round" />
+    {/* TTK yaka rengi */}
+    <path d="M13.5 40.5c2.6-2.6 6.3-4.1 10.5-4.1s7.9 1.5 10.5 4.1v4h-21z" fill="#1d4b87" />
+  </svg>
+);
+
+/* ── Yardımcı botun yanıt üreteci ──────────────────────────────────────────
+   Bu prototipte dış bir yapay zekâ servisine bağlanılmaz; yanıtlar ekrandaki
+   canlı veriden ve kullanım rehberinden kural tabanlı üretilir. Kurulumda
+   yerine kurumsal bir dil modeli servisi konabilir.                        */
+function botYanit(soru, b) {
+  const q = aramaAnahtari(soru);
+  const gecer = (...kelimeler) => kelimeler.some(k => q.includes(k));
+  const sayfaEylemi = (kod) => { const sf = sayfaBul(kod); return sf && b.izin(sf.izin) ? [{ ad: sf.ad + ' sayfasını aç', ekran: kod }] : []; };
+
+  if (!q) return { metin: 'Bir şey yazın; size yardımcı olayım.' };
+
+  if (gecer('merhaba', 'selam', 'gunaydin', 'iyi gunler', 'kolay gelsin'))
+    return { metin: `Merhaba ${b.kullaniciAdi}. ${b.tesisAd} için buradayım. «Bugün kaç yatak boş?», «kapora nasıl işlenir?» ya da «yeni kayıt nasıl açılır?» diye sorabilirsiniz.` };
+
+  if (gecer('tesekkur', 'sagol', 'sag ol', 'eyvallah'))
+    return { metin: 'Rica ederim. Başka bir konuda da sorabilirsiniz.' };
+
+  /* ── Canlı veri soruları ── */
+  if (gecer('bos yatak', 'kac yatak', 'yer var', 'yerimiz var', 'doluluk', 'dolu mu', 'bos yer'))
+    return {
+      metin: `${b.tesisAd} bugün ${b.canli.dolu}/${b.canli.kapasite} yatak dolu (%${b.canli.oran}). ` +
+             `${b.canli.bos} yatak boş, ${b.canli.temizlik} yatak temizlik bloğunda. ` +
+             `İleri bir tarih aralığı için «Doluluk Takvimi» sayfasında kesintisiz boş yatak hesaplanır.`,
+      eylemler: [...sayfaEylemi('OZET'), ...sayfaEylemi('TAKVIM')],
+    };
+
+  if (gecer('bugun giris', 'giris yapacak', 'kim geliyor', 'gelen misafir'))
+    return { metin: `Bugün ${b.canli.giris} misafir giriş, ${b.canli.cikis} misafir çıkış yapacak. ` +
+                    `Listeleri «Peşinat ve Tahsilat» sayfasındaki «Bugün giriş» ve «Bugün çıkış» kutularından görebilirsiniz.`,
+             eylemler: sayfaEylemi('TAHSILAT') };
+  if (gecer('bugun cikis', 'cikis yapacak', 'kim gidiyor'))
+    return { metin: `Bugün ${b.canli.cikis} misafir çıkış yapacak. Çıkıştan sonra her yatak ${TEMIZLIK_GUN} gün temizlik için bloklanır.`,
+             eylemler: sayfaEylemi('TAHSILAT') };
+
+  if (gecer('bekleyen talep', 'yerlestirilmemis', 'yerlestirme bekleyen', 'kac talep'))
+    return { metin: `${b.tesisAd} için 21 gün içinde yerleştirme bekleyen ${b.canli.bekleyen} talep var. ` +
+                    `«Rezervasyon Talepleri» sayfasında «⚙ Tümünü Otomatik Yerleştir» ile toplu öneri alabilirsiniz; öneri onaylanmadan doluluk değişmez.`,
+             eylemler: sayfaEylemi('TALEPLER') };
+
+  if (gecer('onay bekleyen', 'onaydaki dekont', 'kac dekont', 'onay kuyrugu'))
+    return { metin: `Müdür onayı bekleyen ${b.canli.onayBekleyen} dekont var.` +
+                    (b.izin('rezervasyon.onay') ? ' «Dekont ve Onay» sayfasından inceleyip onaylayabilirsiniz.'
+                                                : ' Onay yetkisi misafirhane müdüründedir.'),
+             eylemler: sayfaEylemi('ONAY') };
+
+  if (gecer('tahsilat bekleyen', 'kac tahsilat', 'odenmemis', 'borclu'))
+    return { metin: `Tahsilat bekleyen ${b.canli.tahsilat} kayıt var. «Peşinat ve Tahsilat» sayfasında «Tahsilat bekleyen» kutusuna tıklayın; satırdaki «₺ Tahsilat Al» ile tutarı ve makbuz numarasını girin.`,
+             eylemler: sayfaEylemi('TAHSILAT') };
+
+  if (gecer('kac kisi kaliyor', 'konaklayan', 'su an kalan'))
+    return { metin: `${b.tesisAd} misafirhanesinde hâlen ${b.canli.konaklayan} kayıt konaklıyor. Kimin hangi yatakta olduğunu «Yatak Listesi» sayfasında görebilirsiniz.`,
+             eylemler: sayfaEylemi('YATAK_LISTESI') };
+
+  /* ── Kapora kuralı ── */
+  if (gecer('kapora ne kadar', 'kapora tutari', 'kapora hesap', 'pesinat ne kadar', 'kapora kurali')) {
+    const k = b.kural || {};
+    const tutar = k.kaporaTuru === 'GECE'
+      ? `ilk ${k.kaporaGece} gecenin yatak bedeli (asgari ${para(k.sahisAsgariTutar)})`
+      : `toplam bedelin %${k.sahisOran}'i (asgari ${para(k.sahisAsgariTutar)})`;
+    return { metin: `${b.tesisAd} kuralına göre şahsi misafirde kapora ${tutar}. Ödeme süresi ${k.odemeSuresiGun} gün; ` +
+                    `gelişten en geç ${k.gelistenOnceEnGecGun} gün önce yatırılmalı. ` +
+                    (k.kurumMisafirindePesinatAranmasin ? 'Kurum misafirinden kapora aranmıyor.' : 'Kurum misafirinden de kapora alınıyor.') +
+                    ' Kuralı «Peşinat ve Tahsilat» sayfasının altından misafirhane müdürü değiştirir.',
+             eylemler: sayfaEylemi('TAHSILAT') };
+  }
+
+  /* ── Yetki sorusu ── */
+  if (gecer('ne yapabilirim', 'yetkim', 'yetkilerim', 'neden yapamiyorum', 'dugme pasif', 'buton pasif')) {
+    const acik = IZINLER.filter(iz => b.izin(iz.kod)).map(iz => iz.ad);
+    return { metin: `${b.rolAdi} rolündesiniz. Yapabildikleriniz: ${acik.join(', ')}. ` +
+                    `Pasif bir düğmenin üzerine gelirseniz hangi yetkinin gerektiği ipucu olarak yazar.`,
+             eylemler: sayfaEylemi('REHBER').length ? [{ ad: 'Rehberde rol yetkilerini gör', ekran: 'REHBER', konu: 'ROLLER' }] : [] };
+  }
+
+  /* ── Misafir arama ── */
+  if (gecer('nerede kaliyor', 'hangi odada', 'kacinci odada', 'hangi yatakta')) {
+    const isim = soru.replace(/nerede kal[ıi]yor|hangi odada|ka[çc][ıi]nc[ıi] odada|hangi yatakta|\?/gi, '').trim();
+    const bulunan = isim.length >= 3 ? b.kayitlar.filter(rz =>
+      aramaAnahtari(rz.ad_soyad + ' ' + rz.misafirler.map(g => g.adi_soyadi).join(' ')).includes(aramaAnahtari(isim))) : [];
+    if (!bulunan.length)
+      return { metin: `«${isim || soru}» için kayıt bulamadım. Üst bandaki arama kutusuna (Ctrl + K) ad soyad, Tc kimlik no veya rezervasyon no yazarak da arayabilirsiniz.` };
+    const satirlar = bulunan.slice(0, 4).flatMap(rz => rz.misafirler.map(g =>
+      `${g.adi_soyadi} — ${g.oda_no ? `Oda ${g.oda_no} / Yatak ${g.yatak_no}` : 'henüz yatak tahsis edilmedi'} (${statuAd(rz.statu)})`));
+    return { metin: satirlar.join('\n'), eylemler: sayfaEylemi('YATAK_LISTESI') };
+  }
+
+  /* ── «Nasıl yapılır» soruları: kullanım rehberinden ── */
+  /* «Nasıl yapılır» eşleştirmesi: Türkçe çekim ekleri yüzünden serbest metin
+     karşılaştırması yanıltıcı olduğundan her rehber başlığının kendi anahtar
+     kelimeleri var. Eşitlik hâlinde başlık ve gövde metnindeki kök eşleşmesi
+     ayırt edici olur.                                                          */
+  const konuPuani = (k) => {
+    const anahtar = (k.anahtarlar || []).filter(x => q.includes(x)).length;
+    const kokler = q.split(' ').filter(x => x.length > 4).map(x => x.slice(0, x.length - 2));
+    const metin = aramaAnahtari(k.baslik + ' ' + k.ozet + ' ' + (k.adimlar || []).map(a => a.b).join(' '));
+    const kok = kokler.filter(x => metin.includes(x)).length;
+    return anahtar * 10 + kok;
+  };
+  const enIyi = REHBER_KONULARI.map(k => ({ k, p: konuPuani(k) })).sort((a, b2) => b2.p - a.p)[0];
+  if (enIyi && enIyi.p >= 10 && enIyi.k.adimlar) {
+    const adimlar = enIyi.k.adimlar.slice(0, 4).map((a, i) => `${i + 1}. ${a.b} — ${a.m}`).join('\n');
+    return {
+      metin: `**${enIyi.k.baslik}**\n${adimlar}` +
+             (enIyi.k.adimlar.length > 4 ? `\n… ${enIyi.k.adimlar.length - 4} adım daha rehberde.` : ''),
+      eylemler: [{ ad: 'Rehberde tamamını oku', ekran: 'REHBER', konu: enIyi.k.kod },
+                 ...(enIyi.k.sayfa ? sayfaEylemi(enIyi.k.sayfa) : [])],
+    };
+  }
+
+  /* ── Sayfaya götürme ── */
+  const sayfa = SAYFALAR.filter(x => b.izin(x.izin))
+    .find(x => q.includes(aramaAnahtari(x.ad)) || q.includes(aramaAnahtari(x.kisa)));
+  if (sayfa) return { metin: `«${sayfa.ad}» sayfası: ${sayfa.aciklama}.`, eylemler: sayfaEylemi(sayfa.kod) };
+
+  return {
+    metin: 'Bunu tam anlayamadım. Şunları sorabilirsiniz: «bugün kaç yatak boş?», «kapora nasıl işlenir?», ' +
+           '«yeni kayıt nasıl açılır?», «dekont nasıl onaylanır?», «yetkilerim neler?». ' +
+           'İşlem aramak için üstteki kutuyu (Ctrl + K) da kullanabilirsiniz.',
+    eylemler: [{ ad: 'Kullanım rehberini aç', ekran: 'REHBER' }],
+  };
+}
+
+const BOT_ONERILERI = ['Bugün kaç yatak boş?', 'Kapora nasıl işlenir?', 'Yeni kayıt nasıl açılır?',
+                       'Dekont nasıl onaylanır?', 'Yetkilerim neler?'];
+
+/* ── Yardımcı bot penceresi ────────────────────────────────────────────── */
+function YardimBotu({ s, izin, git, dolu, temizlik, acik, setAcik }) {
+  const [gecmis, setGecmis] = useState([]);
+  const [girdi, setGirdi] = useState('');
+  const [yaziyor, setYaziyor] = useState(false);
+  const altRef = useRef(null);
+  const tesisAd = (TESISLER.find(t => t.kod === s.tesis) || {}).ad || 'Misafirhane';
+
+  const baglam = useMemo(() => {
+    const yataklar = s.yataklar.filter(y => y.tesis === s.tesis);
+    let doluSayi = 0, temizlikSayi = 0;
+    for (const y of yataklar) {
+      if (dolu.has(y.id + '|' + s.bugun)) doluSayi++;
+      else if (temizlik.has(y.id + '|' + s.bugun)) temizlikSayi++;
+    }
+    const kayitlar = s.rezervasyonlar.filter(r => r.tesis === s.tesis);
+    const ufuk = ekle(s.bugun, 21);
+    return {
+      kullaniciAdi: s.kullanici.ad, rolAdi: rolAd(s.kullanici.rol), tesisAd, izin, kayitlar,
+      kural: s.kurallar[s.tesis],
+      canli: {
+        kapasite: yataklar.length, dolu: doluSayi, temizlik: temizlikSayi,
+        bos: yataklar.length - doluSayi - temizlikSayi,
+        oran: yataklar.length ? Math.round(doluSayi / yataklar.length * 100) : 0,
+        giris: kayitlar.filter(r => r.gelis_tarihi === s.bugun && r.statu !== 'IPTAL').length,
+        cikis: kayitlar.filter(r => r.cikis_tarihi === s.bugun && r.statu !== 'IPTAL').length,
+        bekleyen: kayitlar.filter(r => ['TALEP', 'PESINAT_BEKLENIYOR'].includes(r.statu) &&
+          r.gelis_tarihi >= s.bugun && r.gelis_tarihi <= ufuk && r.misafirler.some(g => !g.yatakId)).length,
+        onayBekleyen: kayitlar.filter(r => r.dekont && r.dekont.durum === 'YUKLENDI').length,
+        tahsilat: kayitlar.filter(r => !['IPTAL', 'CIKIS'].includes(r.statu) && (r.pesinat_tutari || 0) > (r.tahsil_edilen || 0)).length,
+        konaklayan: kayitlar.filter(r => r.statu === 'KONAKLIYOR').length,
+      },
+    };
+  }, [s.rezervasyonlar, s.yataklar, s.tesis, s.bugun, s.kurallar, dolu, temizlik]);
+
+  useEffect(() => {
+    if (acik && !gecmis.length)
+      setGecmis([{ kim: 'bot', metin: `Merhaba ${s.kullanici.ad}, ${tesisAd} için yardımcı olabilirim — doluluk sorabilir, bir işlemin nasıl yapıldığını öğrenebilirsiniz.` }]);
+  }, [acik]);
+  useEffect(() => { altRef.current && altRef.current.scrollIntoView({ block: 'end' }); }, [gecmis, yaziyor, acik]);
+
+  const sor = (metin) => {
+    const soru = (metin || girdi).trim();
+    if (!soru) return;
+    setGecmis(g => [...g, { kim: 'ben', metin: soru }]);
+    setGirdi(''); setYaziyor(true);
+    setTimeout(() => {
+      const y = botYanit(soru, baglam);
+      setGecmis(g => [...g, { kim: 'bot', ...y }]);
+      setYaziyor(false);
+    }, 320);
+  };
+
+  if (!acik) return null;
+  return (
+    <div className="fixed right-3 bottom-[9.5rem] z-40 w-[min(23rem,calc(100vw-1.5rem))] bg-white rounded-xl
+                    shadow-2xl border border-slate-200 flex flex-col overflow-hidden bel print:hidden"
+      role="dialog" aria-label="Yardımcı bot">
+      <header className="flex items-center gap-2 px-3 py-2 bg-ttk-800 text-white shrink-0">
+        <Maskot sinif="w-8 h-8 shrink-0" />
+        <div className="leading-tight min-w-0 flex-1">
+          <div className="text-sm font-bold">Bareti — Misafirhane Yardımcısı</div>
+          <div className="text-2xs text-ttk-200 truncate">{tesisAd} · demo asistan</div>
+        </div>
+        <button onClick={() => setAcik(false)} aria-label="Yardımcıyı kapat" data-ipucu="Yardımcıyı kapat"
+          className="text-white/80 hover:text-white text-lg leading-none px-1">×</button>
+      </header>
+
+      <div className="flex-1 overflow-auto kaydir p-3 space-y-2.5 max-h-[52vh] bg-slate-50">
+        {gecmis.map((m, i) => (
+          <div key={i} className={`flex gap-2 ${m.kim === 'ben' ? 'justify-end' : ''}`}>
+            {m.kim === 'bot' && <Maskot sinif="w-6 h-6 shrink-0 mt-0.5" />}
+            <div className={`max-w-[85%] rounded-lg px-2.5 py-2 text-xs leading-relaxed whitespace-pre-line
+              ${m.kim === 'ben' ? 'bg-ttk-600 text-white' : 'bg-white border border-slate-200 text-slate-700'}`}>
+              {m.metin.split('**').map((p, j) => j % 2 ? <b key={j} className="text-ttk-800">{p}</b> : p)}
+              {m.eylemler && m.eylemler.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {m.eylemler.map((e, j) => (
+                    <button key={j} onClick={() => { git(e.ekran, e.konu); setAcik(false); }}
+                      className="px-2 py-1 rounded border border-ttk-300 bg-ttk-50 text-ttk-800 text-2xs font-semibold hover:bg-ttk-100">
+                      {e.ad} →
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+        {yaziyor && (
+          <div className="flex gap-2">
+            <Maskot sinif="w-6 h-6 shrink-0 mt-0.5" />
+            <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-400">yazıyor…</div>
+          </div>
+        )}
+        <div ref={altRef} />
+      </div>
+
+      {gecmis.length <= 1 && (
+        <div className="px-3 py-2 border-t border-slate-200 flex flex-wrap gap-1.5 bg-white shrink-0">
+          {BOT_ONERILERI.map(o => (
+            <button key={o} onClick={() => sor(o)}
+              className="px-2 py-1 rounded-full border border-slate-300 text-2xs text-slate-600 hover:border-ttk-400 hover:text-ttk-700">
+              {o}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 p-2 border-t border-slate-200 bg-white shrink-0">
+        <input value={girdi} onChange={e => setGirdi(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') sor(); }}
+          placeholder="Sorunuzu yazın…" aria-label="Yardımcıya soru yazın"
+          className="flex-1 border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ttk-400" />
+        <Buton tur="birincil" onClick={() => sor()} disabled={!girdi.trim()} data-ipucu="Soruyu gönder">Gönder</Buton>
+      </div>
+      <div className="px-3 py-1 bg-amber-50 border-t border-amber-200 text-[0.62rem] leading-tight text-amber-900 shrink-0">
+        Demo asistan: yanıtlar ekrandaki veriden ve kullanım rehberinden kural tabanlı üretilir;
+        dış bir yapay zekâ servisine bağlanılmaz.
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
   12) KABUK VE UYGULAMA
    ══════════════════════════════════════════════════════════════════════════ */
 
@@ -4639,6 +5183,9 @@ function Uygulama() {
   const [gunlukAcik, setGunlukAcik] = useState(false);
   const [yeniForm, setYeniForm] = useState(null);
   const [menuAcik, setMenuAcik] = useState(false);
+  const [komutAcik, setKomutAcik] = useState(false);
+  const [botAcik, setBotAcik] = useState(false);
+  const [rehberKonu, setRehberKonu] = useState(null);
 
   useEffect(() => { document.documentElement.style.setProperty('--olcek', String(s.olcek)); }, [s.olcek]);
 
@@ -4651,7 +5198,20 @@ function Uygulama() {
   const aktif = s.ekran === 'ANA_MENU' ? null : (sayfaBul(s.ekran) || sayfalar[0]);
   const tesisler = TESISLER.filter(t => tesisYetkisi(k, t.kod));
   const tesisAdi = (TESISLER.find(t => t.kod === s.tesis) || {}).ad || 'Misafirhane';
-  const git = (kod) => { gonder({ tip: 'EKRAN', ekran: kod }); setMenuAcik(false); };
+  const git = (kod, konu) => {
+    gonder({ tip: 'EKRAN', ekran: kod });
+    setMenuAcik(false);
+    if (kod === 'REHBER') setRehberKonu(konu || null);
+  };
+
+  /* Ctrl/⌘ + K her yerden komut aramasını açar */
+  useEffect(() => {
+    const tus = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setKomutAcik(x => !x); }
+    };
+    window.addEventListener('keydown', tus);
+    return () => window.removeEventListener('keydown', tus);
+  }, []);
 
   /* Ana menü kartlarındaki canlı sayılar */
   const sayilar = useMemo(() => {
@@ -4692,7 +5252,8 @@ function Uygulama() {
       {/* Üst bant — sade */}
       <header className="bg-ttk-800 text-white">
         <div className="sayfa-govde px-3 py-2 flex items-center gap-3 flex-wrap">
-          <button onClick={() => git('ANA_MENU')} className="flex items-center gap-2 hover:opacity-90 min-w-0" title="Ana menüye dön">
+          <button onClick={() => git('ANA_MENU')} className="flex items-center gap-2 hover:opacity-90 min-w-0"
+            data-ipucu="Ana menüye dön — bütün sayfaların kart görünümü">
             <TtkLogo boyut="h-11 w-auto" />
             <div className="leading-tight text-left min-w-0">
               <div className="font-bold text-sm tracking-wide">TTKNET</div>
@@ -4700,14 +5261,26 @@ function Uygulama() {
             </div>
           </button>
 
+          {/* İşlem araması — her yerden Ctrl + K */}
+          <button onClick={() => setKomutAcik(true)}
+            data-ipucu="Sayfa, işlem, misafir ya da rezervasyon no arayın (Ctrl + K)"
+            className="flex-1 min-w-[12rem] max-w-md flex items-center gap-2 px-2.5 py-1.5 rounded-lg
+                       bg-ttk-700/60 hover:bg-ttk-700 border border-ttk-600 text-ttk-100 transition-colors">
+            <Ikon ad="ara" sinif="w-4 h-4 shrink-0" />
+            <span className="text-xs truncate">Hangi işlemi yapmak istiyorsunuz?</span>
+            <kbd className="num ml-auto text-2xs border border-ttk-500 rounded px-1 py-0.5 shrink-0 hidden sm:inline">Ctrl K</kbd>
+          </button>
+
           <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end text-xs">
-            <span className="px-2 py-1 rounded bg-amber-400 text-amber-950 font-bold text-2xs">DEMO</span>
-            <button onClick={() => git('REHBER')} title="Kullanım rehberi — adım adım nasıl yapılır?"
+            <span className="px-2 py-1 rounded bg-amber-400 text-amber-950 font-bold text-2xs"
+              data-ipucu="Bu bir demo prototiptir; gerçek misafir verisi kullanılmaz">DEMO</span>
+            <button onClick={() => git('REHBER')} data-ipucu="Kullanım rehberi — hangi işlem hangi sayfada, adım adım"
               className={`flex items-center gap-1 px-2 py-1 rounded text-2xs font-semibold transition-colors
                 ${s.ekran === 'REHBER' ? 'bg-ttk-600 text-white' : 'text-ttk-100 hover:bg-ttk-700'}`}>
               <Ikon ad="rehber" sinif="w-4 h-4" /> Rehber
             </button>
-            <button onClick={() => gonder({ tip: 'CIKIS' })} title="Oturumu kapat" aria-label="Oturumu kapat"
+            <button onClick={() => gonder({ tip: 'CIKIS' })} aria-label="Oturumu kapat"
+              data-ipucu="Oturumu kapat — giriş ekranına döner"
               className="p-1.5 rounded-full text-ttk-100 hover:bg-rose-500/80 hover:text-white transition-colors">
               <Ikon ad="guc" sinif="w-5 h-5" />
             </button>
@@ -4717,14 +5290,14 @@ function Uygulama() {
         {/* Sayfa şeridi */}
         <nav className="bg-ttk-900/40 border-t border-ttk-700">
           <div className="sayfa-govde px-3 flex items-center gap-1 overflow-x-auto kaydir">
-            <button onClick={() => git('ANA_MENU')}
+            <button onClick={() => git('ANA_MENU')} data-ipucu="Bütün sayfaların kart görünümü"
               className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors
                 ${s.ekran === 'ANA_MENU' ? 'border-white text-white' : 'border-transparent text-ttk-200 hover:text-white'}`}>
               <Ikon ad="menu" sinif="w-3.5 h-3.5" /> Ana Menü
             </button>
             <span className="w-px h-5 bg-ttk-700 mx-1" />
             {menuSayfalari.map(x => (
-              <button key={x.kod} onClick={() => git(x.kod)} title={x.aciklama}
+              <button key={x.kod} onClick={() => git(x.kod)} data-ipucu={x.aciklama}
                 className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors
                   ${s.ekran === x.kod ? 'border-white text-white' : 'border-transparent text-ttk-200 hover:text-white'}`}>
                 <Ikon ad={x.ikon} sinif="w-3.5 h-3.5" /> {x.kisa}
@@ -4747,7 +5320,7 @@ function Uygulama() {
                   {s.ekran === 'ONAY' && <OnayEkrani {...ortak} />}
                   {['TAHSILAT', 'STATU'].includes(s.ekran) && <PesinatEkrani {...ortak} bolum={s.ekran} />}
                   {s.ekran === 'KULLANICILAR' && <KullaniciEkrani s={s} gonder={gonder} />}
-                  {s.ekran === 'REHBER' && <RehberEkrani s={s} git={git} izin={izin} />}
+                  {s.ekran === 'REHBER' && <RehberEkrani s={s} git={git} izin={izin} baslangicKonu={rehberKonu} />}
                 </>}
         </div>
       </main>
@@ -4766,6 +5339,24 @@ function Uygulama() {
       </footer>
 
       <OlcekKontrol olcek={s.olcek} gonder={gonder} />
+
+      {/* Yardımcı bot — madenci bareti takan maskot */}
+      <YardimBotu s={s} izin={izin} git={git} dolu={dolu} temizlik={temizlik} acik={botAcik} setAcik={setBotAcik} />
+      {!botAcik && (
+        <button onClick={() => setBotAcik(true)} aria-label="Yardımcıyı aç"
+          data-ipucu="Bareti — doluluk sorun, bir işlemin nasıl yapıldığını öğrenin"
+          className="fixed right-3 bottom-[9.5rem] z-40 w-14 h-14 rounded-full bg-white border-2 border-ttk-600
+                     shadow-xl flex items-center justify-center hover:scale-105 transition-transform print:hidden">
+          <Maskot sinif="w-10 h-10" />
+        </button>
+      )}
+
+      {komutAcik && (
+        <KomutArama s={s} izin={izin} git={git} gonder={gonder} acYeniKayit={setYeniForm}
+          tesisler={tesisler} kapat={() => setKomutAcik(false)} />
+      )}
+
+      <IpucuKatmani />
 
       {yeniForm && (
         <YeniRezervasyonFormu s={s} gonder={gonder} dolu={dolu} temizlik={temizlik}

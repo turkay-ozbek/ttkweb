@@ -49,6 +49,7 @@ Ekran görüntüleri ve testin ürettiği dosyalar `testler/cikti/` altına yaz�
 | `08-tahsilat-statu-zaman.mjs` | Kapora kuralı değişikliği, altı dönem filtresi, iş listelerinin sayı/satır tutarlılığı, tam ve kısmi tahsilat, kayıt hareketleri, yedi statü kutusu ve süzme, gün ilerletme ve otomatik statü değişiklikleri, toplu iptal, muhasebe yetki sınırı |
 | `09-goruntuleme-tutarlilik.mjs` | Dört misafirhanede dolu+boş+temizlik=kapasite ve yüzde tutarlılığı, takvim dönem kaydırma ve aralık mantığı, oda haritası lejantı/ipuçları/görünüm ve tarih değişimi, temizlik bloğu, yatak listesi sıralama ve süzgeçleri, toplu otomatik yerleştirme önerisinin onaylanmadan uygulanmaması |
 | `10-arayuz-ve-sinir-durumlari.mjs` | Ölçek sınırları ve kalıcılığı, üç çözünürlük × dokuz sayfa taşma, 1280px+%135 birlikte, ekranda form kodu olmaması, «Rehberi yazdır», oturum kapatınca verinin korunması, geçmiş tarihli kayıt, kişi sayısı oynatma, kapora üstü tahsilat, arama sınırları |
+| `11-ipucu-arama-bot.mjs` | İpucu katmanı (çıkma/kaybolma, pasif düğmede yetki gerekçesi, `title` devralma), işlem araması (Ctrl + K, sayfa/işlem/kayıt arama, ok tuşları, Esc), yardımcı bot (maskot, on soru–yanıt eşleşmesi, yanıttaki bağlantı, demo uyarısı, ölçek kutusuyla çakışmama) |
 | `tumu.mjs` | Hepsini sırayla koşturur, özet tablo basar |
 
 ## Sürükle-bırak nasıl test ediliyor?

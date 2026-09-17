@@ -40,7 +40,10 @@ try {
 
     /* c) Pasif düğmede gerekçe ipucu */
     if (!bek.yerlestir) {
-      const ipucu = await p.getByRole('button', { name: /Otomatik Yerleştir/ }).first().getAttribute('title');
+      /* İpuçları artık data-ipucu ile taşınıyor (bkz. 11-ipucu-arama-bot.mjs);
+         eski title'lar da devralındığı için ikisine de bakılıyor. */
+      const dugme = p.getByRole('button', { name: /Otomatik Yerleştir/ }).first();
+      const ipucu = (await dugme.getAttribute('data-ipucu')) || (await dugme.getAttribute('title'));
       d.bekle(/yetki/i.test(ipucu || ''), `${rol}: pasif düğmede yetki gerekçesi ipucu var`, ipucu || 'ipucu yok');
     }
 

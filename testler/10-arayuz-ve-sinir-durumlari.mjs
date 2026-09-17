@@ -85,7 +85,8 @@ try {
   const altBar = await p.locator('footer').innerText();
   d.bekle(!/yetkili misafirhane|Sistem Yöneticisi \(/.test(altBar), 'alt barda uzun oturum metni yok', altBar.slice(0, 120));
   const ustBar = await p.locator('header > div').first().innerText();
-  d.bekle(!/\?/.test(ustBar), 'üst bantta «?» düğmesi yok');
+  d.bekle(await p.locator('header').getByRole('button', { name: '?', exact: true }).count() === 0,
+    'üst bantta «?» bilgi düğmesi yok');
   d.bekle(await p.locator('header select').count() === 0, 'üst bantta misafirhane seçicisi yok');
 
   /* ═══ 9.4 Rehberi yazdır ═══ */

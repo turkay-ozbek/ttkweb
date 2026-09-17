@@ -323,7 +323,45 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
 
 ---
 
-## 10. Arayüz, okunurluk ve dayanıklılık  `[oto: 01, 10]`
+## 10. Yardım öğeleri  `[oto: 11]`
+
+### 10.1 İpucu (tooltip)
+1. Herhangi bir düğmenin üzerine gelip bir saniye bekleyin.
+   - ✔ Ne işe yaradığını anlatan koyu bir balon çıkar, ekran dışına taşmaz.
+2. İmleci uzaklaştırın. ✔ Balon kaybolur.
+3. Muhasebe rolüyle girip «Otomatik Yerleştir» düğmesinin üzerine gelin.
+   - ✔ **Pasif düğmede de** balon çıkar ve hangi yetkinin gerektiğini yazar.
+4. Sekme tuşuyla düğmeler arasında gezinin. ✔ Odaklanan düğmenin ipucu çıkar.
+
+### 10.2 İşlem araması
+1. Üst banttaki «Hangi işlemi yapmak istiyorsunuz?» kutusuna tıklayın (ya da **Ctrl + K**).
+2. Sırayla şunları yazıp deneyin:
+   - `takvim` → ✔ Doluluk Takvimi sayfası açılır.
+   - `yeni kayit` → ✔ yeni kayıt formu açılır.
+   - bir misafirin adı → ✔ **Kayıt** başlığı altında rezervasyonlar listelenir; seçince
+     talep ekranında açılır ve «aramadan açıldı» uyarısı çıkar.
+   - bir rezervasyon no ya da Tc kimlik no → ✔ ilgili kayıt bulunur.
+   - `zzz` → ✔ «sonuç yok» açıklaması ve ne yazılabileceği gösterilir.
+3. ↑ ↓ ok tuşları ✔ seçimi taşır, ↵ ✔ seçer, **Esc** ✔ kapatır.
+
+### 10.3 Yardımcı bot (Bareti)
+1. Sağ alt köşedeki baretli maskota tıklayın. ✔ Pencere açılır, açma düğmesi gizlenir.
+2. Önerilen sorulardan **Bugün kaç yatak boş?** → ✔ canlı sayılarla yanıt verir.
+3. Şunları sorun:
+   - «kapora nasıl işlenir?» → ✔ kapora başlığının adımları
+   - «dekont nasıl onaylanır?» → ✔ dekont ve onay adımları
+   - «misafiri odaya nasıl yerleştiririm?» → ✔ yerleştirme adımları
+   - «kaç dekont onay bekliyor?» → ✔ canlı sayı
+   - «yetkilerim neler?» → ✔ rolünüzün yetkileri
+   - anlamsız bir soru → ✔ ne sorulabileceğini söyler
+4. Yanıttaki mavi bağlantıya tıklayın. ✔ İlgili sayfa açılır, yardımcı kapanır.
+5. ✔ Pencerenin altında demo asistan olduğu, dış bir yapay zekâ servisine
+   bağlanılmadığı yazar.
+6. ✔ Yardımcı düğmesi sağ alttaki ölçek kutusuyla çakışmaz.
+
+---
+
+## 11. Arayüz, okunurluk ve dayanıklılık  `[oto: 01, 10]`
 
 ### 10.1 Çözünürlük
 Tarayıcı penceresini sırayla **1280 / 1366 / 1440 / 1600 / 1920** piksel genişliğe getirip
@@ -361,11 +399,11 @@ Tarayıcı penceresini sırayla **1280 / 1366 / 1440 / 1600 / 1920** piksel geni
 
 ---
 
-## 11. Kabul ölçütü
+## 12. Kabul ölçütü
 
 Aşağıdakilerin tamamı sağlanıyorsa sürüm kabul edilebilir:
 
-1. Bölüm 1–9'daki her senaryo beklenen sonucu veriyor.
+1. Bölüm 1–10'daki her senaryo beklenen sonucu veriyor.
 2. Beş çözünürlükte hiçbir sayfada yatay taşma yok.
 3. Tarayıcı konsolunda hata yok.
 4. Kaporalı hiçbir kayıt, dekontu onaylanmadan yatak alamıyor (üç yerleştirme yolunda da).
@@ -395,7 +433,8 @@ node testler/tumu.mjs 05 09    # yalnız seçilen dosyalar
 | `07-yeni-kayit-dogrulama.mjs` | 2.1–2.5 ve 10.5'in tarih/kayıt sınır durumları |
 | `08-tahsilat-statu-zaman.mjs` | 3.6, 5.1–5.6, 6.1–6.3 |
 | `09-goruntuleme-tutarlilik.mjs` | 7.1–7.4 ve 4.2, 4.5 |
-| `10-arayuz-ve-sinir-durumlari.mjs` | 1.6, 9.4, 10.1–10.5 |
+| `10-arayuz-ve-sinir-durumlari.mjs` | 1.6, 9.4, 11.1–11.5 |
+| `11-ipucu-arama-bot.mjs` | 10.1–10.3 — ipucu, işlem araması ve yardımcı bot |
 
 ### Elle bakılması gerekenler
 
@@ -408,3 +447,5 @@ Otomatik testler davranışı doğrular; şunlar için insan gözü gerekir:
 - **Sürükle-bırak hissi:** otomatik test olayları sentetik gönderir; fareyle gerçek
   sürüklemenin akıcılığını siz deneyin.
 - **Yazıcı çıktısı:** «Rehberi yazdır» çıktısının sayfa düzeni.
+- **Yardımcının dili:** bot yanıtlarının gerçekten anlaşılır olup olmadığı; kendi
+  cümlelerinizle sorup deneyin, anlamadığı soruları not edin.

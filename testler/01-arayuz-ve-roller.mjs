@@ -25,7 +25,11 @@ for (const [w, h] of [[1280,800],[1440,900],[1600,1000],[1920,1080]]) {
   const ust = await p.locator('header > div').first().innerText();
   // 1) üst bar: yalnız DEMO + Rehber; ? yok, kişi simgesi yok, tesis seçici yok
   if (!ust.includes('Rehber')) hata.push(`${w}: üst barda Rehber yok`);
-  if (ust.includes('?')) hata.push(`${w}: «?» düğmesi hâlâ var`);
+  // «?» bilgi düğmesi kaldırıldı (arama kutusundaki soru cümlesiyle karışmasın diye
+  // metin değil, düğmenin erişilebilir adı denetleniyor)
+  if (await p.locator('header').getByRole('button', { name: '?', exact: true }).count())
+    hata.push(`${w}: «?» düğmesi hâlâ var`);
+  if (!ust.includes('Hangi işlemi yapmak istiyorsunuz?')) hata.push(`${w}: üst bantta işlem arama kutusu yok`);
   if (await p.locator('header select').count()) hata.push(`${w}: üst barda misafirhane seçicisi hâlâ var`);
   if (await p.locator('header button[aria-label="Kullanıcı bilgileri"]').count()) hata.push(`${w}: kişi simgesi hâlâ var`);
   if (!(await p.locator('header button[aria-label="Oturumu kapat"]').isVisible())) hata.push(`${w}: çıkış düğmesi yok`);

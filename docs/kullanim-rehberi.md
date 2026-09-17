@@ -23,7 +23,16 @@ arayüzünde gösterilmez.
    sayfa şeridinden tek tıkla geçilir.
 4. **Yazı boyutu.** Ekranın sağ alt köşesindeki dikey büyüteç kutusu: **+** büyütür, **−**
    küçültür, ortadaki yüzde düğmesi %100'e döndürür. Ayar tarayıcıda saklanır.
-5. **Rehber ve oturum.** Üst bandın sağındaki **Rehber** düğmesi bu sayfayı her ekrandan açar;
+5. **Bir düğmenin ne yaptığını öğrenin.** Düğmenin üzerine gelip bekleyin; ne işe yaradığı
+   küçük bir balonda yazar. Düğme soluk (pasif) ise balon hangi yetkinin gerektiğini söyler.
+6. **Aradığınız işlemi yazarak bulun.** Üst bandın ortasındaki **«Hangi işlemi yapmak
+   istiyorsunuz?»** kutusu ya da her yerden **Ctrl + K**. Sayfa adı, işlem, misafir adı,
+   Tc kimlik no veya rezervasyon no yazabilirsiniz; ↑ ↓ ile gezinip ↵ ile seçersiniz.
+7. **Yardımcıya sorun.** Sağ alt köşedeki baretli maskot **Bareti**'dir. Doluluk gibi
+   soruları canlı veriyle, «kapora nasıl işlenir?» gibi soruları bu rehberden adım adım
+   yanıtlar ve ilgili sayfaya bağlantı verir. Bir **demo asistandır**: kural tabanlı çalışır,
+   dış bir yapay zekâ servisine bağlanılmaz.
+8. **Rehber ve oturum.** Üst bandın sağındaki **Rehber** düğmesi bu sayfayı her ekrandan açar;
    en sağdaki güç simgesi oturumu kapatır. Kullanıcı adınız alt bilgi çubuğunun solunda yazar.
 
 > Bir düğme soluk (pasif) görünüyorsa üzerine gelin: o işlem için hangi yetkinin gerektiği

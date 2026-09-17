@@ -8,6 +8,35 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.5.0] — 17.09.2026
+### Eklendi — üç yardım öğesi
+- **İpucu (tooltip) katmanı.** Düğmenin ne yaptığı, üzerine gelince okunaklı bir balonda
+  yazıyor. Tarayıcının kendi `title` balonundan farkları: gecikmesi tutarlı, ekran dışına
+  taşmıyor, klavyeyle odaklanınca da çıkıyor ve **pasif düğmelerde de görünüyor** (imlecin
+  altındaki öğe `elementFromPoint` ile bulunur, çünkü `disabled` düğmeler fare olayı
+  yaymaz). Mevcut `title` değerleri kendiliğinden devralınıyor; yerleştirme, tahsilat,
+  dekont ve onay düğmelerine ayrıca açıklayıcı metinler yazıldı.
+- **İşlem araması** — üst bandın ortasında «Hangi işlemi yapmak istiyorsunuz?» kutusu,
+  her yerden **Ctrl + K**. Sayfalar, işlemler, rehber başlıkları, misafirhaneler ve kayıtlar
+  (ad soyad / Tc kimlik no / rezervasyon no) tek kutudan aranıyor; ↑ ↓ ile gezilip ↵ ile
+  seçiliyor. Aramadan seçilen kayıt talep ekranında açılıyor, tarih süzgeci gerekiyorsa
+  kendiliğinden genişliyor.
+- **Bareti — yardımcı bot.** Sağ alt köşede madenci bareti takan maskot. Doluluk, bugünkü
+  giriş-çıkış, bekleyen talep, onaydaki dekont, tahsilat bekleyen kayıt ve kapora kuralı
+  sorularını **canlı veriyle** yanıtlıyor; «kapora nasıl işlenir?», «dekont nasıl
+  onaylanır?» gibi soruları kullanım rehberinden adım adım anlatıp ilgili sayfaya bağlantı
+  veriyor; «ne yapabilirim?» sorusuna rolün yetkilerini sayıyor; misafirin hangi odada
+  kaldığını buluyor. Yanıtlar kural tabanlıdır, dış bir yapay zekâ servisine bağlanılmaz —
+  pencerenin altında bu açıkça yazıyor.
+- `testler/11-ipucu-arama-bot.mjs`: 47 denetim — ipucunun çıkması/kaybolması, pasif
+  düğmedeki yetki gerekçesi, `title` devralma, Ctrl + K, sayfa/işlem/kayıt araması, ok
+  tuşlarıyla gezinme, on soru–yanıt eşleşmesi, yanıttaki bağlantının doğru sayfayı açması,
+  yardımcının ölçek kutusuyla çakışmaması.
+
+### Değişti
+- Rehber başlıklarına arama anahtarları eklendi; bot eşleştirmesi Türkçe çekim eklerine
+  takılmadan doğru başlığı buluyor («kapora nasıl işlenir» → kapora başlığı).
+
 ## [2.4.0] — 17.09.2026
 ### Eklendi — elle test planı otomatikleştirildi
 - `testler/` altına beş yeni test dosyası ve ortak yardımcı modül (`ortak.mjs`) eklendi;
