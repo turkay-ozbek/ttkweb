@@ -126,7 +126,11 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
 
 ---
 
-## 3. Kapora, dekont ve müdür onayı  `[oto: 03, 04, 05, 08]`
+## 3. Kapora, dekont ve müdür onayı  `[oto: 03, 04, 05, 08, 13]`
+
+> Bu bölümün adım adım genişletilmiş hâli: [`test-senaryolari-kapora.md`](test-senaryolari-kapora.md)
+> — hazır demo kayıtlarıyla hızlı başlangıç, kapora hesabı, yerleştirme kilidi, dekont,
+> müdür onayı ve reddi, **kapora muafiyeti**, tahsilat ve süre aşımı.
 
 ### 3.1 Kapora onaylanmadan yerleştirme engeli
 1. 2.2'de açtığınız **şahıs** kaydını Talepler'de seçin.
