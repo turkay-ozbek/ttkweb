@@ -151,6 +151,8 @@ try {
   const acDugmesi = p.locator('button[aria-label="Yardımcıyı aç"]');
   d.bekle(await acDugmesi.count() === 1, 'yardımcı düğmesi ekranda duruyor');
   d.bekle(await acDugmesi.locator('svg').count() === 1, 'yardımcı düğmesinde maskot simgesi var');
+  const ak2 = await acDugmesi.boundingBox();
+  d.bekle(ak2.width >= 68, `yardımcı düğmesi büyük (${Math.round(ak2.width)} px)`);
   await uzerineGel(acDugmesi);
   d.bekle(/^Madenci/.test(await balon.innerText()), 'yardımcının ipucunda adı «Madenci» yazıyor',
     await balon.innerText());
@@ -163,9 +165,14 @@ try {
     'demo asistan olduğu açıkça yazıyor');
   d.bekle(await acDugmesi.count() === 0, 'pencere açıkken açma düğmesi gizleniyor');
 
-  /* önerilen sorular */
+  /* önerilen sorular — bulunulan sayfaya göre değişir */
+  const cipler = await panel.locator('button').filter({ hasText: /\?$/ }).allInnerTexts();
+  d.bekle(cipler.length >= 2, `sayfaya göre öneri çipleri gösteriliyor (${cipler.length} adet)`, cipler.join(' · '));
+  await p.locator('button[aria-label="Yardımcıyı kapat"]').click(); await p.waitForTimeout(300);
+  await sayfa(p, 'Özet'); await p.waitForTimeout(300);
+  await p.locator('button[aria-label="Yardımcıyı aç"]').click(); await p.waitForTimeout(400);
   const oneri = p.getByRole('button', { name: 'Bugün kaç yatak boş?' });
-  d.bekle(await oneri.count() === 1, 'önerilen sorular gösteriliyor');
+  d.bekle(await oneri.count() === 1, 'Özet sayfasında doluluk sorusu öneriliyor');
   await oneri.click(); await p.waitForTimeout(800);
   const dolulukYaniti = (await panel.innerText());
   d.bekle(/yatak dolu \(%\d+\)/.test(dolulukYaniti), 'doluluk sorusuna canlı veriyle yanıt veriyor',
@@ -183,6 +190,8 @@ try {
     ['kapora tutarı ne kadar?',          /kuralına göre şahsi misafirde kapora/],
     ['yetkilerim neler?',                /rolündesiniz/],
     ['hava nasıl olacak',                /tam anlayamadım/],
+    ['kahvaltı yoklaması nasıl işlenir?', /Kahvaltı|kahvaltıya inmeyen/i],
+    ['ay sonu belgesi nasıl hazırlanır?', /Ay sonu|belgeyi/i],
   ];
   const kutu2 = p.locator('input[aria-label="Yardımcıya soru yazın"]');
   for (const [soru, desen] of sorular) {

@@ -73,7 +73,8 @@ try {
   const matris = p.locator('main table').first();   // matris, kullanıcı tablosundan önce gelir
   const satir = await matris.locator('tbody tr').count();
   const sutun = await matris.locator('thead th').count();
-  d.bekle(satir === 14 && sutun === 6, `yetki matrisi 14 yetki × 4 rol olarak açıldı`, `${satir} satır / ${sutun} sütun`);
+  /* Yetki sayısı sürümle birlikte artar; sabit sayı yerine yapı denetlenir. */
+  d.bekle(satir >= 14 && sutun === 6, `yetki matrisi ${satir} yetki × 4 rol olarak açıldı`, `${satir} satır / ${sutun} sütun`);
   /* Admin sütunu tamamen ✓ olmalı, muhasebede yerleştirme ✗ */
   const adminSutun = await matris.locator('tbody tr td:nth-child(3)').allInnerTexts();
   d.bekle(adminSutun.every(x => x.trim() === '✓'), 'matriste Admin bütün yetkilere sahip');

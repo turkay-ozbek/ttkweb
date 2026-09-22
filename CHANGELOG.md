@@ -8,6 +8,53 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.6.0] — 22.09.2026
+### Düzeltildi
+- **Yeni kayıt listeye düşmüyordu.** Talep listesinin süzgeci sayfa değişince sıfırlanıyor,
+  geliş tarihi 21 günden uzak olan kayıt görünmez oluyordu. Süzgeç artık genel durumda
+  tutuluyor (sayfa değiştirip dönünce korunuyor), varsayılan aralık **bugün−7 … bugün+90**
+  gün oldu ve süzgeç yüzünden gizlenen kayıt varsa sayısı uyarı olarak yazılıp tek tuşla
+  temizlenebiliyor.
+
+### Eklendi
+- **Uzunluğu belli alanlarda giriş denetimi.** Tc kimlik no (11), telefon (10) ve IBAN
+  (TR + 24) alanları harf kabul etmiyor, hane sayısını aşan rakamı almıyor ve «fazla rakam
+  girdiniz» uyarısı veriyor. Her alanda canlı sayaç (8/11), eksik/hatalı durumda gerekçe;
+  IBAN'da mod-97 kontrol hanesi denetimi. Dekont penceresine gönderen IBAN alanı eklendi.
+- **Kapora muafiyeti (öncelikli misafir).** Telefonla arayan önemli bir misafir için müdür,
+  gerekçe yazarak kaydı kapora beklemeden yerleştirmeye açabiliyor. Karar kayıt geçmişine
+  ve işlem günlüğüne yazılıyor; **kapora borcu silinmiyor**, tahsilat listesinde kalıyor.
+  Yeni yetki: `rezervasyon.kapora_muafiyet` (Müdür, Admin).
+- **Misafir bilgilendirme SMS'i.** Kayıt açıldığında, dekont onaylandığında ve iptalde
+  misafire mesaj üretiliyor; alt banttaki «✉ SMS» düğmesinden gönderim günlüğü, mesaj
+  metni, karakter sayısı ve kaç SMS'e böleceği görülüyor. Telefonu olmayan kayıtta
+  «gönderilemedi» olarak işaretleniyor ve form uyarı veriyor.
+- **Kahvaltı Takibi sayfası (MSFH-W11).** Resepsiyon, günbegün kahvaltıya inmeyen
+  misafirleri işaretliyor; sayılar ay sonu belgesine geçiyor. Muhasebe sayfayı görüyor ama
+  değiştiremiyor. Yeni yetki: `kahvalti.isle`.
+- **Ay Sonu Belgesi sayfası (MSFH-W12).** Muhasebe dönem seçip belgeyi resepsiyondan
+  istiyor, resepsiyon «Belgeyi Hazırla» ile konaklama gecesi, kahvaltı ve tahsilat
+  sayılarını içeren **PDF belgeyi** üretip teslim ediyor. Yeni yetkiler: `rapor.talep`
+  (Muhasebe, Müdür), `rapor.hazirla` (Resepsiyon, Müdür). Çok sayfalı A4 PDF üreteci eklendi.
+- **Yatak listesi yazdırma.** A4 dikey/yatay seçimi, önizleme, kurum başlıklı çıktı;
+  ekrandaki süzgeç geçerli, çıktıda listenin tamamı basılıyor.
+- **Yardımcı «Madenci» büyüdü ve etkileşimli oldu.** Daha büyük maskot ve pencere,
+  genişlet/küçült düğmesi, bulunulan sayfaya göre değişen öneri çipleri, «sohbeti temizle»,
+  yazıyor animasyonu; ilk kullanımda dikkat çeken tanıtım baloncuğu (bir kez gösterilir).
+  Kahvaltı ve ay sonu konuları da yanıtlanıyor.
+- **Mobil arayüz.** Bütün esnek ızgaralar `minmax(min(Xrem,100%),1fr)` oldu, geniş tablolar
+  sayfayı değil kendi kutusunu kaydırıyor, yeni kayıt formu telefonda tek sütuna düşüyor,
+  kart başlıkları sarmalanıyor. 390 px'te on bir sayfanın hiçbirinde yatay taşma yok.
+- Belgeler: [`docs/veritabani.md`](docs/veritabani.md) (PostgreSQL önerisi, şema, çakışma
+  kısıtı, tekrar gelen misafirin hızlı kaydı), [`docs/dagitim-mimarisi.md`](docs/dagitim-mimarisi.md)
+  (Compose / Kubernetes karşılaştırması, CloudNativePG, GitOps, yayına alma sırası),
+  [`docs/mobil-arayuz.md`](docs/mobil-arayuz.md).
+- Testler: `12-mobil.mjs` (21 denetim) ve `13-yeni-islevler.mjs` (48 denetim).
+
+### Değişti
+- Rol tanımları güncellendi: resepsiyon rezervasyon alır ama onaylayamaz (onayı müdüre
+  sunar), kahvaltı yoklamasını işler ve ay sonu belgesini hazırlar; muhasebe belgeyi ister.
+
 ## [2.5.1] — 17.09.2026
 ### Düzeltildi
 - **İpucu açılırken sola kayıyordu.** Balon `transform: translate(-50%)` ile ortalanıyor,

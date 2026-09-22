@@ -54,6 +54,8 @@ Uygulama ana menüden açılan on odaklı sayfadan oluşur; her sayfa tek bir i�
 | MSFH-W07 | **Peşinat ve Tahsilat** | Dönem filtresi, iş listeleri, ₺ Tahsilat Al, süresi dolanlar, peşinat kuralı |
 | MSFH-W08 | **Statü Takibi** | Talep → Kapora Bekleniyor → Müdür Onayı Bekliyor → Onaylı → Konaklıyor → Çıkış → İptal akışı |
 | MSFH-W09 | **Kullanıcı ve Yetki** (Admin) | Kullanıcılar, roller, misafirhane yetkisi ve yetki matrisi |
+| MSFH-W11 | **Kahvaltı Takibi** | Günlük kahvaltı yoklaması — kahvaltıya inmeyen misafirlerin işaretlenmesi (resepsiyon işler, muhasebe görür) |
+| MSFH-W12 | **Ay Sonu Belgesi** | Muhasebe ister, resepsiyon hazırlar; konaklama gecesi, kahvaltı ve tahsilat sayılarını içeren PDF |
 | MSFH-W10 | **Kullanım Rehberi** | Adım adım anlatım: kayıt açma, kapora, dekont onayı, yerleştirme, tahsilat, giriş-çıkış, rol yetkileri ve SSS (yalnız üst banttaki «Rehber» düğmesinden açılır) |
 
 > Form kodları (MSFH-Wxx) yalnız bu belgede ve API sözleşmesinde kullanılır; kullanıcı
@@ -120,6 +122,16 @@ node testler/tumu.mjs 05 09    # yalnız numarası verilen dosyalar
 Test planındaki senaryoların çoğu bu takımla otomatik koşar; hangi bölümü hangi dosyanın
 kapsadığı [`docs/test-plani.md`](docs/test-plani.md) sonundaki tabloda, elle bakılması
 gereken başlıklar da aynı yerdedir.
+
+## Kurulum kararları
+
+Prototipin arkasındaki mimari sorular ayrı belgelerde yanıtlanmıştır:
+
+| Konu | Belge | Özet |
+|---|---|---|
+| Veritabanı | [`docs/veritabani.md`](docs/veritabani.md) | **PostgreSQL 16.** Aynı yatağın iki kez verilmesini `EXCLUDE … daterange` kısıtı veritabanı seviyesinde engeller. Geçmiş sınırsız tutulur (~250 MB/yıl); tekrar gelen misafir Tc kimlik no ya da bulanık ad aramasıyla saniyeler içinde bulunup formu doldurur |
+| Canlıya çıkış | [`docs/dagitim-mimarisi.md`](docs/dagitim-mimarisi.md) | Kurumda Kubernetes kümesi **varsa** K8s + CloudNativePG + Argo CD; **yoksa** tek sunucu + Docker Compose ile çıkıp konteynerleri hazır tutmak. Bu ölçekte küme kurmak tek başına gerekçelendirilemez |
+| Mobil | [`docs/mobil-arayuz.md`](docs/mobil-arayuz.md) | Ayrı uygulama değil, duyarlı web + PWA. Müdür telefonla arandığında kaydı telefondan açabilir; 390 px'te taşma yok |
 
 ## Kapora ve dekont onayı
 

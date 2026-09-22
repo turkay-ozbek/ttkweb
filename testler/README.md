@@ -50,6 +50,8 @@ Ekran görüntüleri ve testin ürettiği dosyalar `testler/cikti/` altına yaz�
 | `09-goruntuleme-tutarlilik.mjs` | Dört misafirhanede dolu+boş+temizlik=kapasite ve yüzde tutarlılığı, takvim dönem kaydırma ve aralık mantığı, oda haritası lejantı/ipuçları/görünüm ve tarih değişimi, temizlik bloğu, yatak listesi sıralama ve süzgeçleri, toplu otomatik yerleştirme önerisinin onaylanmadan uygulanmaması |
 | `10-arayuz-ve-sinir-durumlari.mjs` | Ölçek sınırları ve kalıcılığı, üç çözünürlük × dokuz sayfa taşma, 1280px+%135 birlikte, ekranda form kodu olmaması, «Rehberi yazdır», oturum kapatınca verinin korunması, geçmiş tarihli kayıt, kişi sayısı oynatma, kapora üstü tahsilat, arama sınırları |
 | `11-ipucu-arama-bot.mjs` | İpucu katmanı (çıkma/kaybolma, pasif düğmede yetki gerekçesi, `title` devralma), işlem araması (Ctrl + K, sayfa/işlem/kayıt arama, ok tuşları, Esc), yardımcı bot (maskot, on soru–yanıt eşleşmesi, yanıttaki bağlantı, demo uyarısı, ölçek kutusuyla çakışmama) |
+| `12-mobil.mjs` | 390 px'te on bir sayfada taşma, tablonun kendi kutusunda kayması, formun tek sütuna düşmesi, rakam klavyesi, telefondan uçtan uca kayıt, dokunma hedefi yüksekliği, yardımcının ekran içinde kalması |
+| `13-yeni-islevler.mjs` | Tc/telefon/IBAN giriş denetimi ve fazla rakam uyarısı, SMS gönderimi ve metni, kapora muafiyeti (kilit → muafiyet → yerleştirme), talep süzgecinin kalıcılığı ve «süzgeci temizle», yatak listesi yazdırma (dikey/yatay @page), kahvaltı yoklaması ve rol sınırı, ay sonu belgesi akışı ve üretilen PDF'in içeriği |
 | `tumu.mjs` | Hepsini sırayla koşturur, özet tablo basar |
 
 ## Sürükle-bırak nasıl test ediliyor?
