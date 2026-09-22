@@ -129,10 +129,11 @@ Prototipin arkasındaki mimari sorular ayrı belgelerde yanıtlanmıştır:
 
 | Konu | Belge | Özet |
 |---|---|---|
-| **Brifing** | [`docs/mimari-brifing.md`](docs/mimari-brifing.md) | **Başkasına anlatmak için tek parça belge:** yönetici özeti, bugünkü sorunlar, katman mimarisi, veritabanı ve Kubernetes kararlarının gerekçesi, entegrasyonlar, KVKK, RPO/RTO, 13 haftalık göç planı, maliyet kalemleri, risk tablosu ve karar gerektiren altı soru |
+| **Brifing** | [`docs/mimari-brifing.md`](docs/mimari-brifing.md) | **Başkasına anlatmak için tek parça belge:** yönetici özeti, bugünkü sorunlar, katman mimarisi, veritabanı ve Kubernetes kararlarının gerekçesi, entegrasyonlar, KVKK, RPO/RTO, 13 haftalık göç planı, maliyet kalemleri, risk tablosu, kurum ağı dışından mobil erişim ve karar gerektiren yedi soru |
 | Veritabanı | [`docs/veritabani.md`](docs/veritabani.md) | **PostgreSQL 16.** Aynı yatağın iki kez verilmesini `EXCLUDE … daterange` kısıtı veritabanı seviyesinde engeller. Geçmiş sınırsız tutulur (~250 MB/yıl); tekrar gelen misafir Tc kimlik no ya da bulanık ad aramasıyla saniyeler içinde bulunup formu doldurur |
 | Canlıya çıkış | [`docs/dagitim-mimarisi.md`](docs/dagitim-mimarisi.md) | Kurumda Kubernetes kümesi **varsa** K8s + CloudNativePG + Argo CD; **yoksa** tek sunucu + Docker Compose ile çıkıp konteynerleri hazır tutmak. Bu ölçekte küme kurmak tek başına gerekçelendirilemez |
-| Mobil | [`docs/mobil-arayuz.md`](docs/mobil-arayuz.md) | Ayrı uygulama değil, duyarlı web + PWA. Müdür telefonla arandığında kaydı telefondan açabilir; 390 px'te taşma yok |
+| Mobil | [`docs/mobil-arayuz.md`](docs/mobil-arayuz.md) | Ayrı uygulama değil, duyarlı web + PWA. Müdür telefonla arandığında kaydı telefondan açabilir; 390 px'te taşma yok. **PWA masaüstü kadar etkili mi?** Kayıt alma, onaylama ve sorgulamada evet; oda haritasında toplu yerleştirme, 30 günlük takvim ve toplu veri girişi masaüstü işi olarak kalır |
+| Mobil güvenlik | [`docs/mobil-guvenlik.md`](docs/mobil-guvenlik.md) | **Risk mobil verinin kendisinde değil, sistemi internete açmakta ve cihazdadır.** Üç seçenek (kurum VPN'i / ZTNA / DMZ'den yayımlama) karşılaştırılır; öneri VPN ile başlayıp ZTNA'ya geçmek, uygulamayı hiç yayımlamamaktır. Oturum, veri, ağ ve cihaz katmanlarında alınacak önlemler ve KVKK etkisi listelenir |
 
 ## Kapora ve dekont onayı
 

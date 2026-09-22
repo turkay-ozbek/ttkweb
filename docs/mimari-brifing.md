@@ -238,6 +238,27 @@ Yapılandırma örnekleri: [`dagitim-mimarisi.md`](dagitim-mimarisi.md) § 3–4
 **Karar gerektiren:** KVKK saklama sürelerinin kurum politikasıyla netleştirilmesi ve
 aydınlatma metninin hukuk müşavirliğince onaylanması.
 
+### 7.1 Kurum ağı dışından (mobil) erişim
+
+Uygulamanın kurum içi özel ağda çalışması beklenir; ancak müdürün telefonla arandığında
+sahadan kayıt açabilmesi istenmektedir. Bu, ağ güvenliği açısından ayrı bir karardır:
+
+| | **A — Kurum VPN'i** | **B — ZTNA / kimlik farkındalı vekil** | **C — Doğrudan yayımlama** |
+|---|---|---|---|
+| Uygulama internette mi? | Hayır | Hayır (aracı üzerinden) | **Evet** |
+| Ek saldırı yüzeyi | Yok denecek kadar az | Düşük | **Yüksek** |
+| Önerilen | **Başlangıç için evet** | **Olgunlaşınca hedef** | Hayır |
+
+Riskin kaynağı mobil verinin kendisi değildir (4G/5G radyo bağlantısı operatörce
+şifrelenir, halka açık Wi-Fi'dan güvenlidir); risk **uygulamayı internete açmakta,
+cihazın kaybında ve oturumun çalınmasında** yoğunlaşır. Alınacak önlemler — kurum
+dışından zorunlu MFA, 15 dakikalık boşta kalma süresi, cihazda kişisel veri
+saklanmaması, kurum dışından toplu dışa aktarma ve yetki yönetiminin sunucu tarafında
+kapatılması — ayrıntısıyla [`mobil-guvenlik.md`](mobil-guvenlik.md) belgesindedir.
+
+**Karar gerektiren:** Kurumda mobil istemcili VPN var mı ve kapasitesi yeterli mi;
+erişim kurum telefonlarıyla mı (MDM) yoksa kişisel cihazlarla mı (BYOD) olacak.
+
 ---
 
 ## 8. Süreklilik ve hizmet düzeyi
@@ -305,14 +326,15 @@ güvenilir olmaz** — bu yüzden burada adam-gün ve kalem listesi verilmiştir
 
 ## 12. Karar gerektiren noktalar
 
-Brifing sonunda şu altı sorunun yanıtlanması gerekir:
+Brifing sonunda şu yedi sorunun yanıtlanması gerekir:
 
 1. **Veritabanı:** PostgreSQL mi, mevcut Oracle lisansıyla Oracle'da mı kalınacak?
 2. **Çalışma ortamı:** Kurumda işletilen bir Kubernetes kümesi var mı? Yoksa A seçeneği onaylanıyor mu?
 3. **Kimlik:** LDAP/AD bağlantısı için hangi grup yapısı kullanılacak; AD grubu → rol eşleştirmesini kim tanımlayacak?
 4. **SMS:** Hangi sağlayıcı, hangi arayüz, yıllık kota?
 5. **KVKK:** Saklama süreleri ve aydınlatma metni kim tarafından onaylanacak?
-6. **Kaynak:** Geliştirme iç kaynakla mı yapılacak, hizmet alımı mı? Pilot misafirhane hangisi olacak?
+6. **Mobil erişim:** Kurum ağı dışından erişim açılacak mı? Açılacaksa VPN mi ZTNA mı; cihazlar kurum telefonu mu (MDM) kişisel mi (BYOD)?
+7. **Kaynak:** Geliştirme iç kaynakla mı yapılacak, hizmet alımı mı? Pilot misafirhane hangisi olacak?
 
 ---
 
