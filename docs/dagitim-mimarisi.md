@@ -248,3 +248,106 @@ sorun çıkarsa DNS bir kayıtla eski sisteme döner.
 
 **Karar:** Kubernetes'i bu modül için *tek başına* kurmayın. Kurumda küme varsa
 kullanın; yoksa Compose ile çıkın, konteynerleri hazır tutun, küme geldiğinde taşıyın.
+
+---
+
+## 9. Boyutlandırma
+
+Ölçüm değil, hesap: 40 eşzamanlı kullanıcı, kullanıcı başına dakikada ~4 istek
+⇒ **~3 istek/saniye**. Yerleştirme önerisi en ağır işlem (~50 ms CPU).
+
+| Bileşen | İstek (request) | Sınır (limit) | Örnek | Gerekçe |
+|---|---|---|---|---|
+| api | 200m CPU / 256 Mi | 1 CPU / 512 Mi | 3 | Tek örnek bile yükü kaldırır; 3 örnek kesintisiz güncelleme ve arıza payı içindir |
+| web (statik) | 50m / 64 Mi | 200m / 128 Mi | 2 | Yalnız dosya sunar |
+| PostgreSQL | 1 CPU / 4 Gi | 2 CPU / 8 Gi | 3 (1 birincil + 2 yedek) | `shared_buffers` 2 GB |
+| MinIO | 200m / 512 Mi | 1 CPU / 2 Gi | 2 | Dekont ve belgeler |
+| Redis | 100m / 128 Mi | 500m / 512 Mi | 1 | Oturum ve kuyruk |
+
+**Disk:** veritabanı 100 Gi (20 yıllık veri + dizin + yedek alanı payı), MinIO 200 Gi
+(dekont taramaları ~200 KB × yılda ~3.000 adet ⇒ 0,6 GB/yıl; bolca pay bırakılmıştır).
+
+---
+
+## 10. İşletme el kitabı (runbook)
+
+Gece yarısı arandığında bakılacaklar. Bu bölüm sistemi devralacak kişiye verilir.
+
+### 10.1 «Uygulama açılmıyor»
+```bash
+# K8s
+kubectl -n msfh get pods                       # pod durumları
+kubectl -n msfh logs deploy/msfh-api --tail=100
+kubectl -n msfh describe pod <pod>             # olaylar: imaj çekilemedi? bellek?
+# Compose
+docker compose ps && docker compose logs --tail=100 api
+```
+Sık neden: veritabanı hazır değil (`readinessProbe` başarısız). `msfh-db` durumuna bakın.
+
+### 10.2 «Veritabanı yanıt vermiyor»
+```bash
+kubectl -n msfh get cluster msfh-db            # CloudNativePG durumu
+kubectl -n msfh cnpg status msfh-db            # birincil kim, gecikme ne
+```
+Devralma kendiliğinden olur (~15 sn). Olmuyorsa:
+```bash
+kubectl -n msfh cnpg promote msfh-db msfh-db-2
+```
+
+### 10.3 Yedekten dönüş (PITR)
+```yaml
+# Belirli bir ana dönmek için yeni küme oluşturulur, eskisi bozulmaz
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata: { name: msfh-db-kurtarma }
+spec:
+  instances: 1
+  bootstrap:
+    recovery:
+      source: msfh-db
+      recoveryTarget: { targetTime: "2026-09-22 14:30:00+03" }
+  externalClusters:
+    - name: msfh-db
+      barmanObjectStore: { destinationPath: s3://msfh-yedek/, ... }
+```
+Doğrulandıktan sonra uygulama yeni kümeye yönlendirilir.
+**Compose'da:** `pgbackrest --stanza=msfh --type=time --target="..." restore`
+
+### 10.4 Sürüm yükseltme / geri alma
+```bash
+# GitOps: imaj etiketi değiştirilir, Argo CD uygular
+argocd app sync msfh
+argocd app history msfh
+argocd app rollback msfh <önceki-numara>
+```
+**Şema göçü geri alınamaz.** Bu yüzden göçler geriye uyumlu yazılır (§ 4.5);
+sütun silme, bir sonraki sürümde ayrı bir adım olarak yapılır.
+
+### 10.5 Rutin bakım takvimi
+
+| Sıklık | İş |
+|---|---|
+| Günlük | Yedek başarı bildirimi, disk kullanımı, hata oranı |
+| Haftalık | En yavaş 10 sorgu (`pg_stat_statements`), güvenlik yamaları |
+| Aylık | Trivy imaj taraması, bağımlılık güncellemesi |
+| 6 ayda bir | **Yedekten dönüş tatbikatı** — yapılmayan tatbikat, yedek yok demektir |
+| Yıllık | PostgreSQL ana sürüm yükseltmesi değerlendirmesi |
+
+---
+
+## 11. Devreye alma kontrol listesi
+
+Canlıya çıkmadan önce hepsi işaretlenmeli:
+
+- [ ] TLS sertifikası geçerli, otomatik yenileme çalışıyor
+- [ ] LDAP/AD bağlantısı test edildi; AD grubu → rol eşleştirmesi doğrulandı
+- [ ] Yetki denetimi **sunucuda** yapılıyor (arayüzdeki gizleme tek başına güvenlik değildir)
+- [ ] `EXCLUDE` kısıtı üretim şemasında var ve çakışma denemesi reddediliyor
+- [ ] Yedek alınıyor **ve** yedekten dönüş bir kez denendi
+- [ ] İzleme ve uyarılar kuruldu, alarm bir kişiye ulaşıyor
+- [ ] SMS sağlayıcısı üretim anahtarıyla test edildi, kota biliniyor
+- [ ] KVKK aydınlatma metni yerinde, saklama süresi işi tanımlı
+- [ ] Denetim izi (`hareket`) yazılıyor ve silinemiyor
+- [ ] Geri dönüş planı yazılı ve sorumlusu belli
+- [ ] Kullanıcı eğitimi yapıldı, uygulama içi rehber güncel
+- [ ] Bu belge ve [`veritabani.md`](veritabani.md) sistemi devralacak kişiye teslim edildi

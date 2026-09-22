@@ -52,6 +52,7 @@ Ekran görüntüleri ve testin ürettiği dosyalar `testler/cikti/` altına yaz�
 | `11-ipucu-arama-bot.mjs` | İpucu katmanı (çıkma/kaybolma, pasif düğmede yetki gerekçesi, `title` devralma), işlem araması (Ctrl + K, sayfa/işlem/kayıt arama, ok tuşları, Esc), yardımcı bot (maskot, on soru–yanıt eşleşmesi, yanıttaki bağlantı, demo uyarısı, ölçek kutusuyla çakışmama) |
 | `12-mobil.mjs` | 390 px'te on bir sayfada taşma, tablonun kendi kutusunda kayması, formun tek sütuna düşmesi, rakam klavyesi, telefondan uçtan uca kayıt, dokunma hedefi yüksekliği, yardımcının ekran içinde kalması |
 | `13-yeni-islevler.mjs` | Tc/telefon/IBAN giriş denetimi ve fazla rakam uyarısı, SMS gönderimi ve metni, kapora muafiyeti (kilit → muafiyet → yerleştirme), talep süzgecinin kalıcılığı ve «süzgeci temizle», yatak listesi yazdırma (dikey/yatay @page), kahvaltı yoklaması ve rol sınırı, ay sonu belgesi akışı ve üretilen PDF'in içeriği |
+| `14-takvim-ve-kisayollar.mjs` | Açılır takvim (panel, ay gezinme, gün seçimi, kısayollar, Esc, kaymama, sınırlı tarih), süre kısayolları, daha önce kalmış misafiri bulma ve satırın doldurulması, talep listesi statü çipleri |
 | `tumu.mjs` | Hepsini sırayla koşturur, özet tablo basar |
 
 ## Sürükle-bırak nasıl test ediliyor?

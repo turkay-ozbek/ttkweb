@@ -91,6 +91,8 @@ tailwind.config = {
     .sayfa-govde section, .sayfa-govde > div > div { min-width: 0; max-width: 100%; }
     .kaydir-x, div:has(> table.veri) { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
     table.veri { min-width: max-content; }
+    /* Dokunmatik ekranda parmakla isabet ettirilebilecek en küçük yükseklik */
+    button, select, input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) { min-height: 30px; }
     /* Kart başlığındaki süzgeç/arama kutuları alt satıra insin */
     .sayfa-govde section > header { flex-wrap: wrap; }
     .sayfa-govde section > header > div { flex-wrap: wrap; min-width: 0; }
@@ -133,7 +135,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useLayoutEffect, useCa
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.6.0';
+const SURUM = '2.7.0';
 const SURUM_TARIHI = '2026-09-16';
 
 const GUN_MS = 86400000;
@@ -1687,9 +1689,121 @@ function SayiliGirdi({ tur, deger, onChange, className = '', sinif = '', zorunlu
   );
 }
 
-function TarihGirdi({ deger, onChange, className = '' }) {
+/* ── Açılır takvim ─────────────────────────────────────────────────────────
+   Tarih kutusunun yanındaki küçük takvim simgesine tıklanınca açılır. Kutuya
+   elle GG.AA.YYYY yazmak da çalışmayı sürdürür; takvim yalnız kısa yoldur.
+   Panel fixed konumlanır (tablo/pencere taşmalarından etkilenmesin diye) ve
+   yeri ölçülerek verilir; ekran kenarından taşmaz.                          */
+const HAFTA_BASLIK = ['Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct', 'Pz'];
+
+/* Ayın ilk gününün pazartesi=0 olacak biçimde kaçıncı sütunda başladığı */
+function ayIzgarasi(yil, ay) {
+  const ilk = new Date(Date.UTC(yil, ay, 1));
+  const kaydir = (ilk.getUTCDay() + 6) % 7;            // Pazar=0 → Pazartesi=0
+  const gunSayisi = new Date(Date.UTC(yil, ay + 1, 0)).getUTCDate();
+  const hucreler = [];
+  for (let i = 0; i < kaydir; i++) hucreler.push(null);
+  for (let g = 1; g <= gunSayisi; g++) hucreler.push(iso(new Date(Date.UTC(yil, ay, g))));
+  while (hucreler.length % 7) hucreler.push(null);
+  return hucreler;
+}
+
+function TakvimPaneli({ deger, bugun, enAz, enCok, sec, kapat, capa }) {
+  const temel = deger || bugun || iso(new Date());
+  const [yil, setYil] = useState(Number(temel.slice(0, 4)));
+  const [ay, setAy] = useState(Number(temel.slice(5, 7)) - 1);
+  const kutuRef = useRef(null);
+
+  /* Konumu ölç ve yerleştir — açılırken kaymasın, kenardan taşmasın */
+  useLayoutEffect(() => {
+    const el = kutuRef.current;
+    if (!el || !capa) return;
+    const g = el.getBoundingClientRect(), bosluk = 6;
+    const altta = capa.bottom + g.height + bosluk <= window.innerHeight;
+    el.style.left = Math.round(Math.min(Math.max(capa.left, bosluk), window.innerWidth - g.width - bosluk)) + 'px';
+    el.style.top = Math.round(altta ? capa.bottom + bosluk : Math.max(bosluk, capa.top - g.height - bosluk)) + 'px';
+    el.style.visibility = 'visible';
+  }, [capa]);
+
+  useEffect(() => {
+    const disari = (e) => { if (kutuRef.current && !kutuRef.current.contains(e.target)) kapat(); };
+    const tus = (e) => { if (e.key === 'Escape') kapat(); };
+    document.addEventListener('mousedown', disari);
+    document.addEventListener('keydown', tus);
+    return () => { document.removeEventListener('mousedown', disari); document.removeEventListener('keydown', tus); };
+  }, [kapat]);
+
+  const hucreler = useMemo(() => ayIzgarasi(yil, ay), [yil, ay]);
+  const ayDegistir = (yon) => {
+    const y = new Date(Date.UTC(yil, ay + yon, 1));
+    setYil(y.getUTCFullYear()); setAy(y.getUTCMonth());
+  };
+  const kapali = (t) => (enAz && t < enAz) || (enCok && t > enCok);
+
+  const kisaYol = (ad, tarih, ipucu) => (
+    <button key={ad} onClick={() => { if (!kapali(tarih)) sec(tarih); }} disabled={kapali(tarih)}
+      data-ipucu={ipucu} className="px-2 py-1 rounded border border-slate-300 text-2xs font-semibold
+        text-ttk-700 hover:bg-ttk-50 hover:border-ttk-400 disabled:opacity-40 disabled:cursor-not-allowed">
+      {ad}
+    </button>
+  );
+
+  return (
+    <div ref={kutuRef} style={{ left: 0, top: 0, visibility: 'hidden' }} role="dialog" aria-label="Takvim"
+      className="fixed z-[70] w-[16.5rem] bg-white rounded-lg shadow-2xl border border-slate-300 p-2 ipucu-bel">
+      <div className="flex items-center gap-1 mb-1.5">
+        <button onClick={() => ayDegistir(-12)} data-ipucu="Önceki yıl"
+          className="px-1.5 py-1 rounded hover:bg-slate-100 text-slate-500 text-2xs num">«</button>
+        <button onClick={() => ayDegistir(-1)} data-ipucu="Önceki ay"
+          className="px-1.5 py-1 rounded hover:bg-slate-100 text-slate-600">◀</button>
+        <div className="flex-1 text-center text-xs font-bold text-ttk-900">{AY[ay]} {yil}</div>
+        <button onClick={() => ayDegistir(1)} data-ipucu="Sonraki ay"
+          className="px-1.5 py-1 rounded hover:bg-slate-100 text-slate-600">▶</button>
+        <button onClick={() => ayDegistir(12)} data-ipucu="Sonraki yıl"
+          className="px-1.5 py-1 rounded hover:bg-slate-100 text-slate-500 text-2xs num">»</button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-px mb-0.5">
+        {HAFTA_BASLIK.map((g, i) => (
+          <div key={g} className={`text-center text-[0.6rem] font-bold py-0.5
+            ${i >= 5 ? 'text-rose-400' : 'text-slate-400'}`}>{g}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-px">
+        {hucreler.map((t, i) => {
+          if (!t) return <div key={'b' + i} />;
+          const secili = t === deger, buGun = t === bugun, hs = haftaSonu(t), yasak = kapali(t);
+          return (
+            <button key={t} onClick={() => sec(t)} disabled={yasak}
+              aria-current={secili ? 'date' : undefined}
+              className={`num h-7 rounded text-xs transition-colors
+                ${secili ? 'bg-ttk-600 text-white font-bold'
+                  : yasak ? 'text-slate-300 cursor-not-allowed'
+                  : buGun ? 'bg-amber-100 text-amber-900 font-bold ring-1 ring-amber-300 hover:bg-amber-200'
+                  : hs ? 'text-rose-500 hover:bg-slate-100' : 'text-slate-700 hover:bg-slate-100'}`}>
+              {Number(t.slice(8, 10))}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center gap-1 flex-wrap mt-2 pt-2 border-t border-slate-200">
+        {kisaYol('Bugün', bugun, 'Bugünün tarihini seç')}
+        {kisaYol('Yarın', ekle(bugun, 1), 'Yarını seç')}
+        {kisaYol('+1 hafta', ekle(bugun, 7), 'Bir hafta sonrası')}
+        <button onClick={kapat} className="ml-auto px-2 py-1 rounded text-2xs text-slate-500 hover:bg-slate-100">Kapat</button>
+      </div>
+    </div>
+  );
+}
+
+/* Tarih kutusu: elle yazma + takvim simgesi. enAz/enCok ile sınır verilebilir. */
+function TarihGirdi({ deger, onChange, className = '', enAz, enCok, bugun }) {
   const [metin, setMetin] = useState(tr(deger));
+  const [takvim, setTakvim] = useState(null);
+  const sarmalRef = useRef(null);
   useEffect(() => setMetin(tr(deger)), [deger]);
+
   const uygula = () => {
     const p = metin.trim().replace(/[\/\-\s]/g, '.').match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
     if (!p) { setMetin(tr(deger)); return; }
@@ -1698,15 +1812,34 @@ function TarihGirdi({ deger, onChange, className = '' }) {
     if (isNaN(d.getTime()) || iso(d) !== s) { setMetin(tr(deger)); return; }
     onChange(s);
   };
+  const ac = () => {
+    const r = sarmalRef.current.getBoundingClientRect();
+    setTakvim({ left: r.left, top: r.top, bottom: r.bottom });
+  };
+
   return (
-    <input value={metin} placeholder="GG.AA.YYYY" title="GG.AA.YYYY · ↑ / ↓ tuşlarıyla gün değiştirir"
-      onChange={e => setMetin(e.target.value)} onBlur={uygula}
-      onKeyDown={e => {
-        if (e.key === 'Enter') uygula();
-        if (e.key === 'ArrowUp')   { e.preventDefault(); onChange(ekle(deger, 1)); }
-        if (e.key === 'ArrowDown') { e.preventDefault(); onChange(ekle(deger, -1)); }
-      }}
-      className={`num w-[86px] text-center border border-slate-300 rounded px-1.5 py-0.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-ttk-400 ${className}`} />
+    <span ref={sarmalRef} className={`inline-flex items-stretch ${className.includes('w-full') || className.includes('!w-full') ? 'w-full' : ''}`}>
+      <input value={metin} placeholder="GG.AA.YYYY"
+        data-ipucu="GG.AA.YYYY yazabilir, ↑ ↓ tuşlarıyla gün değiştirebilir ya da takvimden seçebilirsiniz"
+        onChange={e => setMetin(e.target.value)} onBlur={uygula}
+        onKeyDown={e => {
+          if (e.key === 'Enter') uygula();
+          if (e.key === 'ArrowUp')   { e.preventDefault(); onChange(ekle(deger, 1)); }
+          if (e.key === 'ArrowDown') { e.preventDefault(); onChange(ekle(deger, -1)); }
+        }}
+        className={`num w-[86px] flex-1 min-w-0 text-center border border-slate-300 rounded-l px-1.5 py-0.5 text-xs
+                    bg-white focus:outline-none focus:ring-1 focus:ring-ttk-400 ${className}`} />
+      <button type="button" onClick={ac} aria-label="Takvimden seç" aria-haspopup="dialog"
+        data-ipucu="Takvimden seç"
+        className={`shrink-0 px-1.5 border border-l-0 border-slate-300 rounded-r bg-slate-50 hover:bg-ttk-50
+                    text-slate-500 hover:text-ttk-700 transition-colors ${takvim ? 'bg-ttk-100 text-ttk-800' : ''}`}>
+        <Ikon ad="takvim" sinif="w-3.5 h-3.5" />
+      </button>
+      {takvim && (
+        <TakvimPaneli deger={deger} bugun={bugun || SISTEM_TARIHI_BASLANGIC} enAz={enAz} enCok={enCok} capa={takvim}
+          sec={(t) => { onChange(t); setTakvim(null); }} kapat={() => setTakvim(null)} />
+      )}
+    </span>
   );
 }
 
@@ -2002,7 +2135,7 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolu
   const tarihGezgini = (
     <div className="flex items-center gap-1">
       <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, -1))} aria-label="Önceki gün">◀</Buton>
-      <TarihGirdi deger={haritaTarihi} onChange={setHaritaTarihi} />
+      <TarihGirdi deger={haritaTarihi} onChange={setHaritaTarihi} bugun={s.bugun} />
       <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, 1))} aria-label="Sonraki gün">▶</Buton>
       {haritaTarihi !== s.bugun && <Buton tur="sessiz" onClick={() => setHaritaTarihi(s.bugun)}>Bugün</Buton>}
     </div>
@@ -2141,9 +2274,9 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolu
           <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(20rem, 100%), 1fr))' }}>
             <Kart baslik="Seçili Tarih Aralığı — Kalan Yatak">
               <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-                <TarihGirdi deger={aralikBas} onChange={setAralikBas} />
+                <TarihGirdi deger={aralikBas} onChange={setAralikBas} bugun={s.bugun} />
                 <span className="text-slate-400 text-xs">→</span>
-                <TarihGirdi deger={aralikSon} onChange={setAralikSon} />
+                <TarihGirdi deger={aralikSon} onChange={setAralikSon} bugun={s.bugun} enAz={ekle(aralikBas, 1)} />
               </div>
               {!aralikAnaliz ? <BosDurum metin="Geçerli bir tarih aralığı seçiniz" /> : (
                 <div className="space-y-2">
@@ -2385,7 +2518,8 @@ function DekontYukleme({ s, rz, gonder, kapat }) {
             </Alan>
             <div className="grid grid-cols-2 gap-2">
               <Alan etiket="Ödeme Tarihi" zorunlu>
-                <TarihGirdi deger={f.odeme_tarihi} onChange={v => setF({ ...f, odeme_tarihi: v })} className="!w-full" />
+                <TarihGirdi deger={f.odeme_tarihi} onChange={v => setF({ ...f, odeme_tarihi: v })} className="!w-full"
+                  bugun={s.bugun} enCok={s.bugun} />
               </Alan>
               <Alan etiket="Yatırılan Tutar (₺)" zorunlu>
                 <input type="number" value={f.tutar} onChange={e => setF({ ...f, tutar: e.target.value })}
@@ -3094,11 +3228,26 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
         <div className="bg-white border border-slate-200 rounded px-3 py-2.5 flex items-center gap-3 flex-wrap mb-3">
           <div className="flex items-center gap-1.5">
             <span className="text-2xs uppercase font-semibold text-slate-500">Geliş</span>
-            <TarihGirdi deger={filtreBas} onChange={setFiltreBas} />
+            <TarihGirdi deger={filtreBas} onChange={setFiltreBas} bugun={s.bugun} />
             <span className="text-slate-400 text-xs">–</span>
-            <TarihGirdi deger={filtreSon} onChange={setFiltreSon} />
+            <TarihGirdi deger={filtreSon} onChange={setFiltreSon} bugun={s.bugun} enAz={filtreBas} />
+          </div>
+          <div className="flex items-center gap-1 flex-wrap">
+            {[['BEKLEYEN', 'Bekleyen işler', 'Yerleştirilmeyi bekleyen bütün kayıtlar'],
+              ['YERLESMEMIS', 'Yatağı yok', 'Statüsü ne olursa olsun yatağı olmayanlar'],
+              ['PESINAT_BEKLENIYOR', 'Kapora bekleyen', 'Kaporası yatmamış kayıtlar'],
+              ['ONAY_BEKLIYOR', 'Onayda', 'Dekontu müdür onayında olanlar'],
+              ['HEPSI', 'Tümü', 'İptal hariç bütün kayıtlar']].map(([kod, ad, ipucu]) => (
+              <button key={kod} onClick={() => setStatuFiltre(kod)} data-ipucu={ipucu}
+                className={`px-2 py-1 rounded-full border text-2xs font-semibold transition-colors
+                  ${statuFiltre === kod ? 'bg-ttk-600 border-ttk-700 text-white'
+                                        : 'bg-white border-slate-300 text-slate-600 hover:border-ttk-400 hover:text-ttk-700'}`}>
+                {ad}
+              </button>
+            ))}
           </div>
           <select value={statuFiltre} onChange={e => setStatuFiltre(e.target.value)}
+            data-ipucu="Tek bir statüye göre süzmek için"
             className="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
             <option value="BEKLEYEN">Bekleyen işler (yerleştirilmemiş)</option>
             <option value="YERLESMEMIS">Yatağı olmayan kayıtlar</option>
@@ -3306,7 +3455,7 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
           ]} />
           {!yerlestirmeModu && <>
             <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, -1))}>◀</Buton>
-            <TarihGirdi deger={haritaTarihi} onChange={setHaritaTarihi} />
+            <TarihGirdi deger={haritaTarihi} onChange={setHaritaTarihi} bugun={s.bugun} />
             <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, 1))}>▶</Buton>
           </>}
         </>} />
@@ -3620,9 +3769,9 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
       <div className="bg-white border border-slate-200 rounded px-3 py-2.5 space-y-2">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-2xs uppercase font-semibold text-slate-500">Dönem</span>
-          <TarihGirdi deger={filtreBas} onChange={setFiltreBas} />
+          <TarihGirdi deger={filtreBas} onChange={setFiltreBas} bugun={s.bugun} />
           <span className="text-slate-400 text-xs">–</span>
-          <TarihGirdi deger={filtreSon} onChange={setFiltreSon} />
+          <TarihGirdi deger={filtreSon} onChange={setFiltreSon} bugun={s.bugun} enAz={filtreBas} />
           <div className="flex items-center gap-1">
             {HIZLI_ARALIK.map(([ad, fn]) => (
               <button key={ad} onClick={() => { const [a, b] = fn(); setFiltreBas(a); setFiltreSon(b); }}
@@ -3972,6 +4121,105 @@ const Alan = ({ etiket, zorunlu, ipucu, children, className = '' }) => (
   </label>
 );
 
+/* ── Daha önce kalmış misafiri bulma ───────────────────────────────────────
+   Tekrar gelen misafirin kaydı elle yazılmasın: Tc kimlik no ya da adla
+   geçmiş konaklamalar aranır, seçilince misafir satırı kendiliğinden dolar.
+   Kurulumda bu arama `misafir` tablosu üzerinde yapılır (docs/veritabani.md § 3). */
+function misafirDefteri(rezervasyonlar) {
+  const defter = new Map();
+  for (const rz of rezervasyonlar) {
+    for (const g of rz.misafirler) {
+      if (!g.adi_soyadi) continue;
+      const anahtar = g.tc_kimlik_no || ('ad:' + aramaAnahtari(g.adi_soyadi));
+      const k = defter.get(anahtar) || {
+        anahtar, tc_kimlik_no: g.tc_kimlik_no, adi_soyadi: g.adi_soyadi, cinsiyet: g.cinsiyet,
+        sicil_no: g.sicil_no, birim: g.birim, gorev_sevk_no: '', tel_no: rz.tel_no,
+        sayi: 0, sonCikis: '', odalar: [], tesisler: new Set(), protokol: false,
+      };
+      k.sayi++;
+      if (rz.cikis_tarihi > k.sonCikis) {
+        k.sonCikis = rz.cikis_tarihi;
+        if (g.sicil_no) k.sicil_no = g.sicil_no;
+        if (g.birim) k.birim = g.birim;
+        if (rz.tel_no) k.tel_no = rz.tel_no;
+      }
+      if (g.oda_no) k.odalar.push(g.oda_no);
+      k.tesisler.add(rz.tesis);
+      if (rz.protokol) k.protokol = true;
+      defter.set(anahtar, k);
+    }
+  }
+  return defter;
+}
+
+/* En çok kaldığı oda — «genelde Oda 21» bilgisini üretir */
+const enCokOda = (odalar) => {
+  if (!odalar.length) return null;
+  const say = {};
+  odalar.forEach(o => { say[o] = (say[o] || 0) + 1; });
+  return Object.entries(say).sort((a, b) => b[1] - a[1])[0][0];
+};
+
+function MisafirArama({ defter, baslangic, sec, kapat }) {
+  const [sorgu, setSorgu] = useState(baslangic || '');
+  const girdiRef = useRef(null);
+  useEffect(() => { girdiRef.current && girdiRef.current.focus(); }, []);
+
+  const sonuclar = useMemo(() => {
+    const q = aramaAnahtari(sorgu);
+    if (q.length < 3) return [];
+    /* Rakam yoksa Tc eşleşmesi denenmez: boş dizge her kaydı eşleştirirdi. */
+    const rakam = sorgu.replace(/\D/g, '');
+    return [...defter.values()]
+      .filter(k => aramaAnahtari(k.adi_soyadi).includes(q) ||
+                   (rakam.length >= 3 && (k.tc_kimlik_no || '').includes(rakam)))
+      .sort((a, b) => b.sayi - a.sayi || (b.sonCikis > a.sonCikis ? 1 : -1))
+      .slice(0, 12);
+  }, [sorgu, defter]);
+
+  return (
+    <Modal baslik="Daha Önce Kalmış Misafiri Bul" genislik="max-w-2xl" kapat={kapat}
+      altlik={<Buton tur="sessiz" onClick={kapat}>Kapat</Buton>}>
+      <div className="space-y-2 text-xs">
+        <p className="text-slate-600">
+          Tekrar gelen misafirin bilgilerini yeniden yazmayın: adını ya da Tc kimlik numarasını
+          yazıp seçin, satır kendiliğinden dolsun.
+        </p>
+        <input ref={girdiRef} value={sorgu} onChange={e => setSorgu(e.target.value)}
+          placeholder="Ad soyad ya da Tc kimlik no (en az 3 karakter)"
+          className={`${GIRDI} !text-sm`} />
+        <div className="max-h-[46vh] overflow-auto kaydir space-y-1">
+          {sorgu.trim().length < 3 && <BosDurum metin="Aramak için en az üç karakter yazın." />}
+          {sorgu.trim().length >= 3 && !sonuclar.length &&
+            <BosDurum metin={`«${sorgu}» için daha önce konaklamış misafir bulunamadı — yeni misafir olarak girin.`} />}
+          {sonuclar.map(k => {
+            const oda = enCokOda(k.odalar);
+            return (
+              <button key={k.anahtar} onClick={() => { sec(k); kapat(); }}
+                className="w-full text-left border border-slate-200 rounded px-2.5 py-2 hover:border-ttk-400 hover:bg-ttk-50 transition-colors">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {k.protokol && <span className="text-violet-600" title="Protokol misafiri">★</span>}
+                  <b className="text-ttk-900 text-sm">{k.adi_soyadi}</b>
+                  <span className="num text-slate-500">{k.tc_kimlik_no || 'Tc kimlik no yok'}</span>
+                  <Rozet sinif="bg-ttk-100 text-ttk-800 border-ttk-300">{k.sayi} kez kaldı</Rozet>
+                  <span className="num text-2xs text-slate-500 ml-auto">son çıkış {tr(k.sonCikis)}</span>
+                </div>
+                <div className="text-2xs text-slate-500 mt-0.5 flex gap-2 flex-wrap">
+                  <span>{k.cinsiyet === 'E' ? 'Erkek' : 'Kadın'}</span>
+                  {k.sicil_no && <span>· sicil {k.sicil_no}</span>}
+                  {k.birim && <span>· {k.birim}</span>}
+                  {oda && <span>· genelde Oda {oda}</span>}
+                  <span>· {[...k.tesisler].map(t => (TESISLER.find(x => x.kod === t) || {}).ad).join(', ')}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 function bosMisafir(cinsiyet = 'E') {
   return { tc_kimlik_no: '', adi_soyadi: '', cinsiyet, sicil_no: '', gorev_sevk_no: '',
            harcirah_miktari: '', birim: '', yatakId: null };
@@ -3989,7 +4237,20 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
     misafirler: [{ ...bosMisafir(), yatakId: (onDolgu && onDolgu.yatakId) || null }],
   }));
   const [motorNotu, setMotorNotu] = useState(null);
+  const [aramaSatiri, setAramaSatiri] = useState(null);   // hangi misafir satırı için arama açık
+  const defter = useMemo(() => misafirDefteri(s.rezervasyonlar), [s.rezervasyonlar]);
   const yaz = (alan, deger) => setF(x => ({ ...x, [alan]: deger }));
+
+  /* Seçilen geçmiş misafiri satıra doldur */
+  const misafirDoldur = (i, k) => setF(x => ({
+    ...x,
+    tel_no: x.tel_no || (k.tel_no || ''),
+    ad_soyad: x.ad_soyad || (i === 0 ? k.adi_soyadi : x.ad_soyad),
+    misafirler: x.misafirler.map((g, j) => j === i ? {
+      ...g, tc_kimlik_no: k.tc_kimlik_no || g.tc_kimlik_no, adi_soyadi: k.adi_soyadi,
+      cinsiyet: k.cinsiyet, sicil_no: k.sicil_no || '', birim: k.birim || '',
+    } : g),
+  }));
   const misafirYaz = (i, alan, deger) => setF(x => ({
     ...x, misafirler: x.misafirler.map((g, k) => k === i ? { ...g, [alan]: deger } : g) }));
 
@@ -4188,6 +4449,11 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
         <Buton tur="basari" onClick={kaydet} disabled={hatalar.length > 0}
           data-ipucu={hatalar.length ? 'Eksik veya hatalı alanlar var; düzeltilmeden kayıt açılamaz' : 'Kaydı aç ve talep listesine ekle'}>Kaydet</Buton>
       </>}>
+      {aramaSatiri != null && (
+        <MisafirArama defter={defter} baslangic={f.misafirler[aramaSatiri].adi_soyadi}
+          sec={(k) => misafirDoldur(aramaSatiri, k)} kapat={() => setAramaSatiri(null)} />
+      )}
+
       <div className="grid grid-cols-12 gap-3">
         {/* Sol: talep ve ödeme bilgileri — dar ekranda tam genişlik */}
         <div className="col-span-12 lg:col-span-5 space-y-3">
@@ -4200,7 +4466,7 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
                 </select>
               </Alan>
               <Alan etiket="Rezerv Tarihi">
-                <TarihGirdi deger={f.rezerv_tarihi} onChange={v => yaz('rezerv_tarihi', v)} className="!w-full" />
+                <TarihGirdi deger={f.rezerv_tarihi} onChange={v => yaz('rezerv_tarihi', v)} className="!w-full" bugun={s.bugun} />
               </Alan>
             </div>
             <Alan etiket="Adı Soyadı (rezervasyonu yaptıran)" zorunlu>
@@ -4225,12 +4491,26 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
             <legend className="text-2xs font-bold text-ttk-800 uppercase px-1">Konaklama</legend>
             <div className="grid grid-cols-3 gap-2 items-end">
               <Alan etiket="Geliş Tarihi" zorunlu>
-                <TarihGirdi deger={f.gelis_tarihi} onChange={v => setF(x => ({
+                <TarihGirdi bugun={s.bugun} deger={f.gelis_tarihi} onChange={v => setF(x => ({
                   ...x, gelis_tarihi: v, cikis_tarihi: v >= x.cikis_tarihi ? ekle(v, Math.max(1, fark(x.gelis_tarihi, x.cikis_tarihi))) : x.cikis_tarihi
                 }))} className="!w-full" />
               </Alan>
               <Alan etiket="Çıkış Tarihi" zorunlu>
-                <TarihGirdi deger={f.cikis_tarihi} onChange={v => yaz('cikis_tarihi', v)} className="!w-full" />
+                <TarihGirdi deger={f.cikis_tarihi} onChange={v => yaz('cikis_tarihi', v)} className="!w-full"
+                  bugun={s.bugun} enAz={ekle(f.gelis_tarihi, 1)} />
+              </Alan>
+              <Alan etiket="Süre kısayolu" className="col-span-2"
+                ipucu="Geliş tarihinden itibaren konaklama süresini tek tıkla ayarlar">
+                <div className="flex items-center gap-1 flex-wrap">
+                  {[['1 gece', 1], ['2 gece', 2], ['3 gece', 3], ['1 hafta', 7], ['2 hafta', 14], ['1 ay', 30]].map(([ad, gece]) => (
+                    <button key={ad} type="button" onClick={() => yaz('cikis_tarihi', ekle(f.gelis_tarihi, gece))}
+                      className={`px-2 py-1 rounded border text-2xs font-semibold transition-colors
+                        ${gunSayisi === gece ? 'bg-ttk-600 border-ttk-700 text-white'
+                                             : 'bg-white border-slate-300 text-ttk-700 hover:border-ttk-400 hover:bg-ttk-50'}`}>
+                      {ad}
+                    </button>
+                  ))}
+                </div>
               </Alan>
               <Alan etiket="Kaldığı Gün">
                 <div className="flex items-center gap-1">
@@ -4357,11 +4637,37 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
               <tbody>
                 {f.misafirler.map((g, i) => (
                   <tr key={i}>
-                    <td className="num text-slate-400">{i + 1}</td>
+                    <td className="num text-slate-400">
+                      <div className="flex items-center gap-1">
+                        {i + 1}
+                        <button type="button" onClick={() => setAramaSatiri(i)}
+                          data-ipucu="Daha önce kalmış misafiri bul — bilgileri kendiliğinden dolsun"
+                          className="p-1 rounded hover:bg-ttk-100 text-slate-400 hover:text-ttk-700">
+                          <Ikon ad="ara" sinif="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
                     <td><SayiliGirdi tur="TC" deger={g.tc_kimlik_no}
                       onChange={v => misafirYaz(i, 'tc_kimlik_no', v)} className="w-[9.5rem]" /></td>
-                    <td><input value={g.adi_soyadi} onChange={e => misafirYaz(i, 'adi_soyadi', e.target.value)}
-                      className={`${GIRDI} !w-40`} placeholder="Ad Soyad" /></td>
+                    <td>
+                      <input value={g.adi_soyadi} onChange={e => misafirYaz(i, 'adi_soyadi', e.target.value)}
+                        className={`${GIRDI} !w-40`} placeholder="Ad Soyad" />
+                      {(() => {
+                        /* Tc kimlik no tamamlandıysa geçmiş konaklamayı hatırlat */
+                        const k = g.tc_kimlik_no.length === 11 ? defter.get(g.tc_kimlik_no) : null;
+                        if (!k || k.adi_soyadi === g.adi_soyadi) return null;
+                        const oda = enCokOda(k.odalar);
+                        return (
+                          <button type="button" onClick={() => misafirDoldur(i, k)}
+                            className="mt-0.5 flex items-center gap-1 text-[0.62rem] text-ttk-700 hover:underline bel">
+                            <span className="text-violet-600">★</span>
+                            <b>{k.adi_soyadi}</b> · {k.sayi} kez kaldı
+                            {oda && <span className="text-slate-500">· genelde Oda {oda}</span>}
+                            <span className="text-emerald-700 font-semibold">— bilgileri doldur</span>
+                          </button>
+                        );
+                      })()}
+                    </td>
                     <td>
                       <select value={g.cinsiyet} onChange={e => misafirYaz(i, 'cinsiyet', e.target.value)} className={`${GIRDI} !w-14`}>
                         <option value="E">E</option><option value="K">K</option>
@@ -4795,7 +5101,8 @@ const REHBER_KONULARI = [
     adimlar: [
       { b: 'Formu açın', m: '«Rezervasyon Talepleri» sayfasının sağ üstündeki yeşil «+ Yeni Kayıt» düğmesine basın. Aynı düğme «Peşinat ve Tahsilat» sayfasında ve ana menünün sağ üstünde de («+ Yeni Rezervasyon / Kayıt») bulunur.', sayfa: 'TALEPLER' },
       { b: 'Rezervasyon bilgilerini girin', m: 'Sol sütunda misafirhane, rezervasyonu yaptıranın adı soyadı, telefonu ve geliş nedeni (harcırahlı görev, kurum misafiri, personel, protokol…) alanlarını doldurun. Görev sevkli gelişlerde «Görev Sevk No» alanını da yazın.' },
-      { b: 'Tarih ve kişi sayısını girin', m: 'Geliş ve çıkış tarihini seçin; «Kaldığı Gün» otomatik hesaplanır. Kişi sayısını değiştirdiğinizde sağdaki misafir satırları kendiliğinden artar veya azalır.' },
+      { b: 'Tarih ve kişi sayısını girin', m: 'Tarih kutusuna GG.AA.YYYY yazabilir, ↑ ↓ tuşlarıyla gün değiştirebilir ya da yanındaki takvim simgesine tıklayıp günü seçebilirsiniz. Takvimde «Bugün», «Yarın» ve «+1 hafta» kısayolları vardır. Süre için «1 gece / 3 gece / 1 hafta» düğmeleri çıkış tarihini tek tıkla ayarlar. Kişi sayısını değiştirdiğinizde misafir satırları kendiliğinden artar veya azalır.' },
+      { b: 'Daha önce kalmış misafiri bulun', m: 'Misafir satırının başındaki büyüteç simgesine tıklayıp adı ya da Tc kimlik numarasını yazın: kaç kez kaldığı, son çıkışı ve genelde hangi odada kaldığı listelenir. Seçince ad, cinsiyet, sicil ve birim kendiliğinden dolar. Tc kimlik numarasını elle yazdığınızda da altında «3 kez kaldı — bilgileri doldur» kısayolu çıkar.' },
       { b: 'Misafirleri yazın', m: 'Sağ sütunda her misafir için ad soyad, 11 haneli Tc kimlik no ve cinsiyet girin. Aile ya da birlikte kalacak grup ise «Birlikte kalsın» kutusunu işaretleyin; yerleştirme bu grubu bölmemeye çalışır.' },
       { b: 'Ödeme ve kaporayı kontrol edin', m: '«Kurum-Şahıs» seçimini yapın. Şahıs kayıtlarında kapora tutarı, misafirhanenin kapora kuralına göre otomatik hesaplanır ve formun altında gösterilir. Kurum misafirlerinde kapora aranmayabilir (tesis kuralına bağlıdır).' },
       { b: 'İsterseniz yatağı hemen bulun', m: 'Formun altındaki «⚙ Uygun Yatağı Otomatik Bul» düğmesi, girilen tarih aralığında boş yatakları bulup misafirlere atar. Yatak atamadan da kaydı açabilirsiniz; kayıt «Talep» statüsünde bekler.' },
@@ -5328,7 +5635,7 @@ function KahvaltiEkrani({ s, gonder, izin }) {
       <SayfaBasligi ikon={sayfa.ikon} baslik={sayfa.ad} aciklama={sayfa.aciklama} tesis={tesisAd}
         sag={<div className="flex items-center gap-1">
           <Buton tur="sessiz" onClick={() => setTarih(ekle(tarih, -1))} data-ipucu="Önceki gün">◀</Buton>
-          <TarihGirdi deger={tarih} onChange={setTarih} />
+          <TarihGirdi deger={tarih} onChange={setTarih} bugun={s.bugun} enCok={ekle(s.bugun, 1)} />
           <Buton tur="sessiz" onClick={() => setTarih(ekle(tarih, 1))} data-ipucu="Sonraki gün">▶</Buton>
           {tarih !== s.bugun && <Buton tur="sessiz" onClick={() => setTarih(s.bugun)}>Bugün</Buton>}
         </div>} />

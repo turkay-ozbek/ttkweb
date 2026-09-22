@@ -8,6 +8,44 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.7.0] — 22.09.2026
+### Eklendi — işlemi kısaltan arayüz öğeleri
+- **Açılır takvim.** Her tarih kutusunun yanında küçük takvim simgesi; tıklanınca ay
+  görünümü açılıyor. Hafta pazartesiden başlıyor, hafta sonu ayrı renkte, bugün
+  işaretli, seçili gün vurgulu; ay ve yıl ileri-geri düğmeleri, «Bugün / Yarın /
+  +1 hafta» kısayolları. Panel yeri ölçülerek veriliyor — açılırken kaymıyor, ekran
+  kenarından taşmıyor, Esc ile kapanıyor. Elle GG.AA.YYYY yazmak ve ↑ ↓ tuşları
+  çalışmayı sürdürüyor.
+- **Sınırlı takvim.** Çıkış tarihi takviminde geliş günü ve öncesi seçilemiyor; dekont
+  ödeme tarihinde ileri tarih, kahvaltı yoklamasında yarından sonrası kapalı.
+- **Süre kısayolları.** Yeni kayıt formunda «1 gece · 2 gece · 3 gece · 1 hafta ·
+  2 hafta · 1 ay» düğmeleri çıkış tarihini tek tıkla ayarlıyor; seçili olan işaretli.
+- **Daha önce kalmış misafiri bulma.** Misafir satırındaki büyüteçle ad ya da Tc kimlik
+  numarasından geçmiş konaklamalar aranıyor: kaç kez kaldığı, son çıkışı, genelde hangi
+  oda, hangi misafirhane. Seçilince ad, cinsiyet, sicil, birim ve telefon doluyor.
+  Tc kimlik no elle tamamlandığında da «★ 3 kez kaldı · genelde Oda 21 — bilgileri
+  doldur» kısayolu çıkıyor. (Kurulumdaki karşılığı: `docs/veritabani.md` § 3.)
+- **Talep listesi statü çipleri.** «Bekleyen işler · Yatağı yok · Kapora bekleyen ·
+  Onayda · Tümü» tek tıkla süzüyor; açılır liste ayrıntılı süzme için duruyor.
+- `testler/14-takvim-ve-kisayollar.mjs`: 34 denetim.
+
+### Eklendi — mimari belgeler
+- [`docs/mimari-brifing.md`](docs/mimari-brifing.md): başkasına anlatılmak üzere hazırlanmış
+  tek parça brifing — yönetici özeti, bugünkü sorunlar, katman mimarisi, veritabanı
+  kararının gerekçesi, entegrasyonlar, Kubernetes kararı, güvenlik ve KVKK, süreklilik
+  hedefleri (RPO/RTO), 13 haftalık göç planı, maliyet kalemleri, risk tablosu ve
+  yanıtlanması gereken altı karar sorusu.
+- `docs/veritabani.md` genişletildi: yerleştirme motorunun SQL karşılığı (müsait yatak,
+  karma oda, gün gün doluluk, gecelik materialized view), dizin ve ayar stratejisi,
+  Oracle'dan göçün adımları ve **göçten önce çalıştırılacak çakışma raporu**.
+- `docs/dagitim-mimarisi.md` genişletildi: boyutlandırma hesabı (istek/sınır/örnek
+  sayısı), işletme el kitabı (uygulama açılmıyor, veritabanı devralmıyor, yedekten
+  dönüş, sürüm geri alma), rutin bakım takvimi ve 12 maddelik devreye alma kontrol listesi.
+
+### Düzeltildi
+- Misafir aramasında rakam içermeyen sorgu bütün kayıtları eşleştiriyordu (boş dizge
+  `includes('')` her zaman doğru). Tc eşleşmesi artık en az üç rakam istiyor.
+
 ## [2.6.0] — 22.09.2026
 ### Düzeltildi
 - **Yeni kayıt listeye düşmüyordu.** Talep listesinin süzgeci sayfa değişince sıfırlanıyor,

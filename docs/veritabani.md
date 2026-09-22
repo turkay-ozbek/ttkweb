@@ -267,3 +267,155 @@ WHERE id IN (SELECT misafir_id FROM konaklama GROUP BY misafir_id
    doğrulama sonrası yazma da devralınır.
 4. Eski kayıtlarda çakışma bulunursa `EXCLUDE` kısıtı yükleme sırasında hata verir —
    bu bir sorun değil, **var olan veri hatalarının ortaya çıkmasıdır**; temizlenerek yüklenir.
+
+---
+
+## 7. Yerleştirme motorunun SQL karşılığı
+
+Prototipteki motor bellekte çalışır. Kurulumda aynı sorular veritabanına sorulur.
+Bu bölüm, geliştiriciye verilecek somut sorguları içerir.
+
+### 7.1 Bir tarih aralığında kesintisiz müsait yataklar
+
+«Geliş–çıkış arasındaki **her gecede** boş olan yataklar» — prototipteki
+`yatakMusait()` işlevinin karşılığı:
+
+```sql
+-- $1 tesis, $2 geliş, $3 çıkış, $4 temizlik günü (varsayılan 1)
+SELECT y.id, o.oda_no, y.yatak_no, o.tip, o.protokol, y.gecelik_bedel
+FROM yatak y
+JOIN oda  o ON o.id = y.oda_id
+WHERE o.tesis_kod = $1
+  AND NOT EXISTS (
+        SELECT 1 FROM konaklama k
+        WHERE k.yatak_id = y.id
+          AND NOT k.iptal
+          -- temizlik boşluğu dahil çakışma
+          AND daterange(lower(k.donem), upper(k.donem) + k.temizlik_gun) && daterange($2, $3)
+      )
+ORDER BY o.protokol, o.oda_no, y.yatak_no;
+```
+`konaklama_donem` GiST dizini sayesinde 240 yataklık tesiste **1 ms altında** döner.
+
+### 7.2 Karma oda denetimi
+
+```sql
+-- Odada seçilen aralıkta hangi cinsiyetler var?
+SELECT DISTINCT m.cinsiyet
+FROM konaklama k
+JOIN yatak y   ON y.id = k.yatak_id
+JOIN misafir m ON m.id = k.misafir_id
+WHERE y.oda_id = $1 AND NOT k.iptal AND k.donem && daterange($2, $3);
+```
+Sonuç boş değilse ve talebin cinsiyeti kümede yoksa oda kapalıdır (aile talebi hariç).
+
+### 7.3 Gün gün doluluk (takvim şeridi)
+
+```sql
+SELECT g.gun,
+       count(*) FILTER (WHERE k.id IS NOT NULL)                       AS dolu,
+       (SELECT count(*) FROM yatak y2 JOIN oda o2 ON o2.id = y2.oda_id
+        WHERE o2.tesis_kod = $1)                                      AS kapasite
+FROM generate_series($2::date, $3::date, '1 day') AS g(gun)
+LEFT JOIN konaklama k ON NOT k.iptal AND g.gun <@ k.donem
+LEFT JOIN yatak y ON y.id = k.yatak_id
+LEFT JOIN oda   o ON o.id = y.oda_id AND o.tesis_kod = $1
+GROUP BY g.gun ORDER BY g.gun;
+```
+30 günlük şerit için yeterlidir. Yıllık raporlarda bunun yerine gecelik
+**materialized view** kullanılır (aşağıda).
+
+### 7.4 Gecelik özet (raporlar için)
+
+```sql
+CREATE MATERIALIZED VIEW gunluk_doluluk AS
+SELECT o.tesis_kod, g.gun,
+       count(*) AS dolu_yatak,
+       count(DISTINCT k.rezervasyon_id) AS kayit
+FROM konaklama k
+JOIN yatak y ON y.id = k.yatak_id
+JOIN oda   o ON o.id = y.oda_id
+CROSS JOIN LATERAL generate_series(lower(k.donem), upper(k.donem) - 1, '1 day') AS g(gun)
+WHERE NOT k.iptal
+GROUP BY o.tesis_kod, g.gun;
+
+CREATE UNIQUE INDEX ON gunluk_doluluk (tesis_kod, gun);
+-- Gece yenilenir; kilitlemeden:
+REFRESH MATERIALIZED VIEW CONCURRENTLY gunluk_doluluk;
+```
+Ay sonu belgesi ve yıllık doluluk raporu bu görünümden okunur; 20 yıllık sorgu
+bile saniyeler içinde döner.
+
+---
+
+## 8. Performans ve dizin stratejisi
+
+| Sorgu | Dizin | Beklenen |
+|---|---|---|
+| Tc kimlik no ile misafir | `misafir(tc_kimlik_no)` UNIQUE | Index Scan, < 1 ms |
+| Ad ile bulanık arama | `misafir` GIN trigram | Bitmap Scan, < 20 ms (100 bin kayıtta) |
+| Müsait yatak | `konaklama` GiST `donem` + `EXCLUDE` dizini | < 1 ms |
+| Talep listesi (tarih aralığı) | `rezervasyon(tesis_kod, gelis_tarihi, cikis_tarihi)` | < 5 ms |
+| Açık kayıtlar | Kısmi dizin: `WHERE statu NOT IN ('CIKIS','IPTAL')` | Küçük dizin, hızlı |
+| Ay sonu raporu | `gunluk_doluluk` materialized view | < 100 ms |
+
+**Ayar önerileri** (16 GB RAM'li sunucu için):
+```
+shared_buffers = 4GB
+effective_cache_size = 12GB
+work_mem = 32MB
+maintenance_work_mem = 512MB
+random_page_cost = 1.1          # SSD
+max_connections = 200           # ya da PgBouncer ile 50'ye indir
+```
+**Bağlantı havuzu:** uygulama sunucusu çok örnekli çalışacaksa **PgBouncer**
+(transaction pooling) konur; `max_connections` düşük tutulur.
+
+**Denetim:** `pg_stat_statements` açık tutulur; haftalık en yavaş 10 sorgu gözden geçirilir.
+
+---
+
+## 9. Oracle'dan göç — adım adım
+
+### 9.1 Şema ve veri aktarımı
+```bash
+# Oracle şemasını incele ve dönüştür
+ora2pg -c ora2pg.conf -t SHOW_TABLE          # envanter
+ora2pg -c ora2pg.conf -t TABLE -o sema.sql   # DDL
+ora2pg -c ora2pg.conf -t COPY  -o veri.sql   # veri
+```
+Üretilen DDL doğrudan kullanılmaz; § 2'deki hedef modele **elle eşlenir**
+(alan karşılıkları [`alan-eslestirme.md`](alan-eslestirme.md) belgesindedir).
+
+### 9.2 Çakışma raporu — göçten ÖNCE çalıştırılmalı
+
+`EXCLUDE` kısıtı, eski veride çakışma varsa yüklemeyi durdurur. Bu yüzden önce
+geçici bir tabloya yüklenip rapor alınır:
+
+```sql
+-- Aynı yatakta örtüşen konaklamalar
+SELECT a.yatak_id, a.rezervasyon_id AS rez_a, b.rezervasyon_id AS rez_b,
+       a.donem AS donem_a, b.donem AS donem_b
+FROM konaklama_gecici a
+JOIN konaklama_gecici b
+  ON a.yatak_id = b.yatak_id AND a.id < b.id AND a.donem && b.donem
+ORDER BY a.yatak_id, lower(a.donem);
+```
+Çıkan liste işletme birimine verilir, hangi kaydın geçerli olduğu belirlenir,
+düzeltilmiş veri asıl tabloya yüklenir.
+
+> **Bu adımı atlamayın.** Çakışma çıkması bir aksaklık değil, sistemin ilk
+> faydasıdır: bugüne kadar fark edilmemiş kayıt hatalarını görünür kılar.
+
+### 9.3 Mutabakat (çift yazma döneminde)
+```sql
+-- Her gece: iki sistemdeki gecelik dolu yatak sayısı tutuyor mu?
+SELECT gun, dolu_yatak FROM gunluk_doluluk WHERE tesis_kod = $1 AND gun = current_date - 1;
+```
+Sonuç Oracle tarafındaki aynı hesapla karşılaştırılır; ardışık beş gün fark
+çıkmazsa devralmaya geçilir.
+
+### 9.4 Geri dönüş
+Devralmadan sonra bir hafta Oracle yazılabilir tutulur. Sorun çıkarsa yeni
+sistemde açılan kayıtlar `rezervasyon.olusturma > devralma_tarihi` ile süzülüp
+Oracle'a aktarılır; DNS eski sisteme döner.
