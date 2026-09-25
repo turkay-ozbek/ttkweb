@@ -138,12 +138,9 @@ if (await yeniK.count()) {
   else hata.push('H: kullanıcı eklenmedi');
 } else hata.push('H: «Yeni Kullanıcı» düğmesi yok');
 
-/* ── I) Ölçek ayarı ────────────────────────────────────────────── */
-const once = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--olcek'));
-await p.locator('.fixed.right-3 button[aria-label="Yazıyı büyüt"]').click(); await p.waitForTimeout(300);
-const sonra = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--olcek'));
-if (once !== sonra) ok('yazı ölçeği değişiyor (' + once.trim() + ' → ' + sonra.trim() + ')');
-else hata.push('I: ölçek değişmedi');
+/* ── I) Ölçek kutusu (büyüteç) kaldırıldı ──────────────────────── */
+if (await p.locator('button[aria-label="Yazıyı büyüt"]').count() === 0) ok('büyüteç kutusu ekranda yok');
+else hata.push('I: büyüteç kutusu hâlâ duruyor');
 
 await b.close();
 console.log(adim.join('\n'));

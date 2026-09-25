@@ -21,8 +21,10 @@ arayüzünde gösterilmez.
 3. **Sayfalar arasında gezinin.** Logoya veya **Ana Menü**'ye basınca bütün sayfaların kart
    görünümü açılır; kartlardaki sayılar canlıdır. Sık kullanılan sayfalara logonun altındaki
    sayfa şeridinden tek tıkla geçilir.
-4. **Yazı boyutu.** Ekranın sağ alt köşesindeki dikey büyüteç kutusu: **+** büyütür, **−**
-   küçültür, ortadaki yüzde düğmesi %100'e döndürür. Ayar tarayıcıda saklanır.
+4. **Telefon ve tablette.** Arayüz ekran genişliğine göre kendini düzenler: sayfa şeridi
+   yerini **«☰ <sayfa adı> ▼»** düğmesine bırakır (alttan açılan çekmecede bütün sayfalar
+   sayılarıyla listelenir), kartlar tek sütuna iner, listeler tablo yerine kart olarak
+   açılır. Yazı boyutu için tarayıcının yakınlaştırmasını kullanın.
 5. **Bir düğmenin ne yaptığını öğrenin.** Düğmenin üzerine gelip bekleyin; ne işe yaradığı
    küçük bir balonda yazar. Düğme soluk (pasif) ise balon hangi yetkinin gerektiğini söyler.
 6. **Aradığınız işlemi yazarak bulun.** Üst bandın ortasındaki **«Hangi işlemi yapmak
@@ -210,5 +212,6 @@ Kaydı **Detay** ile açın; bütün hareketler (tahsilat, dekont, onay, statü 
 kullanıcı bilgisiyle listelenir. Prototipte düzeltme, doğru tutarla yeni bir hareket girilerek gösterilir.
 
 **Ekrana sığmıyor / yazılar küçük.**
-Sağ alt köşedeki dikey büyüteç kutusundan yazı boyutunu %85–%135 arasında ayarlayın; bütün
-sayfalar bu ayarla yeniden düzenlenir, tarayıcı yakınlaştırmasına gerek yoktur.
+Geniş tablolar sayfayı değil kendi kutusunu kaydırır; tablonun üzerinde parmağınızı ya da
+farenizi yana sürükleyin. Telefonda satır işlemi olan listeler zaten kart olarak açılır.
+Yazı boyutu için tarayıcının yakınlaştırmasını kullanın (Ctrl + / telefonda iki parmakla açma).

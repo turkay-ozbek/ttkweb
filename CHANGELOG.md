@@ -8,6 +8,57 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.8.0] — 24.09.2026
+### Değişti — mobil (duyarlı) arayüz elden geçirildi
+- **Telefonda sayfa çekmecesi.** 640 px altında yana kayan sayfa şeridi yerine «☰ <sayfa
+  adı> ▼» düğmesi var; alttan açılan çekmecede bütün sayfalar simgesi, açıklaması ve
+  canlı sayısıyla (boş yatak, bekleyen talep, onaydaki dekont…) listeleniyor. Arama
+  kutusu aynı satırda kalıyor.
+- **Satır işlemi olan listeler telefonda kart oluyor.** Talep listesi, dekont/onay,
+  tahsilat, kahvaltı yoklaması, ay sonu talepleri, kullanıcılar ve yeni kayıt formundaki
+  misafir tablosu; 13 sütunlu tabloyu yana kaydırmak yerine her kayıt tek kart olarak
+  açılıyor. Kartın başlığı misafirin adı, diğer alanlar «başlık → değer» satırları.
+  Sütun başlıkları hücrelere betikte yazılıyor (`data-b`), kural CSS'te.
+- **İkincil sütunlar telefonda gizleniyor.** Yatak listesinde oda tipi, Tc kimlik no,
+  cinsiyet, gün, kurum-şahıs, ödeme türü ve rezervasyon no; tahsilatta kurum-şahıs,
+  ödeme türü ve makbuz; kahvaltıda rezervasyon no ve kurum-şahıs. Geniş ekranda hepsi
+  yerinde duruyor.
+- **Sayaç kartları telefonda iki sütun.** 11–14 rem'lik özet kutuları tek sütuna düşmek
+  yerine ikişerli diziliyor; «Bugünkü Durum» ve «Kahvaltı» sayfaları bir ekrana sığıyor.
+- **Pencereler telefonda tam ekran.** Yeni kayıt, detay, manuel yerleştirme gibi bütün
+  pencereler telefonda sayfanın tamamını kaplıyor; başlık üstte, düğmeler altta sabit,
+  gövde kendi içinde kayıyor. Düğmeler sığmadığında alt satıra iniyor.
+- **Dokunmatikte ipucu balonu açılmıyor.** Dokunulan düğme odaklandığı için balon
+  ekranda asılı kalıyordu; ipucu katmanı artık yalnız fareli (hover destekli) cihazda
+  çalışıyor, klavyeyle gezinirken de yalnız `:focus-visible` durumunda.
+- **Yardımcı (Madenci) telefonda küçüldü.** Düğme 3,5 rem'e indi ve sağ alt köşeye
+  çekildi; «Yardım ister misiniz?» baloncuğu telefonda çıkmıyor (listenin üstünü
+  kapatıyordu), pencere alttan tam genişlikte açılıyor.
+- **Giriş ekranı telefonda önce formu gösteriyor.** Tanıtım bloğu alta iniyor; kullanıcı
+  adı ve şifre alanları ilk ekranda görünüyor.
+- **Pencere açıkken yardımcı gizleniyor.** Sağ alt köşedeki Madenci düğmesi, pencerenin
+  altındaki «Kaydet / Reddet» gibi düğmelerin üstüne biniyordu; bir pencere (ya da telefon
+  sayfa çekmecesi) açıkken artık görünmüyor.
+- **Tanıtım baloncuğu tıklamayı engellemiyor.** «Yardım ister misiniz?» baloncuğu artık
+  tıklanamaz bir işaret; sekiz saniye sonra ya da ekranda bir şey yapılınca kayboluyor.
+- İşaret kutuları dokunmatikte 17 px'e büyütüldü; sayfa çekmecesi Esc ile kapanıyor.
+
+### Değişti — kahvaltı yoklaması
+- Kutucuğun yanındaki etiket artık her zaman **«yapmadı»** (işaretlemenin anlamı);
+  eskiden işaretsiz satırda «yaptı» yazıyordu. Sütun başlığı «Kahvaltı Yapmadı».
+
+### Kaldırıldı
+- **Arayüz ölçeği (büyüteç) kutusu.** Sağ alt köşedeki dikey «+ / % / −» kutusu,
+  `--olcek` değişkeni, `msfh_olcek` tercihi ve komut paletindeki «Yazıyı büyüt /
+  küçült» girdileri kaldırıldı. Yazı boyutu tarayıcı yakınlaştırmasıyla ayarlanıyor;
+  rehber metinleri buna göre güncellendi.
+
+### Testler
+- `12-mobil.mjs`: sayfa çekmecesi ve kart görünümü denetimleri eklendi; gezinme
+  yardımcısı (`ortak.mjs → sayfa()`) dar ekranda çekmeceyi kullanıyor.
+- `13-yeni-islevler.mjs`: kahvaltı kutucuğunun etiketi denetleniyor.
+- `04` ve `10`: ölçek kutusu testleri, «büyüteç ekranda yok» denetimine dönüştürüldü.
+
 ## [2.7.0] — 22.09.2026
 ### Eklendi — işlemi kısaltan arayüz öğeleri
 - **Açılır takvim.** Her tarih kutusunun yanında küçük takvim simgesi; tıklanınca ay

@@ -37,11 +37,10 @@ tailwind.config = {
 }
 </script>
 <style>
-  /* Kök ölçü ekran genişliğine göre akar; kullanıcı ayrıca A− / A+ ile değiştirebilir.
-     --olcek kullanıcı tercihidir (0.9 – 1.3), --taban ekran genişliğinden gelir. */
-  :root { --olcek: 1; }
+  /* Kök ölçü ekran genişliğine göre akar; ayrıca kullanıcı ayarı yoktur —
+     okunabilirlik tarayıcı yakınlaştırmasıyla değiştirilir. */
   html {
-    font-size: calc(clamp(15.2px, 0.3vw + 11.4px, 18.5px) * var(--olcek));
+    font-size: clamp(15.2px, 0.3vw + 11.4px, 18.5px);
   }
   body { background:#f4f6f9; color:#16202e; -webkit-font-smoothing:antialiased; }
   /* Uygulama gövdesi hiçbir çözünürlükte yatay taşmasın */
@@ -97,7 +96,47 @@ tailwind.config = {
     .sayfa-govde section > header { flex-wrap: wrap; }
     .sayfa-govde section > header > div { flex-wrap: wrap; min-width: 0; }
     .sayfa-govde input[type="text"], .sayfa-govde input:not([type]) { max-width: 100%; }
+    /* Parmakla işaretlenebilecek kutucuk boyu */
+    input[type="checkbox"], input[type="radio"] { width: 17px; height: 17px; }
+    /* İkincil sütunlar telefonda gizlenir (geniş referans tabloları) */
+    .mobil-gizle { display: none !important; }
   }
+  /* Telefon (≤640 px): satır işlemi olan listeler tabloya değil karta dönüşür.
+     Sütun başlıkları her hücrenin data-b özniteliğine betikte yazılır. */
+  @media (max-width: 640px) {
+    table.veri.mobil-kart, table.veri.mobil-kart tbody,
+    table.veri.mobil-kart tr, table.veri.mobil-kart td { display: block; width: 100%; }
+    table.veri.mobil-kart { min-width: 0; }
+    table.veri.mobil-kart thead { display: none; }
+    table.veri.mobil-kart tbody tr { display: flex; flex-direction: column; background: #fff;
+      border: 1px solid #dfe5ee; border-radius: 10px; margin: 7px 6px; padding: 3px 0 5px;
+      box-shadow: 0 1px 2px rgba(13,35,64,.05); }
+    table.veri.mobil-kart tbody tr:nth-child(even) { background: #fff; }
+    table.veri.mobil-kart tbody tr.secili { background: #eef4fb !important; border-color: #4a81c6;
+      box-shadow: inset 3px 0 0 #1d4b87; }
+    table.veri.mobil-kart tbody td { border: 0; padding: 2px 12px; white-space: normal; text-align: right;
+      font-size: 12.5px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-height: 22px; }
+    table.veri.mobil-kart tbody td::before { content: attr(data-b); flex: 1 1 auto; text-align: left;
+      font-size: 10.5px; letter-spacing: .03em; text-transform: uppercase; color: #64748b; font-weight: 700; }
+    table.veri.mobil-kart tbody td[data-b=""]::before { display: none; }
+    table.veri.mobil-kart tbody td.kart-baslik { order: -1; justify-content: flex-start; text-align: left;
+      font-size: 14.5px; font-weight: 700; color: #122f56; padding-top: 7px; padding-bottom: 5px;
+      max-width: none; white-space: normal; }
+    /* Kart satırları uzun olduğundan liste kutusu telefonda biraz yükselir;
+       sayfanın tamamı değil, yalnız liste kayar. */
+    div:has(> table.veri.mobil-kart) { max-height: 70vh !important; }
+    table.veri.mobil-kart tbody td.kart-yalin { justify-content: flex-start; text-align: left; }
+    /* Form tablolarında girdi kutuları hücreyi doldursun (sabit genişlikler dar ekranda geçersiz) */
+    table.veri.mobil-kart tbody td input:not([type="checkbox"]):not([type="radio"]),
+    table.veri.mobil-kart tbody td select { width: auto !important; flex: 1 1 auto; max-width: 62%; min-width: 0; }
+    table.veri.mobil-kart tbody td[colspan] { justify-content: center; text-align: center; }
+    table.veri.mobil-kart tbody td[colspan]::before { display: none; }
+  }
+  /* Bir pencere açıkken yardımcı düğmesi/penceresi gizlenir: ekranın sağ alt
+     köşesinde duran yardımcı, pencerenin altındaki «Kaydet / Reddet» gibi
+     düğmelerin üstüne binip tıklamayı engelliyordu. */
+  body:has(.pencere-katmani) .yardimci-katmani { display: none !important; }
+
   /* Yazdırma: ekrandaki arayüz basılmaz, yalnız .yazdir-alan kâğıda gider.
      Kâğıt yönü (@page size) yazdırma penceresinden dinamik olarak yazılır. */
   .yazdir-alan { position: fixed; left: -10000px; top: 0; width: 26cm; }
@@ -135,8 +174,8 @@ const { useState, useMemo, useReducer, useRef, useEffect, useLayoutEffect, useCa
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.7.0';
-const SURUM_TARIHI = '2026-09-16';
+const SURUM = '2.8.0';
+const SURUM_TARIHI = '2026-09-24';
 
 const GUN_MS = 86400000;
 /* Uygulama, çalıştırıldığı günün tarihini sistem tarihi olarak kullanır;
@@ -1176,7 +1215,6 @@ function baslangicDurumu() {
     kahvalti: {},     /* 'TESIS|YYYY-AA-GG' → { 'rezId|misafirIndex': true }  (kahvaltıya inmeyenler) */
     raporlar: [],     /* ay sonu belge talepleri */
     seciliRezId: null,
-    olcek: (() => { try { return Number(localStorage.getItem('msfh_olcek')) || 1; } catch (_) { return 1; } })(),
     kullanici: null,
     kullanicilar: [...BASLANGIC_KULLANICILAR, ...TEST_KULLANICILAR].map(k => ({ ...k, sonGiris: null })),
     odalar, yataklar, rezervasyonlar, kurallar,
@@ -1224,12 +1262,6 @@ function indirgeyici(s, a) {
     case 'TESIS': return { ...s, tesis: a.tesis };
     case 'EKRAN': return { ...s, ekran: a.ekran };
     case 'SECILI_REZ': return { ...s, seciliRezId: a.rezId };
-    case 'OLCEK': {
-      const o = Math.min(1.35, Math.max(0.85, Number(a.olcek.toFixed(2))));
-      try { localStorage.setItem('msfh_olcek', String(o)); } catch (_) {}
-      return { ...s, olcek: o };
-    }
-
     /* Motor önerisini gerçek yerleşime çevir */
     case 'ONERI_UYGULA': {
       let rezler = s.rezervasyonlar;
@@ -1843,15 +1875,22 @@ function TarihGirdi({ deger, onChange, className = '', enAz, enCok, bugun }) {
   );
 }
 
+/* Pencere: geniş ekranda ortada kutu, telefonda tam ekran sayfa.
+   Telefonda başlık üstte, düğmeler altta sabit kalır; gövde kendi içinde kayar. */
 const Modal = ({ baslik, genislik = 'max-w-5xl', kapat, children, altlik }) => (
-  <div className="fixed inset-0 z-50 bg-ttk-900/40 flex items-start justify-center p-2 sm:p-6 overflow-auto" onMouseDown={e => { if (e.target === e.currentTarget) kapat(); }}>
-    <div className={`bg-white rounded shadow-2xl w-full ${genislik} bel`} onMouseDown={e => e.stopPropagation()}>
-      <header className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 bg-ttk-700 text-white rounded-t">
-        <h3 className="text-sm font-bold">{baslik}</h3>
-        <button onClick={kapat} className="text-white/80 hover:text-white text-lg leading-none px-1">×</button>
+  <div className="pencere-katmani fixed inset-0 z-50 bg-ttk-900/40 flex items-stretch sm:items-start justify-center p-0 sm:p-6 overflow-auto"
+    onMouseDown={e => { if (e.target === e.currentTarget) kapat(); }}>
+    <div className={`bg-white sm:rounded shadow-2xl w-full ${genislik} bel flex flex-col min-h-full sm:min-h-0`}
+      onMouseDown={e => e.stopPropagation()}>
+      <header className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 border-b border-slate-200
+                         bg-ttk-700 text-white sm:rounded-t shrink-0 sticky top-0 z-10">
+        <h3 className="text-sm font-bold min-w-0 truncate">{baslik}</h3>
+        <button onClick={kapat} aria-label="Pencereyi kapat"
+          className="text-white/80 hover:text-white text-xl leading-none px-2 py-0.5 rounded hover:bg-white/10">×</button>
       </header>
-      <div className="p-3 sm:p-4 max-h-[72vh] sm:max-h-[68vh] overflow-auto kaydir">{children}</div>
-      {altlik && <footer className="px-4 py-2.5 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2 rounded-b">{altlik}</footer>}
+      <div className="p-3 sm:p-4 flex-1 overflow-auto kaydir sm:max-h-[68vh]">{children}</div>
+      {altlik && <footer className="px-3 sm:px-4 py-2.5 border-t border-slate-200 bg-slate-50 flex flex-wrap
+                                    items-center justify-end gap-2 sm:rounded-b shrink-0 sticky bottom-0">{altlik}</footer>}
     </div>
   </div>
 );
@@ -2362,10 +2401,12 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolu
           <div className="kaydir-x kaydir max-h-[65vh] overflow-y-auto">
             <table className="veri w-full">
               <thead><tr>
-                <th className="text-center">Oda</th><th className="text-center">Yatak</th><th>Oda Tipi</th><th>Durum</th>
-                <th>Tc Kimlik No</th><th>Adı ve Soyadı</th><th className="text-center">C.</th>
-                <th>Geliş / Çıkış</th><th className="text-center">Gün</th><th>Kurum-Şahıs</th>
-                <th title="Ödeme Türü">Öd.</th><th className="text-right">Peşinattan Kalan</th><th>Rez. No</th>
+                <th className="text-center">Oda</th><th className="text-center">Yatak</th>
+                <th className="mobil-gizle">Oda Tipi</th><th>Durum</th>
+                <th className="mobil-gizle">Tc Kimlik No</th><th>Adı ve Soyadı</th><th className="text-center mobil-gizle">C.</th>
+                <th>Geliş / Çıkış</th><th className="text-center mobil-gizle">Gün</th><th className="mobil-gizle">Kurum-Şahıs</th>
+                <th className="mobil-gizle" title="Ödeme Türü">Öd.</th><th className="text-right">Peşinattan Kalan</th>
+                <th className="mobil-gizle">Rez. No</th>
               </tr></thead>
               <tbody>
                 {yatakListesi.map(r => (
@@ -2373,21 +2414,21 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolu
                     onClick={() => setDetay({ yatak: r.y, tarih: haritaTarihi, durum: r.durum, kayit: r.kayit })}>
                     <td className="num text-center font-bold text-ttk-900">{r.y.oda_no}</td>
                     <td className="num text-center font-bold">{r.y.yatak_no}</td>
-                    <td className="text-slate-600">{r.y.tip === 'TEK' ? 'Tek kişilik' : r.y.tip === 'CIFT' ? 'İki kişilik' : 'Üç kişilik'}{r.y.protokol && ' · protokol'}</td>
+                    <td className="text-slate-600 mobil-gizle">{r.y.tip === 'TEK' ? 'Tek kişilik' : r.y.tip === 'CIFT' ? 'İki kişilik' : 'Üç kişilik'}{r.y.protokol && ' · protokol'}</td>
                     <td><Rozet sinif={YATAK_DURUM[r.durum].kutu}>{YATAK_DURUM[r.durum].ad}</Rozet></td>
-                    <td className="num">{r.misafir ? r.misafir.tc_kimlik_no : r.cikan ? r.cikan.tc_kimlik_no : '—'}</td>
+                    <td className="num mobil-gizle">{r.misafir ? r.misafir.tc_kimlik_no : r.cikan ? r.cikan.tc_kimlik_no : '—'}</td>
                     <td className="font-semibold text-ttk-900">
                       {r.misafir ? r.misafir.adi_soyadi
                         : r.cikan ? <span className="font-normal text-violet-700">çıkış: {r.cikan.adi_soyadi}</span>
                         : <span className="text-slate-400 font-normal">— boş —</span>}
                     </td>
-                    <td className="text-center">{r.misafir ? r.misafir.cinsiyet : r.cikan ? r.cikan.cinsiyet : ''}</td>
+                    <td className="text-center mobil-gizle">{r.misafir ? r.misafir.cinsiyet : r.cikan ? r.cikan.cinsiyet : ''}</td>
                     <td className="num">{r.rez ? `${tr(r.rez.gelis_tarihi)} – ${tr(r.rez.cikis_tarihi)}` : ''}</td>
-                    <td className="num text-center">{r.rez ? r.rez.gun_sayisi : ''}</td>
-                    <td>{r.rez ? (r.rez.kurum_sahis === 'KURUM' ? 'Kurum' : 'Şahıs') : ''}</td>
-                    <td className="text-slate-600">{r.rez ? r.rez.odeme_turu : ''}</td>
+                    <td className="num text-center mobil-gizle">{r.rez ? r.rez.gun_sayisi : ''}</td>
+                    <td className="mobil-gizle">{r.rez ? (r.rez.kurum_sahis === 'KURUM' ? 'Kurum' : 'Şahıs') : ''}</td>
+                    <td className="text-slate-600 mobil-gizle">{r.rez ? r.rez.odeme_turu : ''}</td>
                     <td className="num text-right">{r.rez && r.rez.pesinat_tutari ? para(Math.max(0, r.rez.pesinat_tutari - r.rez.tahsil_edilen)) : ''}</td>
-                    <td className="num text-slate-500">{r.rez ? r.rez.rez_no.slice(4) : ''}</td>
+                    <td className="num text-slate-500 mobil-gizle">{r.rez ? r.rez.rez_no.slice(4) : ''}</td>
                   </tr>
                 ))}
                 {!yatakListesi.length && <tr><td colSpan="13" className="text-center text-slate-400 py-6">Filtreye uyan yatak yok.</td></tr>}
@@ -2723,7 +2764,7 @@ function OnayEkrani({ s, gonder, izin, git, acYeniKayit }) {
                    : '🔒 Görüntüleme yetkiniz var, onay yetkiniz yok.'}
         </span>} />
 
-      <div className="grid gap-2 mb-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(12rem, 100%), 1fr))' }}>
+      <div className="grid gap-2 mb-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(12rem, 47%), 1fr))' }}>
         {[['ONAY_BEKLIYOR', 'Onay Bekleyen', gruplar.ONAY_BEKLIYOR.length, 'text-sky-700', para(bekleyenTutar) + ' kapora'],
           ['ONAYLANDI', 'Onaylanan', gruplar.ONAYLANDI.length, 'text-emerald-700', 'rezervasyon listesinde'],
           ['REDDEDILDI', 'Reddedilen', gruplar.REDDEDILDI.length, 'text-rose-700', 'kapora bekleniyor']].map(([kod, ad, sayi, renk, alt]) => (
@@ -2741,7 +2782,7 @@ function OnayEkrani({ s, gonder, izin, git, acYeniKayit }) {
         style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(24rem, 100%), 1fr))' }}>
         <Kart baslik={`${STATULER.find(x => x.kod === 'ONAY_BEKLIYOR').ad.replace('Müdür Onayı Bekliyor', 'Dekontlar')} (${kayitlar.length})`} govdeSinif="p-0">
           <div className="max-h-[60vh] overflow-auto kaydir">
-            <table className="veri w-full">
+            <table className="veri w-full mobil-kart">
               <thead><tr>
                 <th>Adı Soyadı</th><th>Geliş / Çıkış</th><th className="text-right">Kapora</th><th>Dekont</th><th>Statü</th>
               </tr></thead>
@@ -2763,7 +2804,7 @@ function OnayEkrani({ s, gonder, izin, git, acYeniKayit }) {
         </Kart>
 
         <Kart baslik={seciliRez ? `Dekont İncelemesi — ${seciliRez.rez_no}` : 'Dekont İncelemesi'}>
-          {!seciliRez ? <BosDurum metin="Soldaki listeden bir kayıt seçiniz." /> : (
+          {!seciliRez ? <BosDurum metin="Listeden bir kayıt seçiniz." /> : (
             <div className="space-y-3">
               <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(9rem, 100%), 1fr))' }}>
                 {[['Rezerv Eden', seciliRez.ad_soyad],
@@ -2938,7 +2979,7 @@ function ManuelYerlestirme({ s, rz, gonder, kapat }) {
         <Buton tur="basari" onClick={kaydet} disabled={hatalar.length > 0}>Yerleşimi Kaydet</Buton>
       </>}>
       <div className="space-y-3 text-xs">
-        <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(14rem, 100%), 1fr))' }}>
+        <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(14rem, 47%), 1fr))' }}>
           {[['Konaklama', `${tr(rz.gelis_tarihi)} – ${tr(rz.cikis_tarihi)} · ${geceler.length} gece`],
             ['Kişi / Talep', `${rz.misafirler.length} kişi${rz.aile ? ' · aile (birlikte)' : ''}${rz.protokol ? ' · protokol' : ''}`],
             ['Kurum-Şahıs', rz.kurum_sahis === 'KURUM' ? 'Kurum · ' + rz.odeyecek : 'Şahıs'],
@@ -3274,10 +3315,10 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
           <Kart baslik="Talep Listesi" govdeSinif="p-0"
             sag={<span className="text-2xs text-slate-500">satıra tıklayın</span>}>
             <div className="max-h-[60vh] overflow-auto kaydir">
-              <table className="veri w-full">
+              <table className="veri w-full mobil-kart">
                 <thead><tr>
                   <th>Adı Soyadı</th><th>Geliş / Çıkış</th><th className="text-center">Kişi</th>
-                  <th className="text-center">Gün</th><th className="text-right">Kapora</th><th>Oda No</th><th>Statü</th>
+                  <th className="text-center mobil-gizle">Gün</th><th className="text-right">Kapora</th><th>Oda No</th><th>Statü</th>
                 </tr></thead>
                 <tbody>
                   {talepler.map(rz => {
@@ -3293,7 +3334,7 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
                         </td>
                         <td className="num">{tr(rz.gelis_tarihi).slice(0, 6)} – {tr(rz.cikis_tarihi)}</td>
                         <td className="num text-center">{rz.kisi_sayisi}{rz.aile && <span title="Aile / birlikte" className="text-amber-600 ml-0.5">⚭</span>}</td>
-                        <td className="num text-center">{rz.gun_sayisi}</td>
+                        <td className="num text-center mobil-gizle">{rz.gun_sayisi}</td>
                         <td className="num text-right">
                           {!rz.pesinat_tutari ? <span className="text-slate-400">aranmıyor</span>
                             : rz.kapora_muafiyeti
@@ -3315,7 +3356,7 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
           </Kart>
 
           <Kart baslik={seciliRez ? `Seçili Talep — ${seciliRez.rez_no}` : 'Seçili Talep'}>
-            {!seciliRez ? <BosDurum metin="Soldaki listeden bir talep seçiniz." /> : (
+            {!seciliRez ? <BosDurum metin="Listeden bir talep seçiniz." /> : (
               <div className="space-y-3">
                 <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(9rem, 100%), 1fr))' }}>
                   {[['Rezerv Eden', seciliRez.ad_soyad],
@@ -3815,7 +3856,7 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
           sag={<span className="text-2xs text-slate-500">
             {izin('pesinat.kural') ? 'değişiklik bu tesisin açık kayıtlarında peşinatı yeniden hesaplar'
                                    : '🔒 salt okunur — kural değiştirme yetkiniz yok'}</span>}>
-          <div className="grid gap-4 text-xs" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(13rem, 100%), 1fr))' }}>
+          <div className="grid gap-4 text-xs" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(13rem, 47%), 1fr))' }}>
             <label className={`col-span-1 flex items-start gap-2 p-2 bg-emerald-50 border border-emerald-200 rounded
               ${izin('pesinat.kural') ? 'cursor-pointer' : 'opacity-60'}`}>
               <input type="checkbox" className="mt-0.5" checked={kural.kurumMisafirindePesinatAranmasin}
@@ -3903,7 +3944,7 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
       </Kart>}
 
       {/* ── Para özeti */}
-      {tahsilatSayfasi && <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(13rem, 100%), 1fr))' }}>
+      {tahsilatSayfasi && <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(13rem, 47%), 1fr))' }}>
         <Kpi etiket="Toplam Yatak Bedeli" deger={para(toplam.bedel)} alt={`${kayitlar.length} kayıt (listede)`} />
         <Kpi etiket="Peşinat Tutarı" deger={para(toplam.pesinat)} />
         <Kpi etiket="Tahsil Edilen" deger={para(toplam.tahsil)} renk="text-emerald-700" />
@@ -3948,14 +3989,15 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
             <Buton tur="sessiz" onClick={() => { setListe('HEPSI'); setStatuFiltre('HEPSI'); setArama(''); }}>Filtreleri temizle</Buton>}
         </>}>
         <div className="max-h-[60vh] overflow-auto kaydir kaydir-x">
-          <table className="veri w-full">
+          <table className="veri w-full mobil-kart">
             <thead><tr>
               <th>İşlem</th>
-              <th>Rez. No</th><th>Adı Soyadı</th><th>Geliş / Çıkış</th><th>Kurum-Şahıs</th><th title="Ödeme Türü">Öd. Türü</th>
+              <th>Rez. No</th><th>Adı Soyadı</th><th>Geliş / Çıkış</th><th className="mobil-gizle">Kurum-Şahıs</th>
+              <th className="mobil-gizle" title="Ödeme Türü">Öd. Türü</th>
               <th className="text-right" title="Yatak Bedeli">Bedel</th><th className="text-right">Peşinat</th>
               <th title="Peşinat son ödeme tarihi">Son Ödeme</th>
               <th className="text-right" title="Tahsil Edilen">Tahsil</th><th className="text-right" title="Peşinattan Kalan">Kalan</th>
-              <th title="Makbuz No">Makbuz</th><th>Statü</th>
+              <th className="mobil-gizle" title="Makbuz No">Makbuz</th><th>Statü</th>
             </tr></thead>
             <tbody>
               {kayitlar.map(rz => {
@@ -3987,9 +4029,9 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
                     <td className="num" title={`${tr(rz.gelis_tarihi)} – ${tr(rz.cikis_tarihi)}`}>
                       {tr(rz.gelis_tarihi).slice(0, 6)} – {tr(rz.cikis_tarihi)}
                     </td>
-                    <td>{rz.kurum_sahis === 'KURUM' ? <Rozet sinif="bg-ttk-50 text-ttk-700 border-ttk-200">Kurum</Rozet>
+                    <td className="mobil-gizle">{rz.kurum_sahis === 'KURUM' ? <Rozet sinif="bg-ttk-50 text-ttk-700 border-ttk-200">Kurum</Rozet>
                                                    : <Rozet sinif="bg-slate-100 text-slate-700 border-slate-300">Şahıs</Rozet>}</td>
-                    <td className="text-slate-600" title={ODEME_TURU[rz.odeme_turu]}>{rz.odeme_turu}</td>
+                    <td className="text-slate-600 mobil-gizle" title={ODEME_TURU[rz.odeme_turu]}>{rz.odeme_turu}</td>
                     <td className="num text-right">{para(rz.yatak_bedeli)}</td>
                     <td className="num text-right font-semibold">{rz.pesinat_tutari ? para(rz.pesinat_tutari) : <span className="text-slate-400">aranmıyor</span>}</td>
                     <td className={`num ${gecti ? 'text-rose-700 font-bold' : 'text-slate-600'}`}>
@@ -3997,7 +4039,7 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
                     </td>
                     <td className="num text-right text-emerald-700">{rz.tahsil_edilen ? para(rz.tahsil_edilen) : '—'}</td>
                     <td className={`num text-right ${kalan ? 'text-rose-700 font-semibold' : 'text-slate-400'}`}>{kalan ? para(kalan) : '—'}</td>
-                    <td className="num text-slate-500">{rz.makbuz_no || '—'}</td>
+                    <td className="num text-slate-500 mobil-gizle">{rz.makbuz_no || '—'}</td>
                     <td><StatuRozet kod={rz.statu} kisa /></td>
                   </tr>
                 );
@@ -4628,7 +4670,7 @@ function YeniRezervasyonFormu({ s, gonder, kapat, dolu, temizlik, onDolgu }) {
             <legend className="text-2xs font-bold text-ttk-800 uppercase px-1">
               Misafirler ve Yatak Tahsisi ({f.misafirler.length} kişi)
             </legend>
-            <table className="veri w-full">
+            <table className="veri w-full mobil-kart">
               <thead><tr>
                 <th className="w-6">#</th><th>Tc Kimlik No</th><th>Adı ve Soyadı</th><th className="w-14">Cinsiyet</th>
                 <th className="w-20">Sicil No</th><th className="w-24">Görev Sevk No</th>
@@ -4760,7 +4802,7 @@ function GirisEkrani({ kullanicilar, gonder }) {
       style={{ background: 'linear-gradient(135deg,#0d2340 0%,#173c6d 55%,#2a61a8 100%)' }}>
       <div className="w-full max-w-4xl grid grid-cols-12 bg-white rounded-lg shadow-2xl overflow-hidden">
         {/* Sol tanıtım */}
-        <div className="col-span-12 md:col-span-5 bg-ttk-800 text-white p-6 flex flex-col">
+        <div className="col-span-12 md:col-span-5 order-last md:order-first bg-ttk-800 text-white p-5 sm:p-6 flex flex-col">
           <div className="flex items-center gap-2.5">
             <TtkLogo boyut="h-24 w-auto" />
             <div className="leading-tight">
@@ -4791,7 +4833,7 @@ function GirisEkrani({ kullanicilar, gonder }) {
         </div>
 
         {/* Sağ giriş formu */}
-        <div className="col-span-12 md:col-span-7 p-6">
+        <div className="col-span-12 md:col-span-7 order-first md:order-last p-5 sm:p-6">
           <h1 className="text-lg font-bold text-ttk-800">Bağlantı</h1>
           <p className="text-xs text-slate-500 mb-4">Kullanıcı adınız ve şifrenizle oturum açınız.</p>
 
@@ -4886,7 +4928,7 @@ function KullaniciEkrani({ s, gonder }) {
         aciklama={sayfaBul('KULLANICILAR').aciklama} />
       <Kart baslik="Roller ve Yetki Tanımları"
         sag={<Buton tur="sessiz" onClick={() => setMatrisAcik(x => !x)}>{matrisAcik ? 'Yetki matrisini gizle' : 'Yetki matrisini göster'}</Buton>}>
-        <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(14rem, 100%), 1fr))' }}>
+        <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(14rem, 47%), 1fr))' }}>
           {Object.entries(ROLLER).map(([kod, r]) => (
             <div key={kod} className={`border rounded p-2 ${r.renk}`}>
               <div className="font-bold text-xs">{r.ad}</div>
@@ -4930,7 +4972,7 @@ function KullaniciEkrani({ s, gonder }) {
         sag={<Buton tur="basari" onClick={() => setYeni({ kod:'', sifre:'', ad:'', unvan:'', rol:'RESEPSIYON', tesisler:[s.tesis] })}>
           + Yeni Kullanıcı
         </Buton>}>
-        <table className="veri w-full">
+        <table className="veri w-full mobil-kart">
           <thead><tr>
             <th>Kullanıcı Adı</th><th>Adı Soyadı</th><th>Unvan</th><th className="w-44">Rol</th>
             <th>Yetkili Misafirhaneler</th><th>Son Giriş</th><th className="text-center">Durum</th>
@@ -5076,15 +5118,15 @@ const sayfaBul = kod => SAYFALAR.find(x => x.kod === kod);
 /* Rehber içeriği: adımlar, gereken yetki ve ilgili sayfa kodları. */
 const REHBER_KONULARI = [
   {
-    anahtarlar: ['oturum', 'sifre', 'baglan', 'ekran', 'menu', 'gezin', 'yazi boyut', 'olcek', 'buyut', 'kucult', 'okunmuyor'],
+    anahtarlar: ['oturum', 'sifre', 'baglan', 'ekran', 'menu', 'gezin', 'telefon', 'mobil', 'okunmuyor'],
     kod: 'BASLANGIC', baslik: 'Başlarken — ekranı tanıyın', ikon: 'menu',
-    ozet: 'Üst bant, sayfa şeridi, ana menü ve yazı boyutu ayarı nerede?',
+    ozet: 'Üst bant, sayfa şeridi, ana menü ve telefonda kullanım.',
     roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
     adimlar: [
       { b: 'Oturum açın', m: 'Giriş ekranında YBS kullanıcı adınızı ve şifrenizi yazıp «BAĞLAN» düğmesine basın. Rolünüz (Müdür, Resepsiyon, Muhasebe, Admin) hangi sayfaları ve düğmeleri görebileceğinizi belirler.' },
       { b: 'Hangi misafirhanede çalıştığınızı görün', m: 'Üst bandın solunda «<Misafirhane> Bilgi Sistemi» yazar; yaptığınız her işlem bu misafirhane için geçerlidir. Çalışılan misafirhane her sayfanın başlığında da yazar (örn. «Ankara Misafirhanesi Rezervasyon Talepleri»). Birden çok misafirhaneye yetkiliyseniz Ana Menü\'nün üstündeki misafirhane düğmelerinden ya da «Bugünkü Durum» sayfasındaki karşılaştırma tablosundan geçiş yaparsınız.' },
       { b: 'Sayfalar arasında gezinin', m: 'Üst banttaki logoya veya «Ana Menü» düğmesine basınca bütün sayfaların kart görünümü açılır. Kartların üzerindeki sayılar (boş yatak, bekleyen talep, onaydaki dekont…) canlıdır. Sürekli kullandığınız sayfalara logonun altındaki sayfa şeridinden tek tıkla geçebilirsiniz.' },
-      { b: 'Yazılar küçük geliyorsa', m: 'Ekranın sağ alt köşesindeki dikey büyüteç kutusunu kullanın: «+» büyütür, «−» küçültür, ortadaki yüzde düğmesi %100\'e döndürür. Ayar tarayıcınızda saklanır, bir daha girdiğinizde aynı boyutla açılır.' },
+      { b: 'Telefon ve tablette kullanın', m: 'Arayüz ekran genişliğine göre kendini düzenler: telefonda kartlar tek sütuna iner, sayfa şeridi ve geniş tablolar kendi içinde yana kayar, menü «☰» düğmesinin altına toplanır. Yazılar küçük geliyorsa tarayıcının yakınlaştırmasını kullanın.' },
       { b: 'Bir düğmenin ne yaptığını öğrenin', m: 'Herhangi bir düğmenin üzerine gelip bekleyin; ne işe yaradığı küçük bir balonda yazar. Düğme soluk (pasif) ise balon hangi yetkinin gerektiğini söyler.' },
       { b: 'Aradığınız işlemi yazarak bulun', m: 'Üst bandın ortasındaki «Hangi işlemi yapmak istiyorsunuz?» kutusuna tıklayın ya da her yerden Ctrl + K tuşlayın. Sayfa adı, işlem (örn. «tahsilat», «dekont»), misafir adı, Tc kimlik no ya da rezervasyon no yazabilirsiniz; ↑ ↓ ile gezinip ↵ ile seçersiniz.' },
       { b: 'Yardımcıya sorun', m: 'Sağ alt köşedeki baretli maskot «Madenci»dir. «Bugün kaç yatak boş?» gibi soruları ekrandaki canlı veriyle, «kapora nasıl işlenir?» gibi soruları bu rehberden adım adım yanıtlar ve ilgili sayfaya bağlantı verir.' },
@@ -5259,7 +5301,7 @@ const REHBER_KONULARI = [
       ['Yanlış tahsilat girdim, ne yapmalıyım?',
        'Kaydı «Detay» düğmesiyle açın; bütün hareketler (tahsilat, dekont, onay, statü değişikliği) tarih ve kullanıcı bilgisiyle listelenir. Bu prototipte düzeltme, doğru tutarla yeni bir tahsilat hareketi girilerek gösterilir.'],
       ['Ekrana sığmıyor / yazılar küçük.',
-       'Sağ alt köşedeki dikey büyüteç kutusundan yazı boyutunu %85 ile %135 arasında ayarlayın. Bütün sayfalar bu ayarla birlikte yeniden düzenlenir; tarayıcı yakınlaştırmasına gerek yoktur.'],
+       'Geniş tablolar sayfayı değil kendi kutusunu kaydırır; tablonun üzerinde parmağınızı ya da farenizi yana sürükleyin. Yazı boyutu için tarayıcının yakınlaştırmasını (Ctrl + ya da telefonda iki parmakla açma) kullanın.'],
     ],
   },
 ];
@@ -5461,26 +5503,6 @@ function AnaMenu({ s, sayfalar, sayilar, git, gonder, tesisler, acYeniKayit, izi
   );
 }
 
-/* ── Arayüz ölçeği — ekranın sağ altında, dikey ve yarı saydam ─────────────── */
-const OlcekKontrol = ({ olcek, gonder }) => (
-  <div className="fixed right-3 bottom-12 z-40 flex flex-col items-center gap-0.5 rounded-full
-                  bg-ttk-800/55 hover:bg-ttk-800/85 backdrop-blur-sm text-white shadow-lg
-                  px-1 py-1.5 transition-colors print:hidden"
-    title="Yazı boyutunu ekranınıza göre ayarlayın">
-    <button onClick={() => gonder({ tip: 'OLCEK', olcek: olcek + 0.05 })} disabled={olcek >= 1.35}
-      className="p-1.5 rounded-full hover:bg-white/20 disabled:opacity-35" aria-label="Yazıyı büyüt" title="Yazıyı büyüt">
-      <Ikon ad="buyut" sinif="w-5 h-5" />
-    </button>
-    <button onClick={() => gonder({ tip: 'OLCEK', olcek: 1 })}
-      className="num text-[0.62rem] leading-none px-1 py-0.5 rounded hover:bg-white/20"
-      aria-label="Varsayılan boyuta dön" title="Varsayılan boyuta dön">%{Math.round(olcek * 100)}</button>
-    <button onClick={() => gonder({ tip: 'OLCEK', olcek: olcek - 0.05 })} disabled={olcek <= 0.85}
-      className="p-1.5 rounded-full hover:bg-white/20 disabled:opacity-35" aria-label="Yazıyı küçült" title="Yazıyı küçült">
-      <Ikon ad="kucult" sinif="w-5 h-5" />
-    </button>
-  </div>
-);
-
 /* ── Yazdırma penceresi (yatak listesi) ────────────────────────────────────
    Kâğıt yönü seçilir, @page kuralı o an yazılır; ekrandaki arayüz baskıda
    gizlenir, yalnız .yazdir-alan basılır.                                    */
@@ -5644,7 +5666,7 @@ function KahvaltiEkrani({ s, gonder, izin }) {
         <YetkiUyarisi metin="Bu sayfayı görüntüleyebilirsiniz; kahvaltı işaretlemesi resepsiyon görevlisi ve müdür tarafından yapılır." />
       )}
 
-      <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(11rem, 100%), 1fr))' }}>
+      <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(11rem, 47%), 1fr))' }}>
         <Kpi etiket="Konaklayan Misafir" deger={kayitlar.length} alt={tr(tarih)} />
         <Kpi etiket="Kahvaltı Yapmadı" deger={yapmayan} renk="text-rose-600" alt="işaretlenen misafir" />
         <Kpi etiket="Kahvaltı Verildi" deger={kayitlar.length - yapmayan} renk="text-emerald-700" alt="ücretlendirilecek" />
@@ -5665,32 +5687,30 @@ function KahvaltiEkrani({ s, gonder, izin }) {
         sag={<input value={arama} onChange={e => setArama(e.target.value)} placeholder="Ad soyad / oda no ara…"
           className="border border-slate-300 rounded px-2 py-1 text-xs w-full sm:w-52 min-w-0" />}>
         <div className="max-h-[58vh] overflow-auto kaydir">
-          <table className="veri w-full">
+          <table className="veri w-full mobil-kart">
             <thead><tr>
-              <th className="w-28">Kahvaltı</th><th>Oda / Yatak</th><th>Adı Soyadı</th>
-              <th>Rez. No</th><th>Kurum-Şahıs</th><th>Çıkış</th>
+              <th className="w-32">Kahvaltı Yapmadı</th><th>Oda / Yatak</th><th>Adı Soyadı</th>
+              <th className="mobil-gizle">Rez. No</th><th className="mobil-gizle">Kurum-Şahıs</th><th>Çıkış</th>
             </tr></thead>
             <tbody>
               {suzulmus.map(k => {
                 const yapmadi = !!gunKaydi[k.anahtar];
                 return (
                   <tr key={k.anahtar} className={yapmadi ? 'bg-rose-50/60' : ''}>
-                    <td>
-                      <label className={`flex items-center gap-1.5 text-2xs font-semibold
+                    <td className="kart-yalin">
+                      <label className={`flex items-center gap-2 py-1 text-2xs font-semibold
                         ${duzenleyebilir ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
                         data-ipucu={duzenleyebilir ? 'İşaretlenen misafir o sabah kahvaltıya inmedi; ay sonu belgesinde düşülür'
                                                    : yetkiNotu(s.kullanici, 'kahvalti.isle')}>
                         <input type="checkbox" checked={yapmadi} disabled={!duzenleyebilir}
                           onChange={e => isaretle(k.anahtar, e.target.checked)} />
-                        <span className={yapmadi ? 'text-rose-700' : 'text-slate-500'}>
-                          {yapmadi ? 'yapmadı' : 'yaptı'}
-                        </span>
+                        <span className={yapmadi ? 'text-rose-700' : 'text-slate-400'}>yapmadı</span>
                       </label>
                     </td>
                     <td className="num">Oda {k.oda} / {k.yatak}</td>
                     <td className="font-semibold text-ttk-900">{k.misafir.adi_soyadi}</td>
-                    <td className="num text-slate-500">{k.rz.rez_no.slice(4)}</td>
-                    <td>{k.rz.kurum_sahis === 'KURUM' ? 'Kurum' : 'Şahıs'}</td>
+                    <td className="num text-slate-500 mobil-gizle">{k.rz.rez_no.slice(4)}</td>
+                    <td className="mobil-gizle">{k.rz.kurum_sahis === 'KURUM' ? 'Kurum' : 'Şahıs'}</td>
                     <td className="num">{tr(k.rz.cikis_tarihi)}</td>
                   </tr>
                 );
@@ -5805,7 +5825,7 @@ function AySonuEkrani({ s, gonder, izin }) {
       </div>
 
       <Kart baslik="Talep ve Belgeler" govdeSinif="p-0">
-        <table className="veri w-full">
+        <table className="veri w-full mobil-kart">
           <thead><tr>
             <th className="w-40">İşlem</th><th>Dönem</th><th>İsteyen</th><th>Talep Tarihi</th>
             <th>Not</th><th>Hazırlayan</th><th>Durum</th>
@@ -5872,10 +5892,57 @@ function AySonuEkrani({ s, gonder, izin }) {
    Tarayıcının title balonundan farkı: gecikmesi tutarlı, okunaklı, ekran
    dışına taşmaz ve PASİF düğmelerde de çıkar — imlecin altındaki öğe
    elementFromPoint ile bulunur, çünkü disabled düğmeler fare olayı yaymaz.  */
+/* Telefonda (≤640 px) «mobil-kart» işaretli tablolar satır kartına dönüşür.
+   Kart içinde hangi değerin hangi sütun olduğunu göstermek için her hücreye
+   başlık metni data-b olarak yazılır; kural CSS'tedir (td::before).
+   Yalnız dar ekranda bağlanır, geniş ekranda hiç çalışmaz. */
+function TabloEtiketleyici() {
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)');
+    let gozlemci = null, bekliyor = false;
+    const BASLIK = /^(adı soyadı|adı ve soyadı|kullanıcı adı|misafir)$/i;
+    const isle = () => {
+      document.querySelectorAll('table.veri.mobil-kart').forEach(t => {
+        const basliklar = [...t.querySelectorAll('thead th')].map(th => (th.textContent || '').trim());
+        t.querySelectorAll('tbody tr').forEach(satir => {
+          [...satir.children].forEach((h, i) => {
+            if (h.hasAttribute('colspan')) return;
+            const ad = basliklar[i] || '';
+            const anaHucre = BASLIK.test(ad);
+            const etiket = (anaHucre || h.classList.contains('kart-yalin')) ? '' : ad;
+            if (h.getAttribute('data-b') !== etiket) h.setAttribute('data-b', etiket);
+            h.classList.toggle('kart-baslik', anaHucre);
+          });
+        });
+      });
+    };
+    const bagla = () => {
+      if (!mq.matches || gozlemci) return;
+      isle();
+      gozlemci = new MutationObserver(() => {
+        if (bekliyor) return;
+        bekliyor = true;
+        requestAnimationFrame(() => { bekliyor = false; isle(); });
+      });
+      gozlemci.observe(document.body, { childList: true, subtree: true });
+    };
+    const coz = () => { if (gozlemci) { gozlemci.disconnect(); gozlemci = null; } };
+    const degisti = () => (mq.matches ? bagla() : coz());
+    bagla();
+    mq.addEventListener('change', degisti);
+    return () => { mq.removeEventListener('change', degisti); coz(); };
+  }, []);
+  return null;
+}
+
 function IpucuKatmani() {
   const [ipucu, setIpucu] = useState(null);
   const kutuRef = useRef(null);
   useEffect(() => {
+    /* Dokunmatik ekranda «üzerine gelme» yoktur: dokunulan düğme odaklandığı
+       için balon ekranda asılı kalırdı. Telefon/tablette ipucu katmanı hiç
+       çalışmaz; aynı bilgi rehberde ve düğme metninde zaten vardır. */
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
     let zamanlayici = null, sonHedef = null, bekliyor = false;
     const gizle = () => { clearTimeout(zamanlayici); sonHedef = null; setIpucu(null); };
     /* title'ı olan öğeyi data-ipucu'ya çevirir; boş title'lar yok sayılır. */
@@ -5907,6 +5974,8 @@ function IpucuKatmani() {
     };
     const odak = (e) => {
       const hedef = e.target.closest ? e.target.closest('[data-ipucu],[title]') : null;
+      /* yalnız klavyeyle gezinirken: fareyle tıklanan düğme balon açmasın */
+      if (hedef && hedef.matches && !hedef.matches(':focus-visible')) return setIpucu(null);
       clearTimeout(zamanlayici);
       if (!hedef) return setIpucu(null);
       sonHedef = hedef; hesapla(hedef);
@@ -6010,16 +6079,10 @@ function KomutArama({ s, izin, git, gonder, acYeniKayit, tesisler, kapat }) {
       calistir: () => git('REHBER', k.kod) }));
 
     /* Görünüm */
-    liste.push({ tur: 'Görünüm', ad: 'Yazıyı büyüt', aciklama: 'Arayüz ölçeğini bir kademe artırır', ikon: 'buyut',
-      anahtarlar: 'buyut zoom olcek yazi boyut okunmuyor kucuk',
-      calistir: () => gonder({ tip: 'OLCEK', olcek: s.olcek + 0.05 }) });
-    liste.push({ tur: 'Görünüm', ad: 'Yazıyı küçült', aciklama: 'Arayüz ölçeğini bir kademe azaltır', ikon: 'kucult',
-      anahtarlar: 'kucult zoom olcek sigmiyor tasiyor',
-      calistir: () => gonder({ tip: 'OLCEK', olcek: s.olcek - 0.05 }) });
     liste.push({ tur: 'Oturum', ad: 'Oturumu kapat', aciklama: 'Giriş ekranına döner', ikon: 'guc',
       anahtarlar: 'cikis logout kapat oturum', calistir: () => gonder({ tip: 'CIKIS' }) });
     return liste;
-  }, [s.tesis, s.olcek, tesisler, izin]);
+  }, [s.tesis, tesisler, izin]);
 
   const sonuclar = useMemo(() => {
     const q = aramaAnahtari(sorgu);
@@ -6062,9 +6125,9 @@ function KomutArama({ s, izin, git, gonder, acYeniKayit, tesisler, kapat }) {
 
   let oncekiTur = null;
   return (
-    <div className="fixed inset-0 z-50 bg-ttk-900/40 flex items-start justify-center p-6 overflow-auto"
+    <div className="pencere-katmani fixed inset-0 z-50 bg-ttk-900/40 flex items-start justify-center p-3 sm:p-6 overflow-auto"
       onMouseDown={e => { if (e.target === e.currentTarget) kapat(); }}>
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl mt-10 bel overflow-hidden"
+      <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl mt-4 sm:mt-10 bel overflow-hidden"
         onMouseDown={e => e.stopPropagation()}>
         <div className="flex items-center gap-2 px-3 py-2.5 border-b border-slate-200">
           <Ikon ad="ara" sinif="w-5 h-5 text-ttk-600" />
@@ -6344,9 +6407,10 @@ function YardimBotu({ s, izin, git, dolu, temizlik, acik, setAcik }) {
 
   if (!acik) return null;
   return (
-    <div className={`fixed right-3 bottom-[9.5rem] z-40 bg-white rounded-2xl shadow-2xl border-2 border-ttk-600
+    <div className={`yardimci-katmani fixed z-40 left-2 right-2 bottom-2 sm:left-auto sm:right-4 sm:bottom-[9.5rem]
+                    bg-white rounded-2xl shadow-2xl border-2 border-ttk-600
                     flex flex-col overflow-hidden bel print:hidden
-                    ${genis ? 'w-[min(34rem,calc(100vw-1.5rem))]' : 'w-[min(27rem,calc(100vw-1.5rem))]'}`}
+                    ${genis ? 'sm:w-[34rem]' : 'sm:w-[27rem]'}`}
       role="dialog" aria-label="Yardımcı bot">
       <header className="flex items-center gap-2.5 px-3 py-2.5 bg-ttk-800 text-white shrink-0">
         <span className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center shrink-0">
@@ -6451,8 +6515,9 @@ function Uygulama() {
   const [menuAcik, setMenuAcik] = useState(false);
   const [komutAcik, setKomutAcik] = useState(false);
   const [botAcik, setBotAcik] = useState(false);
-  /* Yardımcı ilk kez dikkat çeksin: bir süre sonra kendini tanıtan baloncuk açılır,
-     kullanıcı kapatınca ya da yardımcıyı bir kez açınca bir daha çıkmaz. */
+  /* Yardımcı ilk kez dikkat çeksin: bir süre sonra kendini tanıtan baloncuk açılır.
+     Baloncuk yalnız bir işarettir — tıklamayı engellemez (pointer-events yok), sekiz
+     saniye sonra ya da kullanıcı ekranda bir şey yapınca kendiliğinden kaybolur. */
   const [botBalonu, setBotBalonu] = useState(false);
   useEffect(() => {
     if (botAcik) { setBotBalonu(false); return; }
@@ -6465,9 +6530,28 @@ function Uygulama() {
     }, 6000);
     return () => clearTimeout(t);
   }, [botAcik]);
+  useEffect(() => {
+    if (!botBalonu) return;
+    const kapat = () => setBotBalonu(false);
+    const t = setTimeout(kapat, 8000);
+    document.addEventListener('mousedown', kapat);
+    document.addEventListener('keydown', kapat);
+    window.addEventListener('scroll', kapat, true);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('mousedown', kapat);
+      document.removeEventListener('keydown', kapat);
+      window.removeEventListener('scroll', kapat, true);
+    };
+  }, [botBalonu]);
   const [rehberKonu, setRehberKonu] = useState(null);
-
-  useEffect(() => { document.documentElement.style.setProperty('--olcek', String(s.olcek)); }, [s.olcek]);
+  const [sayfaListesi, setSayfaListesi] = useState(false);   /* telefonda sayfa çekmecesi */
+  useEffect(() => {
+    if (!sayfaListesi) return;
+    const esc = (e) => { if (e.key === 'Escape') setSayfaListesi(false); };
+    document.addEventListener('keydown', esc);
+    return () => document.removeEventListener('keydown', esc);
+  }, [sayfaListesi]);
 
   const { dolu, temizlik } = useMemo(() => dolulukKur(s.rezervasyonlar), [s.rezervasyonlar]);
   const k = s.kullanici;
@@ -6564,7 +6648,16 @@ function Uygulama() {
         {/* Sayfa şeridi ve işlem araması (arama, üstteki çıkış düğmesiyle sağdan hizalı) */}
         <nav className="bg-ttk-900/40 border-t border-ttk-700">
           <div className="sayfa-govde px-3 flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
-          <div className="flex items-center gap-1 overflow-x-auto kaydir min-w-0 flex-1 order-1">
+          {/* Telefon: bütün sayfaları listeleyen düğme (şerit dar ekranda gizlenir) */}
+          <button onClick={() => setSayfaListesi(true)} data-ipucu="Bütün sayfalar"
+            className="sm:hidden order-1 shrink-0 my-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg
+                       bg-ttk-800/70 hover:bg-ttk-700 border border-ttk-600 text-white text-xs font-semibold">
+            <Ikon ad="menu" sinif="w-4 h-4 shrink-0" />
+            <span className="max-w-[7rem] truncate">{aktif ? aktif.kisa : 'Ana Menü'}</span>
+            <span className="text-[0.55rem] opacity-80">▼</span>
+          </button>
+
+          <div className="hidden sm:flex items-center gap-1 overflow-x-auto kaydir min-w-0 flex-1 order-1">
             <button onClick={() => git('ANA_MENU')} data-ipucu="Bütün sayfaların kart görünümü"
               className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors
                 ${s.ekran === 'ANA_MENU' ? 'border-white text-white' : 'border-transparent text-ttk-200 hover:text-white'}`}>
@@ -6583,7 +6676,7 @@ function Uygulama() {
           {/* İşlem araması — her yerden Ctrl + K */}
           <button onClick={() => setKomutAcik(true)}
             data-ipucu="Sayfa, işlem, misafir ya da rezervasyon no arayın (Ctrl + K)"
-            className="order-2 shrink-0 w-full sm:w-64 min-w-[9rem] my-1 flex items-center gap-2 px-2.5 py-1 rounded-lg
+            className="order-2 flex-1 sm:flex-none sm:w-64 min-w-[8rem] my-1 flex items-center gap-2 px-2.5 py-1 rounded-lg
                        bg-ttk-800/70 hover:bg-ttk-700 border border-ttk-600 text-ttk-100 transition-colors">
             <Ikon ad="ara" sinif="w-4 h-4 shrink-0" />
             <span className="text-xs truncate">Hangi işlemi yapmak istiyorsunuz?</span>
@@ -6591,6 +6684,43 @@ function Uygulama() {
           </div>
         </nav>
       </header>
+
+      {/* Telefon sayfa listesi — alttan açılan çekmece */}
+      {sayfaListesi && (
+        <div className="pencere-katmani fixed inset-0 z-50 sm:hidden bg-ttk-900/50 flex items-end print:hidden"
+          onMouseDown={e => { if (e.target === e.currentTarget) setSayfaListesi(false); }}>
+          <div className="w-full bg-white rounded-t-2xl max-h-[86vh] overflow-auto kaydir bel">
+            <header className="flex items-center justify-between px-4 py-3 border-b border-slate-200 sticky top-0 bg-white">
+              <b className="text-sm text-ttk-900">Sayfalar</b>
+              <button onClick={() => setSayfaListesi(false)} aria-label="Kapat"
+                className="text-slate-500 text-xl leading-none px-2">×</button>
+            </header>
+            <div className="p-2 space-y-1.5">
+              <button onClick={() => { git('ANA_MENU'); setSayfaListesi(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left
+                  ${s.ekran === 'ANA_MENU' ? 'border-ttk-500 bg-ttk-50' : 'border-slate-200'}`}>
+                <Ikon ad="menu" sinif="w-5 h-5 text-ttk-700 shrink-0" />
+                <span className="font-semibold text-sm text-ttk-900">Ana Menü</span>
+              </button>
+              {menuSayfalari.map(x => {
+                const say = sayilar[x.kod];
+                return (
+                  <button key={x.kod} onClick={() => { git(x.kod); setSayfaListesi(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left
+                      ${s.ekran === x.kod ? 'border-ttk-500 bg-ttk-50' : 'border-slate-200'}`}>
+                    <Ikon ad={x.ikon} sinif="w-5 h-5 text-ttk-700 shrink-0" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold text-sm text-ttk-900">{x.ad}</span>
+                      <span className="block text-2xs text-slate-500 truncate">{x.aciklama}</span>
+                    </span>
+                    {say && <span className={`num font-bold text-sm shrink-0 ${say.renk || 'text-ttk-700'}`}>{say.deger}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 p-3">
         <div className="sayfa-govde">
@@ -6630,30 +6760,25 @@ function Uygulama() {
         </div>
       </footer>
 
-      <OlcekKontrol olcek={s.olcek} gonder={gonder} />
-
       {/* Yardımcı bot — madenci bareti takan maskot */}
       <YardimBotu s={s} izin={izin} git={git} dolu={dolu} temizlik={temizlik} acik={botAcik} setAcik={setBotAcik} />
       {!botAcik && (
-        <div className="fixed right-3 bottom-[9.5rem] z-40 flex items-end gap-2 print:hidden">
+        <div className="yardimci-katmani fixed right-3 bottom-4 sm:bottom-[9.5rem] z-40 flex items-end gap-2 print:hidden">
           {botBalonu && (
-            <button onClick={() => { setBotAcik(true); setBotBalonu(false); }}
-              className="relative bg-white border-2 border-ttk-600 rounded-xl shadow-xl px-3 py-2 max-w-[15rem]
-                         text-left text-xs text-slate-700 hover:bg-ttk-50 bel">
+            <div aria-hidden="true"
+              className="relative hidden sm:block pointer-events-none bg-white border-2 border-ttk-600 rounded-xl
+                         shadow-xl px-3 py-2 max-w-[15rem] text-left text-xs text-slate-700 bel">
               <b className="block text-ttk-800">Yardım ister misiniz?</b>
               <span className="text-2xs text-slate-500">Doluluk sorun ya da bir işlemin nasıl yapıldığını öğrenin.</span>
-              <span onClick={e => { e.stopPropagation(); setBotBalonu(false); }} role="button" aria-label="Baloncuğu kapat"
-                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-slate-200 hover:bg-slate-300
-                           text-slate-600 text-xs flex items-center justify-center">×</span>
               <span className="absolute -right-1.5 bottom-4 w-3 h-3 bg-white border-r-2 border-b-2 border-ttk-600 rotate-[-45deg]" />
-            </button>
+            </div>
           )}
           <button onClick={() => { setBotAcik(true); setBotBalonu(false); }} aria-label="Yardımcıyı aç"
             data-ipucu="Madenci — doluluk sorun, bir işlemin nasıl yapıldığını öğrenin"
-            className={`w-[4.5rem] h-[4.5rem] rounded-full bg-white border-[3px] border-ttk-600 shadow-2xl
-                        flex items-center justify-center hover:scale-105 active:scale-95 transition-transform
+            className={`w-[3.5rem] h-[3.5rem] sm:w-[4.5rem] sm:h-[4.5rem] rounded-full bg-white border-[3px] border-ttk-600
+                        shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform
                         ${botBalonu ? 'maskot-halka' : ''}`}>
-            <Maskot sinif="w-14 h-14 maskot-salla" />
+            <Maskot sinif="w-11 h-11 sm:w-14 sm:h-14 maskot-salla" />
           </button>
         </div>
       )}
@@ -6666,6 +6791,7 @@ function Uygulama() {
       )}
 
       <IpucuKatmani />
+      <TabloEtiketleyici />
 
       {yeniForm && (
         <YeniRezervasyonFormu s={s} gonder={gonder} dolu={dolu} temizlik={temizlik}

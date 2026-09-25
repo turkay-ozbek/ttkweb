@@ -110,10 +110,40 @@ Ayrıntı: [`mobil-guvenlik.md`](mobil-guvenlik.md) § 3.
 5. **Pencereler kenara yapışmaz.** Modal dolgusu `p-2 sm:p-6`, yükseklik `72vh`.
 6. **Üst bant.** Başlık kısalır, arama kutusu telefonda tam genişliğe geçip alt
    satıra iner; sayfa şeridi yatay kayar.
-7. **Yardımcı ve ölçek kutusu.** Panel genişliği `min(27rem, 100vw - 1.5rem)`.
+7. **Sayfa çekmecesi (640 px altı).** Yana kayan sayfa şeridi telefonda gizleniyor;
+   yerine «☰ <açık sayfanın adı> ▼» düğmesi var. Alttan açılan çekmecede bütün sayfalar
+   simgesi, açıklaması ve canlı sayısıyla (boş yatak, bekleyen talep, onaydaki dekont…)
+   listeleniyor. Arama kutusu aynı satırda kalıyor.
+8. **Listeler telefonda karta dönüşüyor.** Satır işlemi olan tablolar
+   (`table.veri.mobil-kart`) tek tek karta açılıyor: kartın başlığı misafirin adı,
+   diğer alanlar «başlık → değer» satırları. Sütun başlıkları hücrelere betikte
+   yazılıyor (`data-b`), görünüm CSS'te kuruluyor:
+   ```css
+   @media (max-width: 640px) {
+     table.veri.mobil-kart thead { display: none; }
+     table.veri.mobil-kart tbody tr { display: flex; flex-direction: column; border-radius: 10px; }
+     table.veri.mobil-kart tbody td::before { content: attr(data-b); }
+     table.veri.mobil-kart tbody td.kart-baslik { order: -1; }
+   }
+   ```
+   Kapsam: talep listesi, dekont/onay, tahsilat, kahvaltı yoklaması, ay sonu talepleri,
+   kullanıcılar ve yeni kayıt formundaki misafir tablosu.
+9. **İkincil sütunlar telefonda gizleniyor** (`.mobil-gizle`): yatak listesinde oda tipi,
+   Tc kimlik no, cinsiyet, gün, kurum-şahıs, ödeme türü, rezervasyon no; tahsilatta
+   kurum-şahıs, ödeme türü, makbuz. Geniş ekranda hepsi yerinde.
+10. **Sayaç kartları iki sütun.** 11–14 rem'lik kutular `minmax(min(13rem, 47%), 1fr)`
+    ile telefonda ikişerli diziliyor; geniş ekranda davranış değişmiyor.
+11. **Pencereler telefonda tam ekran.** Başlık üstte, düğmeler altta sabit; gövde kendi
+    içinde kayıyor, düğmeler sığmazsa alt satıra iniyor.
+12. **Dokunmatikte ipucu balonu açılmıyor.** Dokunulan düğme odaklandığı için balon
+    ekranda asılı kalıyordu; ipucu katmanı yalnız `(hover: hover) and (pointer: fine)`
+    olan cihazlarda çalışıyor.
+13. **Yardımcı (Madenci).** Düğme telefonda 3,5 rem ve sağ alt köşede; tanıtım baloncuğu
+    telefonda çıkmıyor, pencere alttan tam genişlikte açılıyor.
 
 **Ölçüm:** 390 × 844 px'de (iPhone 14 boyutu) on bir sayfanın hiçbirinde yatay taşma
-yok; ölçüm `testler/12-mobil.mjs` içinde otomatik koşuyor.
+yok; ölçüm `testler/12-mobil.mjs` içinde otomatik koşuyor (sayfa çekmecesi ve kart
+görünümü denetimleriyle birlikte).
 
 ---
 

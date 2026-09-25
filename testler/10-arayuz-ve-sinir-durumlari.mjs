@@ -10,39 +10,11 @@ const num = (m, r) => { const x = m.match(r); return x ? Number(x[1].replace(/\.
 try {
   await giris(p, HESAP.admin);
 
-  /* ═══ 10.2 Yazı ölçeği: sınırlar, sıfırlama, kalıcılık ═══ */
-  const olcekOku = () => p.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue('--olcek')));
-  const buyut = p.locator('.fixed.right-3 button[aria-label="Yazıyı büyüt"]');
-  const kucult = p.locator('.fixed.right-3 button[aria-label="Yazıyı küçült"]');
-  const sifirla = p.locator('.fixed.right-3 button[aria-label="Varsayılan boyuta dön"]');
-
-  for (let i = 0; i < 12; i++) { if (await buyut.isDisabled()) break; await buyut.click(); await p.waitForTimeout(120); }
-  const enBuyuk = await olcekOku();
-  d.bekle(enBuyuk <= 1.36 && enBuyuk >= 1.3, `ölçek üst sınırda duruyor (%${Math.round(enBuyuk * 100)})`);
-  d.bekle(await buyut.isDisabled(), 'üst sınırda «büyüt» düğmesi pasif');
-  d.bekle(await tasma(p) <= 2, `en büyük ölçekte yatay taşma yok`, `${await tasma(p)}px`);
-
-  for (let i = 0; i < 16; i++) { if (await kucult.isDisabled()) break; await kucult.click(); await p.waitForTimeout(120); }
-  const enKucuk = await olcekOku();
-  d.bekle(enKucuk >= 0.84 && enKucuk <= 0.9, `ölçek alt sınırda duruyor (%${Math.round(enKucuk * 100)})`);
-  d.bekle(await kucult.isDisabled(), 'alt sınırda «küçült» düğmesi pasif');
-
-  await sifirla.click(); await p.waitForTimeout(300);
-  d.bekle(Math.abs(await olcekOku() - 1) < 0.001, 'yüzde düğmesi ölçeği %100\'e döndürüyor');
-
-  await buyut.click(); await buyut.click(); await p.waitForTimeout(300);
-  const secilen = await olcekOku();
-  const saklanan = await p.evaluate(() => { try { return localStorage.getItem('msfh_olcek'); } catch (_) { return null; } });
-  d.bekle(saklanan !== null, 'ölçek ayarı tarayıcıda saklanıyor', 'localStorage: ' + saklanan);
-  /* Sayfa yeniden yüklenince (uygulamayı yeniden açmaya denk) ölçek hatırlanmalı.
-     DİKKAT: yenileme demo verisini sıfırlar; bu yüzden veri gerektiren adımlardan önce yapılıyor. */
-  await p.reload();
-  await p.waitForSelector('text=TTKNET');
-  const yeniOlcek = await p.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue('--olcek')));
-  d.bekle(Math.abs(yeniOlcek - secilen) < 0.001,
-    `uygulama yeniden açılınca ölçek hatırlanıyor (%${Math.round(yeniOlcek * 100)})`);
-  await giris(p, HESAP.admin);
-  await sifirla.click(); await p.waitForTimeout(300);
+  /* ═══ 10.2 Ölçek kutusu kaldırıldı — ekranda büyüteç olmamalı ═══ */
+  d.bekle(await p.locator('button[aria-label="Yazıyı büyüt"], button[aria-label="Yazıyı küçült"]').count() === 0,
+    'arayüz ölçeği (büyüteç) kutusu ekranda yok');
+  d.bekle(await p.evaluate(() => !getComputedStyle(document.documentElement).getPropertyValue('--olcek').trim()),
+    '--olcek değişkeni artık kullanılmıyor');
 
   /* ═══ 10.1 Çözünürlük — her sayfada taşma ve ölçek birlikte ═══ */
   for (const [g, y] of [[1280, 800], [1366, 768], [1920, 1080]]) {
@@ -57,9 +29,9 @@ try {
     }
     d.ok(`${g}px genişlikte dokuz sayfada yatay taşma yok`);
   }
-  /* en büyük ölçek + en dar ekran birlikte */
+  /* tarayıcı yakınlaştırması (yazıyı büyütme) ile en dar masaüstü birlikte */
   await p.setViewportSize({ width: 1280, height: 800 });
-  for (let i = 0; i < 12; i++) { if (await buyut.isDisabled()) break; await buyut.click(); await p.waitForTimeout(100); }
+  await p.evaluate(() => { document.documentElement.style.fontSize = '22px'; });
   let enKotu = 0;
   for (const sf of SAYFALAR) {
     const dugme = p.locator('nav').getByRole('button', { name: sf, exact: true });
@@ -67,8 +39,8 @@ try {
     await dugme.click(); await p.waitForTimeout(250);
     enKotu = Math.max(enKotu, await tasma(p));
   }
-  d.bekle(enKotu <= 2, '1280px + %135 ölçekte de yatay taşma yok', `${enKotu}px`);
-  await sifirla.click(); await p.waitForTimeout(300);
+  d.bekle(enKotu <= 2, '1280px + büyütülmüş yazıda da yatay taşma yok', `${enKotu}px`);
+  await p.evaluate(() => { document.documentElement.style.fontSize = ''; });
   await p.setViewportSize({ width: 1680, height: 1050 });
   await p.waitForTimeout(300);
 

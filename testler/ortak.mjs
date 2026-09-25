@@ -55,9 +55,37 @@ export const rolDegistir = async (p, hesap) => {
   await p.waitForTimeout(400);
   await giris(p, hesap);
 };
+/* Sayfa şeridi 640 px altında gizlenir; telefonda gezinme «☰» çekmecesinden olur.
+   Çekmecede sayfanın tam adı yazar (şeritte kısa adı), eşlemesi aşağıdadır. */
+export const CEKMECE_ADI = {
+  'Özet': 'Bugünkü Durum', 'Takvim': 'Doluluk Takvimi', 'Odalar': 'Oda ve Yatak Durumu',
+  'Yatak Listesi': 'Yatak Listesi', 'Talepler': 'Rezervasyon Talepleri', 'Dekont/Onay': 'Dekont ve Onay',
+  'Tahsilat': 'Peşinat ve Tahsilat', 'Statü': 'Statü Takibi', 'Kahvaltı': 'Kahvaltı Takibi',
+  'Ay Sonu': 'Ay Sonu Belgesi', 'Kullanıcılar': 'Kullanıcı ve Yetki', 'Ana Menü': 'Ana Menü',
+};
 export const sayfa = async (p, ad) => {
-  await p.locator('nav').getByRole('button', { name: ad, exact: true }).click();
+  const serit = p.locator('nav').getByRole('button', { name: ad, exact: true });
+  if (await serit.count() && await serit.first().isVisible()) {
+    await serit.first().click();
+  } else {
+    await p.locator('nav button').first().click();            /* ☰ sayfa çekmecesi */
+    await p.waitForTimeout(250);
+    const tam = CEKMECE_ADI[ad] || ad;
+    await p.locator('.fixed.inset-0').getByRole('button', { name: new RegExp('^' + tam) }).first().click();
+  }
   await p.waitForTimeout(400);
+};
+/* Sayfa, giriş yapan rolün yetkisiyle açılabiliyor mu? (şeritte ya da çekmecede) */
+export const sayfaVar = async (p, ad) => {
+  const serit = p.locator('nav').getByRole('button', { name: ad, exact: true });
+  if (await serit.count() && await serit.first().isVisible()) return true;
+  await p.locator('nav button').first().click();
+  await p.waitForTimeout(250);
+  const tam = CEKMECE_ADI[ad] || ad;
+  const var_ = await p.locator('.fixed.inset-0').getByRole('button', { name: new RegExp('^' + tam) }).count() > 0;
+  await p.locator('.fixed.inset-0 button[aria-label="Kapat"]').first().click().catch(() => {});
+  await p.waitForTimeout(200);
+  return var_;
 };
 export const anaMenu = async (p) => sayfa(p, 'Ana Menü');
 export const tesisSec = async (p, ad) => {

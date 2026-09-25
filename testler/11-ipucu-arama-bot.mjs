@@ -220,11 +220,17 @@ try {
   d.bekle(await p.locator('[role=dialog][aria-label="Yardımcı bot"]').count() === 0, 'yardımcı kapatılabiliyor');
   d.bekle(await p.locator('button[aria-label="Yardımcıyı aç"]').count() === 1, 'kapatınca açma düğmesi geri geliyor');
 
-  /* yardımcı ve ölçek kutusu üst üste binmemeli */
-  const y1 = await p.locator('button[aria-label="Yardımcıyı aç"]').boundingBox();
-  const y2 = await p.locator('.fixed.right-3.bottom-12').boundingBox();
-  d.bekle(y1.y + y1.height <= y2.y + 2, 'yardımcı düğmesi ölçek kutusuyla çakışmıyor',
-    `bot alt: ${Math.round(y1.y + y1.height)} · ölçek üst: ${Math.round(y2.y)}`);
+  /* Pencere açıkken yardımcı düğmesi gizlenmeli: pencerenin sağ alt köşesindeki
+     düğmelerin (Kaydet, Reddet…) üstüne binmesin. */
+  await sayfa(p, 'Talepler');
+  await p.getByRole('button', { name: /Yeni Kayıt/ }).first().click();
+  await p.waitForTimeout(600);
+  d.bekle(!(await p.locator('button[aria-label="Yardımcıyı aç"]').isVisible()),
+    'pencere açıkken yardımcı düğmesi gizleniyor');
+  await p.getByRole('button', { name: 'Vazgeç', exact: true }).first().click();
+  await p.waitForTimeout(400);
+  d.bekle(await p.locator('button[aria-label="Yardımcıyı aç"]').isVisible(),
+    'pencere kapanınca yardımcı düğmesi geri geliyor');
 } catch (e) {
   d.hata('KOŞU DURDU: ' + e.message.split('\n').slice(0, 3).join(' / '));
 }

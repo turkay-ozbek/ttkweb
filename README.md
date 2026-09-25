@@ -15,7 +15,9 @@ demo prototipidir.
 `misafirhane-prototip.html` dosyasını herhangi bir modern tarayıcıda açmak
 yeterlidir; kurulum, sunucu veya derleme adımı yoktur. React, Tailwind ve Babel
 CDN'den yüklenir, dolayısıyla ilk açılışta internet erişimi gerekir.
-Masaüstü önceliklidir, 1600 px genişlikte çalışacak şekilde tasarlanmıştır.
+Masaüstü önceliklidir (1600 px), ancak arayüz **390 px'e kadar duyarlıdır**: telefonda
+sayfa şeridi «☰» çekmecesine, listeler karta, pencereler tam ekrana dönüşür — bkz.
+[«Telefon ve tablet»](#telefon-ve-tablet).
 
 ## Giriş ve roller
 
@@ -77,13 +79,29 @@ canlı veri) kullanır:
 
 | Öğe | Nerede | Ne işe yarar |
 |---|---|---|
-| **İpucu** | Her düğme ve simgede | Üzerine gelince düğmenin ne yaptığını yazar. Pasif düğmelerde hangi yetkinin gerektiğini söyler. `data-ipucu` yazılan her öğede çıkar; eski `title` değerleri de devralınır |
+| **İpucu** | Her düğme ve simgede (yalnız fareli cihazda) | Üzerine gelince düğmenin ne yaptığını yazar. Pasif düğmelerde hangi yetkinin gerektiğini söyler. `data-ipucu` yazılan her öğede çıkar; eski `title` değerleri de devralınır. Dokunmatik ekranda açılmaz — balon dokunulan düğmenin üstünde asılı kalırdı |
 | **İşlem araması** | Sayfa şeridinin sağ ucu · **Ctrl + K** | «Hangi işlemi yapmak istiyorsunuz?» — sayfa, işlem, rehber başlığı, misafirhane ve kayıt (ad soyad / Tc kimlik / rezervasyon no) tek kutudan aranır. ↑ ↓ ile gezilir, ↵ ile seçilir |
 | **Madenci** (yardımcı bot) | Sağ alt köşe, baretli maskot | Doluluk, bekleyen talep, onaydaki dekont, tahsilat gibi soruları **canlı veriyle** yanıtlar; «kapora nasıl işlenir?» gibi soruları rehberden adım adım anlatır ve ilgili sayfaya bağlantı verir |
 
 > Madenci bir **demo asistandır**: yanıtlar ekrandaki veriden ve kullanım rehberinden kural
 > tabanlı üretilir, dış bir yapay zekâ servisine bağlanılmaz. Kurulumda yerine kurumsal bir
 > dil modeli servisi konabilir; soru–yanıt eşleştirmesi `botYanit()` işlevindedir.
+
+## Telefon ve tablet
+
+Arayüz tek kod tabanıyla ekrana uyum sağlar; ayrı bir mobil uygulama yoktur.
+
+| Genişlik | Ne değişir |
+|---|---|
+| **< 640 px (telefon)** | Sayfa şeridi yerine **«☰ <sayfa adı> ▼»** düğmesi; alttan açılan çekmecede bütün sayfalar açıklaması ve canlı sayısıyla listelenir. Satır işlemi olan listeler (talep, dekont, tahsilat, kahvaltı, kullanıcılar, misafir girişi) tablo değil **kart** olarak açılır — kartın başlığı misafirin adı, altında «başlık → değer» satırları. İkincil sütunlar gizlenir, sayaç kutuları ikişerli dizilir, pencereler tam ekran açılır (başlık üstte, düğmeler altta sabit) |
+| **640–900 px (tablet)** | Tablolar kendi kutusunda yatay kayar, kart ızgaraları iki sütuna iner, sayfa şeridi geri gelir |
+| **> 900 px** | Tam masaüstü düzeni |
+
+Dokunmatik ekranda ipucu balonları açılmaz, işaret kutuları büyütülür, yardımcı
+(Madenci) küçülüp köşeye çekilir. Ölçüm ve denetim: `testler/12-mobil.mjs`
+(390 × 844 px'de bütün sayfalarda yatay taşma yok).
+Mobil kullanımın kapsamı ve sınırları: [`docs/mobil-arayuz.md`](docs/mobil-arayuz.md),
+güvenlik tarafı: [`docs/mobil-guvenlik.md`](docs/mobil-guvenlik.md).
 
 ## Kullanım rehberi
 

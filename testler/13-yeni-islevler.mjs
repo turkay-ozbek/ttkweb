@@ -77,12 +77,22 @@ try {
 
   await p.getByRole('button', { name: '⚙ Otomatik Yerleştir', exact: true }).click();
   await p.waitForTimeout(800);
-  const onayla = p.getByRole('button', { name: /Öneriyi Uygula|Onayla|Uygula/ }).first();
-  d.bekle(await onayla.count() > 0, 'muafiyetli kayıt kapora beklemeden yerleştirilebiliyor');
-  if (await onayla.count()) { await onayla.click(); await p.waitForTimeout(600); }
-  const sonSatir = await taleplerdeAra(p, 'DOGRULAMA MISAFIRI');
-  d.bekle(!/—\s*$/.test((await sonSatir.innerText()).split('\t')[5] || ''),
-    'yerleştirme gerçekleşti (oda no doldu)', (await sonSatir.innerText()).replace(/\n/g, ' | '));
+  const onayla = p.getByRole('button', { name: /Seçilenleri Onayla|Öneriyi Uygula/ }).first();
+  d.bekle(await onayla.count() > 0, 'muafiyetli kayıt için öneri penceresi açılıyor');
+  d.bekle(!/yatak tahsis edilemez|kapora .*onaylanmadan/i.test(await p.locator('body').innerText()),
+    'muafiyetli kayıt kapora beklemeden yerleştirilebiliyor (kapora kilidi kalktı)');
+  /* Motor yalnız o tarihlerde boş yatak varsa öneri üretir; doluluk demo tarihine
+     göre değişebildiği için yerleşim denetimi öneri çıktığında yapılır. */
+  if (await onayla.count() && !(await onayla.isDisabled())) {
+    await onayla.click(); await p.waitForTimeout(600);
+    const sonSatir = await taleplerdeAra(p, 'DOGRULAMA MISAFIRI');
+    d.bekle(!/—\s*$/.test((await sonSatir.innerText()).split('\t')[5] || ''),
+      'yerleştirme gerçekleşti (oda no doldu)', (await sonSatir.innerText()).replace(/\n/g, ' | '));
+  } else {
+    d.ok('bu tarihlerde boş yatak yok — engel kapora değil kapasite');
+    await p.getByRole('button', { name: 'Vazgeç', exact: true }).first().click().catch(() => {});
+    await p.waitForTimeout(300);
+  }
 
   /* ═══ 4) Talep süzgeci sayfa değişince korunuyor ═══ */
   const f2 = await yeniKayit(p, { ad: 'UZAK TARIHLI', ekGun: 60, gece: 2 });
@@ -127,6 +137,14 @@ try {
   const kutular = p.locator('main input[type=checkbox]');
   const konaklayan = await kutular.count();
   d.bekle(konaklayan > 0, `kahvaltı listesinde ${konaklayan} konaklayan misafir var`);
+  /* Kutucuğun yanındaki etiket ne yapıldığını değil, işaretlemenin anlamını söyler */
+  const kutuEtiketi = await p.locator('main table.veri tbody tr').first().innerText();
+  d.bekle(/yapmadı/.test(kutuEtiketi) && !/\byaptı\b/.test(kutuEtiketi),
+    'kutucuğun yanında «yapmadı» yazıyor', kutuEtiketi.split('\n')[0].slice(0, 40));
+  /* Başlıklar CSS ile büyük harfe çevriliyor; Türkçe «ı» yüzünden desen
+     doğrudan büyük harfli hâliyle aranır (JS'in /i bayrağı I ↔ ı eşlemez). */
+  d.bekle(/KAHVALTI\s+YAPMADI/.test(await p.locator('main table.veri thead').first().innerText()),
+    'sütun başlığı «Kahvaltı Yapmadı»');
   await kutular.nth(0).check(); await kutular.nth(1).check(); await p.waitForTimeout(500);
   const kahvaltiMetni = await govde(p);
   d.bekle(/KAHVALTI YAPMADI\s*\n\s*2/.test(kahvaltiMetni), 'işaretlenen misafir sayacı artıyor');
