@@ -9,8 +9,10 @@ müdürü onaylamadan rezervasyon listesine girememeli, yatak tahsis edilememeli
   Talep açılır (resepsiyon / müdür)
         │  kapora tutarı kurala göre hesaplanır
         ▼
-  Kapora Bekleniyor  ──────────────── son ödeme tarihi geçerse ──▶  İptal
-        │                                                          (yatak serbest)
+  Kapora Bekleniyor  ─── son ödeme tarihi geçerse (konaklama başlamamışsa) ──▶  İptal
+        │                                                                    (yatak serbest)
+        │              konaklama başladıysa iptal YOK: kapora alacağa döner
+        │              («Konaklıyor, kapora eksik» listesi)
         │ misafir kaporayı yatırır, dekont sisteme yüklenir
         ▼
   Müdür Onayı Bekliyor

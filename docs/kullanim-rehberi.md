@@ -163,7 +163,10 @@ onay `rezervasyon.onay` (Müdür, Admin)
 4. **Uzatma.** Çıkış tarihi ileri alınır; aynı yatak boşsa misafir yerinde kalır, değilse sistem
    uyarır ve yeniden yerleştirme gerekir.
 5. **İptal.** Her aşamada mümkündür; tahsis edilmiş yataklar anında boşa düşer. Ödeme süresi dolan
-   kapora talepleri sistem tarafından kendiliğinden iptal edilir.
+   kapora talepleri sistem tarafından kendiliğinden iptal edilir — **ancak yalnız konaklaması
+   henüz başlamamış talepler.** Misafir içerideyken kayıt kendiliğinden düşmez; kapora alacağa
+   döner ve «Peşinat ve Tahsilat» sayfasındaki **«Konaklıyor, kapora eksik»** listesinde izlenir.
+   Tahsil ya da iptal kararını müdür verir.
 
 > «Bugünkü Durum» sayfasındaki **+1 gün** / **+7 gün** demo düğmeleriyle sistem tarihi ilerletilip
 > süresi dolan taleplerin otomatik iptali canlı olarak görülebilir.

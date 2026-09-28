@@ -8,6 +8,31 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.8.1] — 28.09.2026
+### Düzeltildi — çıkış yapmayan misafirin kaydı sistemden düşüyordu
+- **Konaklaması başlamış kayıt artık süre aşımından otomatik iptal edilmiyor.** Elle girilen
+  3 gecelik bir kayıtta (şahsi misafir, kapora tahsil edilmemiş) kapora son ödeme tarihi
+  geçince kayıt **ikinci gün** otomatik iptale düşüyor, misafir çıkış yapmadığı hâlde
+  yataktan siliniyor ve yatak boş görünüyordu — aynı yatak bir başkasına verilebilirdi.
+  Otomatik iptal kuralı artık yalnız **konaklaması henüz başlamamış** talepler için çalışıyor
+  (`iptaleDuser`); misafir içerideyse kayıt korunuyor, kapora alacağa dönüyor ve hareket
+  geçmişine «konaklama başladığı için iptal edilmedi» notu yazılıyor. Aynı koruma «Toplu
+  İptal» düğmesi için de geçerli.
+- **«Konaklıyor, kapora eksik» iş listesi.** Süresi geçmiş ama misafiri içeride olan kayıtlar
+  Peşinat ve Tahsilat sayfasında ayrı bir sayaç ve süzgeçle izleniyor; «Süresi dolan» sayacı
+  artık yalnız gerçekten iptale düşecek talepleri sayıyor (sayaç ile toplu iptalin sonucu
+  birbirini tutuyor). Gecikmiş her kayıt satırda ⚠ ile işaretleniyor.
+- **«+7 gün» artık günleri tek tek işliyor.** Tek hamlede son güne atlandığı için, aradaki bir
+  günde iptale düşmesi gereken ileri tarihli talep atlanabiliyordu.
+
+### Testler
+- `08-tahsilat-statu-zaman.mjs`: konaklaması başlamış kaydın gün ilerledikçe yatakta kalması,
+  iptale düşmemesi, toplu iptalden etkilenmemesi ve «Konaklıyor, kapora eksik» listesinde
+  görünmesi; ayrıca ileri tarihli talebin **hâlâ** otomatik iptale düştüğü denetleniyor.
+- `ortak.mjs`: `sistemTarihi()` ve `gunEkle()` yardımcıları — sistem tarihi ilerletildikten
+  sonra kayıt açan testler gerçek günü değil uygulamanın gününü temel alıyor; `yeniKayit()`
+  artık doğrudan `gelis` / `cikis` alabiliyor.
+
 ## [2.8.0] — 24.09.2026
 ### Değişti — mobil (duyarlı) arayüz elden geçirildi
 - **Telefonda sayfa çekmecesi.** 640 px altında yana kayan sayfa şeridi yerine «☰ <sayfa

@@ -101,6 +101,19 @@ export const trTarih = (p, n) => p.evaluate(x => {
   return String(y.getUTCDate()).padStart(2, '0') + '.' + String(y.getUTCMonth() + 1).padStart(2, '0') + '.' + y.getUTCFullYear();
 }, n);
 
+/* Uygulamanın o anki sistem tarihi (alt bilgi çubuğundan okunur).
+   trTarih() gerçek günü temel alır; «+1 gün» ile ilerletildikten sonra
+   kayıt açacak testler bu işlevi kullanmalıdır. */
+export const sistemTarihi = async (p) =>
+  (await p.locator('footer').innerText()).match(/\d{2}\.\d{2}\.\d{4}/)[0];
+
+/* GG.AA.YYYY metnine n gün ekler */
+export const gunEkle = (gg_aa_yyyy, n) => {
+  const [g, a, y] = gg_aa_yyyy.split('.').map(Number);
+  const d = new Date(Date.UTC(y, a - 1, g + n));
+  return String(d.getUTCDate()).padStart(2, '0') + '.' + String(d.getUTCMonth() + 1).padStart(2, '0') + '.' + d.getUTCFullYear();
+};
+
 /* Tarih kutusu GG.AA.YYYY metin kutusudur; Enter ile uygulanır. */
 export const tarihYaz = async (kutu, deger) => { await kutu.fill(deger); await kutu.press('Enter'); await kutu.page().waitForTimeout(200); };
 
@@ -117,12 +130,13 @@ export const taleplerdeAra = async (p, ad, { statu = 'HEPSI', gunSonra = 60 } = 
 
 /* Yeni kayıt aç. dolgu: { ad, ekGun, gece, kisi, sahis, aile } */
 export async function yeniKayit(p, dolgu) {
-  const { ad, ekGun = 10, gece = 3, kisi = 1, sahis = false, aile = false } = dolgu;
+  const { ad, ekGun = 10, gece = 3, kisi = 1, sahis = false, aile = false, gelis, cikis } = dolgu;
   await p.getByRole('button', { name: /Yeni Kayıt/ }).first().click();
   await p.waitForTimeout(400);
   await p.getByLabel(/Adı Soyadı/).first().fill(ad);
-  await tarihYaz(p.getByLabel(/Geliş Tarihi/), await trTarih(p, ekGun));
-  await tarihYaz(p.getByLabel(/Çıkış Tarihi/), await trTarih(p, ekGun + gece));
+  /* gelis/cikis verilmişse doğrudan kullanılır (sistem tarihi ilerletilmiş olabilir) */
+  await tarihYaz(p.getByLabel(/Geliş Tarihi/), gelis || await trTarih(p, ekGun));
+  await tarihYaz(p.getByLabel(/Çıkış Tarihi/), cikis || await trTarih(p, ekGun + gece));
   /* Kişi sayısı düğmeleri «Kişi Sayısı» etiketinin içindedir (− ve +). */
   const kisiDugme = p.locator('.fixed.inset-0 label:has-text("Kişi Sayısı") button');
   for (let i = 1; i < kisi; i++) { await kisiDugme.nth(1).click(); await p.waitForTimeout(150); }

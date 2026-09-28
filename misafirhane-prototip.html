@@ -174,8 +174,8 @@ const { useState, useMemo, useReducer, useRef, useEffect, useLayoutEffect, useCa
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.8.0';
-const SURUM_TARIHI = '2026-09-24';
+const SURUM = '2.8.1';
+const SURUM_TARIHI = '2026-09-28';
 
 const GUN_MS = 86400000;
 /* Uygulama, çalıştırıldığı günün tarihini sistem tarihi olarak kullanır;
@@ -675,6 +675,25 @@ function pesinatHesapla(rz, odalar, kural) {
   rz.pesinattan_kalan = Math.max(0, rz.pesinat_tutari - (rz.tahsil_edilen || 0));
   return rz;
 }
+
+/* ── Kapora süresi aşımı — kim otomatik iptale düşer, kim düşmez? ─────────
+   Kapora son ödeme tarihi geçmiş ve tutar tahsil edilmemiş kayıt «gecikmiş»
+   sayılır. Ancak otomatik iptal YALNIZ konaklaması henüz başlamamış talep
+   için çalışır: misafir içerideyken (geliş tarihi geldiyse) kayıt kendiliğinden
+   düşürülemez — yoksa çıkış yapmamış misafir sistemden silinir, yatağı boş
+   görünür ve aynı yatak bir başkasına verilebilir. Konaklaması başlamış
+   kayıtta kapora alacağa döner; tahsil ya da iptal kararını müdür verir. */
+const kaporaGecikti = (rz, gun) =>
+  ['TALEP', 'PESINAT_BEKLENIYOR'].includes(rz.statu) &&
+  (rz.pesinat_tutari || 0) > 0 && !!rz.pesinat_son_odeme_tarihi &&
+  rz.pesinat_son_odeme_tarihi < gun &&
+  (rz.tahsil_edilen || 0) < rz.pesinat_tutari;
+
+/* Otomatik iptale düşen: gecikmiş VE konaklaması henüz başlamamış kayıt. */
+const iptaleDuser = (rz, gun) => kaporaGecikti(rz, gun) && rz.gelis_tarihi > gun;
+
+/* Konaklaması başlamış ama kaporası tahsil edilmemiş kayıt (alacak). */
+const kaporaBorclu = (rz, gun) => kaporaGecikti(rz, gun) && rz.gelis_tarihi <= gun;
 
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1443,47 +1462,64 @@ function indirgeyici(s, a) {
     /* Süresi dolan talepleri iptale düşür, yatakları serbest bırak */
     case 'SURE_KONTROL': {
       const hedefGun = a.gun || s.bugun;
-      const dusen = [];
+      const dusen = [], korunan = [];
       const rezler = s.rezervasyonlar.map(rz => {
-        if (rz.statu !== 'PESINAT_BEKLENIYOR') return rz;
-        if (!rz.pesinat_son_odeme_tarihi || rz.pesinat_son_odeme_tarihi >= hedefGun) return rz;
-        if (rz.tahsil_edilen >= rz.pesinat_tutari) return rz;
+        /* Konaklaması başlamış kayıt süre aşımından iptal edilmez (bkz. iptaleDuser) */
+        if (kaporaBorclu(rz, hedefGun)) { korunan.push(rz.rez_no); return rz; }
+        if (!iptaleDuser(rz, hedefGun)) return rz;
         dusen.push(rz.rez_no + ' — ' + rz.ad_soyad);
         return { ...rz, statu: 'IPTAL',
           misafirler: rz.misafirler.map(g => ({ ...g, yatakId: null, oda_no: null, yatak_no: null })),
           hareketler: [...rz.hareketler, { tarih: hedefGun, kullanici: 'SİSTEM',
             metin: `Peşinat son ödeme tarihi (${tr(rz.pesinat_son_odeme_tarihi)}) geçtiği için otomatik iptal edildi; yatak tahsisi serbest bırakıldı` }] };
       });
+      const korumaNotu = korunan.length
+        ? ` ${korunan.length} kayıt konaklaması başladığı için iptal edilmedi — kapora alacak olarak izleniyor.` : '';
       return { ...s, rezervasyonlar: rezler, gunluk: dusen.length
-        ? [{ tarih: hedefGun, tip: 'uyari', metin: `Süre aşımı: ${dusen.length} talep otomatik iptal edildi (${dusen.slice(0, 2).join(' · ')}${dusen.length > 2 ? ' …' : ''})` }, ...s.gunluk]
-        : [{ tarih: hedefGun, tip: 'bilgi', metin: 'Süre kontrolü çalıştı — iptale düşen talep yok' }, ...s.gunluk] };
+        ? [{ tarih: hedefGun, tip: 'uyari', metin: `Süre aşımı: ${dusen.length} talep otomatik iptal edildi (${dusen.slice(0, 2).join(' · ')}${dusen.length > 2 ? ' …' : ''}).${korumaNotu}` }, ...s.gunluk]
+        : [{ tarih: hedefGun, tip: 'bilgi', metin: 'Süre kontrolü çalıştı — iptale düşen talep yok.' + korumaNotu }, ...s.gunluk] };
     }
 
     /* Demo için sistem tarihini ilerlet ve statü kurallarını uygula */
     case 'GUN_ILERLET': {
-      const yeni = ekle(s.bugun, a.adet || 1);
+      /* Takvim gün gün ilerletilir: «+7 gün» dendiğinde de her günün kuralları
+         sırayla işler. Tek hamlede son güne atlansaydı, aradaki bir günde iptale
+         düşmesi gereken talep (o gün henüz gelmemişken) atlanabilirdi. */
       const olaylar = [];
-      let rezler = s.rezervasyonlar.map(rz => {
-        let k = rz;
-        if (['PESINAT_BEKLENIYOR', 'TALEP'].includes(k.statu) && k.pesinat_tutari > 0 && k.pesinat_son_odeme_tarihi &&
-            k.pesinat_son_odeme_tarihi < yeni && k.tahsil_edilen < k.pesinat_tutari) {
-          olaylar.push(`${k.rez_no} süre aşımından iptal`);
-          k = { ...k, statu: 'IPTAL', misafirler: k.misafirler.map(g => ({ ...g, yatakId: null, oda_no: null, yatak_no: null })),
-                hareketler: [...k.hareketler, { tarih: yeni, kullanici: 'SİSTEM', metin: 'Kapora son ödeme tarihi geçti — otomatik iptal, yatak serbest' }] };
-        }
-        if (k.statu === 'ONAYLI' && k.gelis_tarihi <= yeni && k.cikis_tarihi > yeni) {
-          olaylar.push(`${k.rez_no} girişi yapıldı`);
-          k = { ...k, statu: 'KONAKLIYOR', hareketler: [...k.hareketler, { tarih: yeni, kullanici: 'SİSTEM', metin: 'Giriş kaydı açıldı' }] };
-        }
-        if (k.statu === 'KONAKLIYOR' && k.cikis_tarihi <= yeni) {
-          olaylar.push(`${k.rez_no} çıkışı yapıldı`);
-          k = { ...k, statu: 'CIKIS', hareketler: [...k.hareketler, { tarih: yeni, kullanici: 'SİSTEM', metin: 'Çıkış kaydı kapatıldı' }] };
-        }
-        return k;
-      });
-      return { ...s, bugun: yeni, rezervasyonlar: rezler,
-        gunluk: [{ tarih: yeni, tip: olaylar.length ? 'basari' : 'bilgi',
-          metin: `Sistem tarihi ${tr(yeni)} oldu — ${olaylar.length} otomatik statü değişikliği${olaylar.length ? ': ' + olaylar.slice(0, 3).join(', ') + (olaylar.length > 3 ? ' …' : '') : ''}` }, ...s.gunluk] };
+      let borclu = 0, gun = s.bugun, rezler = s.rezervasyonlar;
+      for (let i = 0; i < (a.adet || 1); i++) {
+        const onceki = gun;
+        gun = ekle(gun, 1);
+        rezler = rezler.map(rz => {
+          let k = rz;
+          /* Süre aşımı: yalnız konaklaması başlamamış talep iptale düşer.
+             Misafir içerideyse kayıt korunur, kapora alacağa döner. */
+          if (iptaleDuser(k, gun)) {
+            olaylar.push(`${k.rez_no} süre aşımından iptal`);
+            k = { ...k, statu: 'IPTAL', misafirler: k.misafirler.map(g => ({ ...g, yatakId: null, oda_no: null, yatak_no: null })),
+                  hareketler: [...k.hareketler, { tarih: gun, kullanici: 'SİSTEM', metin: 'Kapora son ödeme tarihi geçti — otomatik iptal, yatak serbest' }] };
+          } else if (kaporaBorclu(k, gun) && !kaporaBorclu(k, onceki)) {
+            borclu++;
+            k = { ...k, hareketler: [...k.hareketler, { tarih: gun, kullanici: 'SİSTEM',
+                  metin: 'Kapora son ödeme tarihi geçti; konaklama başladığı için kayıt iptal edilmedi — kapora alacak olarak izleniyor' }] };
+          }
+          if (k.statu === 'ONAYLI' && k.gelis_tarihi <= gun && k.cikis_tarihi > gun) {
+            olaylar.push(`${k.rez_no} girişi yapıldı`);
+            k = { ...k, statu: 'KONAKLIYOR', hareketler: [...k.hareketler, { tarih: gun, kullanici: 'SİSTEM', metin: 'Giriş kaydı açıldı' }] };
+          }
+          if (k.statu === 'KONAKLIYOR' && k.cikis_tarihi <= gun) {
+            olaylar.push(`${k.rez_no} çıkışı yapıldı`);
+            k = { ...k, statu: 'CIKIS', hareketler: [...k.hareketler, { tarih: gun, kullanici: 'SİSTEM', metin: 'Çıkış kaydı kapatıldı' }] };
+          }
+          return k;
+        });
+      }
+      return { ...s, bugun: gun, rezervasyonlar: rezler,
+        gunluk: [{ tarih: gun, tip: olaylar.length ? 'basari' : 'bilgi',
+          metin: `Sistem tarihi ${tr(gun)} oldu — ${olaylar.length} otomatik statü değişikliği` +
+                 `${olaylar.length ? ': ' + olaylar.slice(0, 3).join(', ') + (olaylar.length > 3 ? ' …' : '') : ''}` +
+                 `${borclu ? ` · ${borclu} kayıtta kapora süresi doldu ama konaklama sürdüğü için iptal edilmedi` : ''}` },
+          ...s.gunluk] };
     }
 
     /* Yeni rezervasyon / kayıt girişi (MSFH0100 karşılığı) */
@@ -3724,8 +3760,10 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
 
   useEffect(() => { setFiltreBas(ekle(s.bugun, -15)); setFiltreSon(ekle(s.bugun, 45)); }, [s.bugun]);
 
-  const suresiDoldu = rz => rz.statu === 'PESINAT_BEKLENIYOR' && rz.pesinat_son_odeme_tarihi &&
-    rz.pesinat_son_odeme_tarihi < s.bugun && rz.tahsil_edilen < rz.pesinat_tutari;
+  /* «Süresi dolan» iş listesi = toplu iptale düşecek kayıtlar (konaklaması
+     başlamamış olanlar). Konaklaması başlamış gecikmiş kayıt ayrı listede. */
+  const suresiDoldu = rz => iptaleDuser(rz, s.bugun);
+  const gecikmis = rz => kaporaGecikti(rz, s.bugun);
   const kalanTutar = rz => Math.max(0, (rz.pesinat_tutari || 0) - (rz.tahsil_edilen || 0));
   const acikMi = rz => ['TALEP', 'PESINAT_BEKLENIYOR', 'ONAYLI', 'KONAKLIYOR'].includes(rz.statu);
 
@@ -3737,6 +3775,7 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
   const isListeleri = useMemo(() => ({
     TAHSILAT:     kapsam.filter(rz => acikMi(rz) && kalanTutar(rz) > 0),
     SURESI_DOLAN: kapsam.filter(suresiDoldu),
+    KAPORA_BORCLU: kapsam.filter(rz => kaporaBorclu(rz, s.bugun)),
     BUGUN_GIRIS:  kapsam.filter(rz => rz.gelis_tarihi === s.bugun && ['ONAYLI', 'KONAKLIYOR'].includes(rz.statu)),
     BUGUN_CIKIS:  kapsam.filter(rz => rz.cikis_tarihi === s.bugun && ['KONAKLIYOR', 'CIKIS'].includes(rz.statu)),
   }), [kapsam, s.bugun]);
@@ -3791,6 +3830,7 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
     { kod:'HEPSI',        ad:'Tüm kayıtlar',        sayi: kapsam.length,                  renk:'bg-white border-slate-300 text-slate-700' },
     { kod:'TAHSILAT',     ad:'Tahsilat bekleyen',   sayi: isListeleri.TAHSILAT.length,    renk:'bg-emerald-50 border-emerald-300 text-emerald-800' },
     { kod:'SURESI_DOLAN', ad:'Süresi dolan',        sayi: isListeleri.SURESI_DOLAN.length,renk:'bg-rose-50 border-rose-300 text-rose-800' },
+    { kod:'KAPORA_BORCLU',ad:'Konaklıyor, kapora eksik', sayi: isListeleri.KAPORA_BORCLU.length, renk:'bg-amber-50 border-amber-300 text-amber-900' },
     { kod:'BUGUN_GIRIS',  ad:'Bugün giriş',         sayi: isListeleri.BUGUN_GIRIS.length, renk:'bg-sky-50 border-sky-300 text-sky-800' },
     { kod:'BUGUN_CIKIS',  ad:'Bugün çıkış',         sayi: isListeleri.BUGUN_CIKIS.length, renk:'bg-orange-50 border-orange-300 text-orange-800' },
   ];
@@ -3966,16 +4006,32 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
             <div className={`num text-2xl font-bold leading-7 ${isListeleri.SURESI_DOLAN.length ? 'text-rose-700' : 'text-slate-400'}`}>
               {isListeleri.SURESI_DOLAN.length}
             </div>
-            <div className="text-2xs text-slate-600">son ödeme tarihi {tr(s.bugun)} itibarıyla geçmiş</div>
+            <div className="text-2xs text-slate-600">
+              son ödeme tarihi {tr(s.bugun)} itibarıyla geçmiş · yalnız konaklaması başlamamış talepler
+            </div>
           </div>
           <div className="ml-auto flex flex-col gap-1">
             <Buton tur="tehlike" disabled={!isListeleri.SURESI_DOLAN.length || !izin('pesinat.toplu_iptal')}
-              title={izin('pesinat.toplu_iptal') ? 'Süresi dolan talepleri iptal et, yatakları serbest bırak' : yetkiNotu(s.kullanici, 'pesinat.toplu_iptal')}
+              title={izin('pesinat.toplu_iptal') ? 'Süresi dolan talepleri iptal et, yatakları serbest bırak — konaklaması başlamış kayıtlara dokunulmaz' : yetkiNotu(s.kullanici, 'pesinat.toplu_iptal')}
               onClick={() => gonder({ tip: 'SURE_KONTROL' })}>
               Toplu İptal
             </Buton>
             <Buton tur="sessiz" onClick={() => { setListe('SURESI_DOLAN'); setStatuFiltre('HEPSI'); }}>Listede süz</Buton>
           </div>
+        </div>
+        <div className={`border rounded px-3 py-2 flex items-center gap-3 min-w-0
+          ${isListeleri.KAPORA_BORCLU.length ? 'bg-amber-50 border-amber-300' : 'bg-white border-slate-200'}`}>
+          <div className="min-w-0">
+            <div className="text-2xs uppercase tracking-wide font-semibold text-slate-500">Konaklıyor, Kapora Eksik</div>
+            <div className={`num text-2xl font-bold leading-7 ${isListeleri.KAPORA_BORCLU.length ? 'text-amber-700' : 'text-slate-400'}`}>
+              {isListeleri.KAPORA_BORCLU.length}
+            </div>
+            <div className="text-2xs text-slate-600">
+              süresi geçti ama misafir içeride — kayıt iptal edilmez, kapora alacak olarak tahsil edilir
+            </div>
+          </div>
+          <Buton tur="sessiz" className="ml-auto"
+            onClick={() => { setListe('KAPORA_BORCLU'); setStatuFiltre('HEPSI'); }}>Listede süz</Buton>
         </div>
       </div>}
 
@@ -4002,7 +4058,7 @@ function PesinatEkrani({ s, gonder, acYeniKayit, izin, bolum }) {
             <tbody>
               {kayitlar.map(rz => {
                 const kalan = kalanTutar(rz);
-                const gecti = suresiDoldu(rz);
+                const gecti = gecikmis(rz);
                 return (
                   <tr key={rz.id} onDoubleClick={() => setDetay(rz)}
                     className={gecti ? 'bg-rose-50/70' : kalan > 0 && acikMi(rz) ? 'bg-amber-50/60' : ''}>

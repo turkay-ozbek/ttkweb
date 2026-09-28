@@ -1,6 +1,7 @@
 /* Test planı bölüm 5 (tahsilat ve iş listeleri), 6 (statü akışı ve zaman), 3.6 (kapora kuralı) */
 import { defter, tarayici, giris, rolDegistir, sayfa, govde, HESAP, yeniKayit, kaydet,
-         trTarih, tarihYaz, taleplerdeAra, pencereKapat, satirSayisi, veriSatirlari } from './ortak.mjs';
+         trTarih, tarihYaz, taleplerdeAra, pencereKapat, satirSayisi, veriSatirlari,
+         sistemTarihi, gunEkle } from './ortak.mjs';
 
 const d = defter('08 — Tahsilat, iş listeleri, statü ve zaman');
 const { b, p } = await tarayici(d);
@@ -147,6 +148,17 @@ try {
   }
 
   /* ═══ 6.2 Gün ilerletme — otomatik statü değişiklikleri ═══ */
+  /* Önce ileri tarihli, süresi dolmuş bir talebi not al: gün ilerleyince bunun
+     iptale düşmesi gerekir (otomatik iptal kuralı çalışmaya devam ediyor mu?). */
+  await sayfa(p, 'Tahsilat');
+  await p.getByRole('button', { name: 'Tüm dönem', exact: true }).click(); await p.waitForTimeout(400);
+  await p.locator('main button', { hasText: 'Süresi dolan' }).first().click(); await p.waitForTimeout(500);
+  const dolanSatirlar = await veriSatirlari(p).allInnerTexts();
+  const ileriTarihli = dolanSatirlar.map(x => x.split('\t').map(y => y.trim()))
+    .find(h => h[1] && /^\d{4}-\d+$/.test(h[1]));
+  const ileriRezNo = ileriTarihli ? ileriTarihli[1] : null;
+  await p.locator('main button', { hasText: 'Tüm kayıtlar' }).first().click(); await p.waitForTimeout(300);
+
   await sayfa(p, 'Özet');
   const tarihAl = async () => (await p.locator('footer').innerText()).match(/\d{2}\.\d{2}\.\d{4}/)[0];
   const t0 = await tarihAl();
@@ -168,6 +180,54 @@ try {
   d.bekle(/statü değişikliği|çıkış yapıldı|iptal/i.test(gunlukPenceresi),
     'işlem günlüğü gün ilerlemesinin sonuçlarını kaydetmiş', gunlukPenceresi.slice(0, 200).replace(/\n/g, ' | '));
   await pencereKapat(p);
+
+  /* Süresi dolan ileri tarihli talep gerçekten iptale düşmüş mü? */
+  if (ileriRezNo) {
+    await sayfa(p, 'Tahsilat');
+    await p.getByRole('button', { name: 'Tüm dönem', exact: true }).click(); await p.waitForTimeout(400);
+    await p.getByPlaceholder(/Ad soyad/).first().fill(ileriRezNo); await p.waitForTimeout(500);
+    const bulunan = veriSatirlari(p).first();
+    const statu = await bulunan.count() ? (await bulunan.locator('td').last().innerText()).trim() : '—';
+    d.bekle(statu === 'İptal', `süresi dolan ileri tarihli talep (${ileriRezNo}) otomatik iptale düştü`, statu);
+    await p.getByPlaceholder(/Ad soyad/).first().fill(''); await p.waitForTimeout(300);
+  } else d.ok('süresi dolan ileri tarihli talep yok (otomatik iptal denetimi atlandı)');
+
+  /* ═══ 6.2b Konaklaması başlamış kayıt, kapora süresi dolsa da düşmemeli ═══
+     (Gerçek hata: elle girilen 3 gecelik kayıt, kapora ödenmediği için ikinci
+     gün otomatik iptale düşüyor ve misafir çıkış yapmadan yataktan siliniyordu.) */
+  await sayfa(p, 'Talepler');
+  const oGun = await sistemTarihi(p);        /* sistem tarihi yukarıda ilerletildi */
+  const icerdeki = await yeniKayit(p, { ad: 'ICERDEKI MISAFIR', sahis: true,
+    gelis: oGun, cikis: gunEkle(oGun, 3) });
+  const yatakBul = p.getByRole('button', { name: /Uygun Yatağı Otomatik Bul/ });
+  if (await yatakBul.count()) { await yatakBul.click(); await p.waitForTimeout(600); }
+  await kaydet(p, icerdeki);
+  const kayitSatiri = await taleplerdeAra(p, 'ICERDEKI MISAFIR');
+  d.bekle(await kayitSatiri.count() === 1, 'konaklaması bugün başlayan kayıt açıldı');
+
+  const yataktaMi = async () => {
+    await sayfa(p, 'Yatak Listesi');
+    return /ICERDEKI MISAFIR/.test(await govde(p));
+  };
+  d.bekle(await yataktaMi(), 'misafir yatak listesinde görünüyor (1. gece)');
+
+  for (const gun of [2, 3]) {
+    await sayfa(p, 'Özet');
+    await p.getByRole('button', { name: '+1 gün' }).click(); await p.waitForTimeout(800);
+    d.bekle(await yataktaMi(), `misafir ${gun}. gün hâlâ yatakta — kapora gecikmesi kaydı düşürmüyor`);
+  }
+  await sayfa(p, 'Tahsilat');
+  await p.getByRole('button', { name: 'Tüm dönem', exact: true }).click(); await p.waitForTimeout(400);
+  await p.getByPlaceholder(/Ad soyad/).first().fill('ICERDEKI MISAFIR'); await p.waitForTimeout(500);
+  /* DİKKAT: satırın işlem sütununda «İptal» adlı düğme de var; statü son hücrededir. */
+  const icerdekiStatu = await veriSatirlari(p).first().locator('td').last().innerText();
+  d.bekle(icerdekiStatu.trim() !== 'İptal', 'kayıt iptale düşmedi', icerdekiStatu.trim());
+  d.bekle(/Kapora Bkl\.|Onaylı|Konaklıyor/.test(icerdekiStatu), 'kayıt açık statüde duruyor', icerdekiStatu.trim());
+  await p.getByPlaceholder(/Ad soyad/).first().fill(''); await p.waitForTimeout(400);
+  const borcluDugme = p.locator('main button', { hasText: 'Konaklıyor, kapora eksik' }).first();
+  d.bekle(await borcluDugme.count() === 1 && sayi(await borcluDugme.innerText(), /(\d[\d.]*)/) > 0,
+    'gecikmiş kapora «Konaklıyor, kapora eksik» listesinde izleniyor',
+    await borcluDugme.innerText().catch(() => '—'));
 
   /* ═══ 6.3 Kalış uzatma ═══ */
   await sayfa(p, 'Talepler');
@@ -191,6 +251,14 @@ try {
     d.bekle(kalan === 0, `süresi dolan ${dolanSayi} kayıt toplu iptal edildi`, `kalan: ${kalan}`);
   } else if (dolanSayi === 0) d.ok('süresi dolan kayıt yok (toplu iptal denetimi atlandı)');
   else d.hata('toplu iptal düğmesi bulunamadı');
+
+  /* Toplu iptal, konaklaması başlamış kaydı da silmemeli (süzgeç önce sıfırlanır) */
+  await p.locator('main button', { hasText: 'Tüm kayıtlar' }).first().click(); await p.waitForTimeout(400);
+  await p.getByPlaceholder(/Ad soyad/).first().fill('ICERDEKI MISAFIR'); await p.waitForTimeout(500);
+  const topluSonrasi = await veriSatirlari(p).first().locator('td').last().innerText();
+  d.bekle(topluSonrasi.trim() !== 'İptal', 'toplu iptal, içerideki misafirin kaydına dokunmuyor',
+    topluSonrasi.trim());
+  await p.getByPlaceholder(/Ad soyad/).first().fill(''); await p.waitForTimeout(300);
 
   /* ═══ 5.x Muhasebe rolüyle tahsilat ═══ */
   await rolDegistir(p, HESAP.muhasebe);
