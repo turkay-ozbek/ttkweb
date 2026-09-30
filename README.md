@@ -49,7 +49,7 @@ Uygulama ana menüden açılan on odaklı sayfadan oluşur; her sayfa tek bir i�
 |---|---|---|
 | MSFH-W01 | **Bugünkü Durum** | Dolu/boş yatak, giriş-çıkış, temizlik sayıları; misafirhane karşılaştırması; bugünün işleri ve son işlemler |
 | MSFH-W02 | **Doluluk Takvimi** | 30 günlük doluluk şeridi, seçili tarih aralığında garanti kalan yatak ve gece bazında boşluk |
-| MSFH-W03 | **Oda ve Yatak Durumu** | Üç görünüm: **İsimli / Kompakt / Kroki**. Kroki, Ankara Misafirhanesi'nin kâğıt krokisindeki düzeni birebir çizer (kat → satır → sütun, odadaki yatak sırası); talep seçiliyken yerleştirme modu her görünümde çalışır (sürükle-bırak veya tıklayarak). «🖨 Krokiyi Yazdır» ile aynı düzen, seçili günün misafir adlarıyla A4 yatay basılır |
+| MSFH-W03 | **Oda ve Yatak Durumu** | Üç görünüm: **İsimli / Kompakt / Kroki**. Kroki, Ankara Misafirhanesi'nin kâğıt krokisindeki düzeni birebir çizer (kat → satır → sütun, odadaki yatak sırası); talep seçiliyken yerleştirme modu her görünümde çalışır (sürükle-bırak veya tıklayarak). «🖨 Yazdır» ile aynı düzen, seçili günün misafir adlarıyla A4 yatay basılır |
 | MSFH-W04 | **Yatak Listesi** | Oda ve yatak numarasına göre misafir tablosu; dolu/boş süzgeci ve arama |
 | MSFH-W05 | **Rezervasyon Talepleri** | Talep listesi, seçili talep özeti, otomatik / manuel / haritada yerleştirme |
 | MSFH-W06 | **Dekont ve Onay** | Kapora dekontlarının PDF önizlemesiyle incelenip onaylanması (misafirhane müdürü) |

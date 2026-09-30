@@ -129,7 +129,7 @@ try {
     'krokide dolu yatakta misafirin adı yazıyor', (await krokiDolu.innerText()).replace(/\n/g, ' '));
 
   /* Çıktı: aynı düzen + tarih başlığı */
-  await p.getByRole('button', { name: /Krokiyi Yazdır/ }).click(); await p.waitForTimeout(700);
+  await p.locator('main').getByRole('button', { name: /Yazdır/ }).first().click(); await p.waitForTimeout(700);
   const cikti = await p.locator('.yazdir-alan').innerText();
   d.bekle(/TÜRKİYE TAŞKÖMÜRÜ KURUMU ANKARA MİSAFİRHANESİ/.test(cikti), 'çıktının başlığı kroki başlığıyla aynı');
   d.bekle(/TARİHLİ ODA DURUMU/.test(cikti), 'çıktıda «… TARİHLİ ODA DURUMU» satırı var');

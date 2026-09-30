@@ -132,7 +132,7 @@ onay `rezervasyon.onay` (Müdür, Admin)
 5. **Doğrulayın.** «Oda ve Yatak Durumu» sayfasında yatakların üzerinde misafir adı yazar;
    «Yatak Listesi» sayfasında oda/yatak numarasına göre «hangi yatakta kim yatıyor» tablosu vardır.
    Ankara Misafirhanesi'nde sağ üstteki **Kroki** görünümü odaları misafirhanenin kâğıt
-   krokisindeki düzende gösterir; yerleştirme bu görünümde de yapılabilir. **🖨 Krokiyi Yazdır**
+   krokisindeki düzende gösterir; yerleştirme bu görünümde de yapılabilir. **🖨 Yazdır**
    ile seçili günün kroki çıktısı alınır: kat kat odalar ve her yatağın karşısında kalan
    misafirin adı (A4 yatay). «Yataklara misafir adlarını yaz» işareti kaldırılırsa çizelge boş
    basılır, elle doldurmak için kullanılır.

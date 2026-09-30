@@ -174,8 +174,8 @@ const { useState, useMemo, useReducer, useRef, useEffect, useLayoutEffect, useCa
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.9.0';
-const SURUM_TARIHI = '2026-09-30';
+const SURUM = '2.9.1';
+const SURUM_TARIHI = '2026-10-01';
 
 const GUN_MS = 86400000;
 /* Uygulama, çalıştırıldığı günün tarihini sistem tarihi olarak kullanır;
@@ -3655,7 +3655,7 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
           ]} />
           {kroki && gorunum === 'KROKI' && !yerlestirmeModu &&
             <Buton onClick={() => setKrokiYazdir(true)}
-              data-ipucu="Krokiyi o günün misafir adlarıyla A4 yatay olarak yazdırır">🖨 Krokiyi Yazdır</Buton>}
+              data-ipucu="Krokiyi o günün misafir adlarıyla A4 yatay olarak yazdırır">🖨 Yazdır</Buton>}
           {!yerlestirmeModu && <>
             <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, -1))}>◀</Buton>
             <TarihGirdi deger={haritaTarihi} onChange={setHaritaTarihi} bugun={s.bugun} />

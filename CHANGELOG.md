@@ -8,6 +8,12 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.9.1] — 01.10.2026
+### Değişti
+- Kroki görünümündeki düğme **«🖨 Yazdır»** oldu (önce «🖨 Krokiyi Yazdır»); hangi
+  sayfada olunduğu zaten başlıkta yazdığı için düğme adı kısaltıldı. Pencerenin adı
+  «Oda Krokisini Yazdır» olarak kaldı.
+
 ## [2.9.0] — 30.09.2026
 ### Eklendi — Ankara Misafirhanesi'nin gerçek oda krokisi
 - **Ankara'nın odaları artık kurumun krokisinden geliyor** (`ANKARA_KROKI`): 3 kat,
