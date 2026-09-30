@@ -174,8 +174,8 @@ const { useState, useMemo, useReducer, useRef, useEffect, useLayoutEffect, useCa
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.8.1';
-const SURUM_TARIHI = '2026-09-28';
+const SURUM = '2.9.0';
+const SURUM_TARIHI = '2026-09-30';
 
 const GUN_MS = 86400000;
 /* Uygulama, çalıştırıldığı günün tarihini sistem tarihi olarak kullanır;
@@ -214,7 +214,9 @@ const tamsayi = (r, a, b) => a + Math.floor(r() * (b - a + 1));
 
 const TESISLER = [
   { kod:'YAYLA',    ad:'Yayla Konağı',          sehir:'Zonguldak', kats:3, tek:5,  cift:16, uclu:5,  carpan:1.10 },
-  { kod:'ANKARA',   ad:'Ankara Misafirhanesi',  sehir:'Ankara',    kats:5, tek:10, cift:20, uclu:10, carpan:1.00 },
+  /* Ankara'nın odaları ANKARA_KROKI'den gelir; aşağıdaki oda sayıları
+     yalnız krokisi olmayan misafirhaneler için kullanılır. */
+  { kod:'ANKARA',   ad:'Ankara Misafirhanesi',  sehir:'Ankara',    kats:3, tek:5,  cift:16, uclu:3,  carpan:1.00 },
   { kod:'AMASRA',   ad:'Amasra Misafirhanesi',  sehir:'Bartın',    kats:4, tek:8,  cift:16, uclu:7,  carpan:0.95 },
   { kod:'ARMUTCUK', ad:'Armutçuk Misafirhanesi',sehir:'Ereğli',    kats:3, tek:5,  cift:12, uclu:6,  carpan:0.85 },
 ];
@@ -344,6 +346,36 @@ const tesisYetkisi    = (k, kod) => yetkiliTesisler(k).includes(kod);
 const rolAd           = (r) => (ROLLER[r] || {}).ad || r;
 const yetkiNotu       = (k, izin) => `Bu işlem için yetkiniz yok — ${rolAd(k.rol)} rolü «${(IZINLER.find(x => x.kod === izin) || {}).ad || izin}» iznine sahip değil.`;
 
+/* ── Ankara Misafirhanesi — gerçek oda krokisi ────────────────────────────
+   Kaynak: kurumun «TÜRKİYE TAŞKÖMÜRÜ KURUMU ANKARA MİSAFİRHANESİ — ODA DURUMU»
+   krokisi. Ankara'nın odaları, yatak sayıları ve kattaki yerleşimi buradan
+   gelir (demo üreteci Ankara için devre dışıdır); diğer misafirhanelerin
+   odaları örnek veri olarak üretilmeye devam eder.
+
+   satirlar: krokideki gibi satır satır, her satırda soldan sağa oda numaraları;
+   null = krokide boş bırakılmış hücre. yatak: oda başına yatak sayısı.
+   Kroki ekranda ve çıktıda bu düzende çizilir — sıra ve sütun değiştirilmez. */
+const ANKARA_KROKI = {
+  tesis: 'ANKARA',
+  kurum: 'TÜRKİYE TAŞKÖMÜRÜ KURUMU',
+  baslik: 'ANKARA MİSAFİRHANESİ',
+  altBaslik: 'ODA DURUMU',
+  katlar: [
+    { kat: 1, satirlar: [[12, 15, 16], [13, 14, 17]] },
+    { kat: 2, satirlar: [[21, 23, 24, 27, 29], [22, 25, 26, 28, null]] },
+    { kat: 3, satirlar: [[31, 33, 34, 37, 38], [32, 35, 36, 39, null]] },
+  ],
+  yatak: {
+    12: 2, 13: 2, 14: 2, 15: 2, 16: 1, 17: 3,
+    21: 1, 22: 1, 23: 2, 24: 2, 25: 2, 26: 2, 27: 2, 28: 3, 29: 1,
+    31: 2, 32: 2, 33: 2, 34: 2, 35: 2, 36: 2, 37: 2, 38: 1, 39: 3,
+  },
+};
+const KROKILER = { ANKARA: ANKARA_KROKI };
+const krokiBul = (tesisKod) => KROKILER[tesisKod] || null;
+/* Krokideki oda numaraları, kroki sırasıyla (kat kat, satır satır) */
+const krokiOdaNolari = (k) => k.katlar.flatMap(x => x.satirlar.flat()).filter(n => n != null);
+
 /* Yerleştirme parametreleri */
 const TEMIZLIK_GUN = 1;   // çıkış günü yatak temizlik için bloke
 
@@ -384,7 +416,34 @@ const telUret   = r => '5' + tamsayi(r, 30, 55) + ' ' + tamsayi(r, 100, 999) + '
 function odalariUret(r) {
   const odalar = [], yataklar = [];
   let yid = 1;
+  const odaEkle = (t, oda_no, kat, yatakSayisi, protokol) => {
+    const tip = yatakSayisi === 1 ? 'TEK' : yatakSayisi === 2 ? 'CIFT' : 'UCLU';
+    const taban = tip === 'TEK' ? 900 : tip === 'CIFT' ? 750 : 600;
+    const yatak_fiyati = Math.round(taban * t.carpan / 50) * 50;
+    odalar.push({ id: t.kod + '-' + oda_no, tesis: t.kod, oda_no, kat, tip, yatakSayisi, protokol, yatak_fiyati });
+    for (let y = 1; y <= yatakSayisi; y++) {
+      yataklar.push({
+        id: t.kod + '-' + oda_no + '-' + y,
+        odaId: t.kod + '-' + oda_no,
+        tesis: t.kod, oda_no, yatak_no: y, tip, protokol, kat, yatak_fiyati,
+      });
+    }
+  };
+
   for (const t of TESISLER) {
+    /* Krokisi olan misafirhanenin odaları gerçek krokiden gelir */
+    const kroki = krokiBul(t.kod);
+    if (kroki) {
+      for (const k of kroki.katlar) {
+        for (const satir of k.satirlar) {
+          for (const oda_no of satir) {
+            if (oda_no == null) continue;
+            odaEkle(t, oda_no, k.kat, kroki.yatak[oda_no], false);
+          }
+        }
+      }
+      continue;
+    }
     const tipler = [
       ...Array(t.tek).fill('TEK'),
       ...Array(t.cift).fill('CIFT'),
@@ -404,17 +463,7 @@ function odalariUret(r) {
       const sira = (i % katBasi) + 1;
       const oda_no = kat * 10 + sira;
       const protokol = tip === 'TEK' && protokolKalan-- > 0;
-      const yatakSayisi = tip === 'TEK' ? 1 : tip === 'CIFT' ? 2 : 3;
-      const taban = tip === 'TEK' ? 900 : tip === 'CIFT' ? 750 : 600;
-      const yatak_fiyati = Math.round(taban * t.carpan / 50) * 50;
-      odalar.push({ id: t.kod + '-' + oda_no, tesis: t.kod, oda_no, kat, tip, yatakSayisi, protokol, yatak_fiyati });
-      for (let y = 1; y <= yatakSayisi; y++) {
-        yataklar.push({
-          id: t.kod + '-' + oda_no + '-' + y,
-          odaId: t.kod + '-' + oda_no,
-          tesis: t.kod, oda_no, yatak_no: y, tip, protokol, kat, yatak_fiyati,
-        });
-      }
+      odaEkle(t, oda_no, kat, tip === 'TEK' ? 1 : tip === 'CIFT' ? 2 : 3, protokol);
       yid++;
     });
   }
@@ -1941,6 +1990,73 @@ const Cubuk = ({ oran, renk = 'bg-ttk-500' }) => (
 /* Ortak oda/yatak haritası. Hücrenin nasıl görüneceğini çağıran ekran belirler:
    hucre(yatak) -> { sinif, ad, baslik, ek?, props? }
    isimli=true iken her yatak satırında yatak no + misafir adı yazılır. */
+/* ── Misafirhane krokisi ──────────────────────────────────────────────────
+   Odaları kurumun kâğıt krokisindeki düzende çizer: her kat kendi başlığı
+   altında, odalar krokideki satır/sütun yerinde, her odanın içinde yatak
+   numarası ve o gece yatakta kalan misafirin adı. Hücre görünümü (renk,
+   metin, sürükle-bırak) YatakHaritasi ile aynı `hucre(yatak)` sözleşmesinden
+   gelir; böylece yerleştirme kroki üzerinde de çalışır.
+   yazdirma=true iken renk yerine çizgi kullanılır (kâğıt çıktısı). */
+function OdaKrokisi({ kroki, odalar, yataklar, hucre, yukseklik = '', yazdirma = false }) {
+  const odaBul = (no) => odalar.find(o => o.oda_no === no);
+  return (
+    <div className={`space-y-4 ${yukseklik} ${yukseklik ? 'overflow-auto kaydir pr-1' : ''}`}>
+      {kroki.katlar.map(k => (
+        <div key={k.kat} className={yazdirma ? 'kroki-kat' : ''}>
+          <div className={yazdirma
+            ? 'text-[12px] font-bold text-slate-900 mb-1'
+            : 'text-2xs font-bold text-slate-500 uppercase tracking-wide mb-1'}>
+            {k.kat}. KAT
+          </div>
+          <div className="space-y-1.5">
+            {k.satirlar.map((satir, si) => (
+              <div key={si} className="grid gap-1.5"
+                style={{ gridTemplateColumns: `repeat(${satir.length}, minmax(0, 1fr))` }}>
+                {satir.map((no, ci) => {
+                  const oda = no == null ? null : odaBul(no);
+                  if (!oda) return <div key={ci} />;                    /* krokideki boş hücre */
+                  const ys = yataklar.filter(y => y.odaId === oda.id);
+                  return (
+                    <div key={ci} className={`flex flex-col h-full ${yazdirma
+                      ? 'border border-slate-900 break-inside-avoid'
+                      : 'border border-slate-300 rounded overflow-hidden bg-white'}`}>
+                      <div className={yazdirma
+                        ? 'text-center text-[10px] font-bold border-b border-slate-900 py-[2px]'
+                        : 'text-center num text-xs font-bold text-ttk-900 bg-slate-100 border-b border-slate-300 py-0.5'}>
+                        Oda {oda.oda_no}
+                      </div>
+                      {ys.map(y => {
+                        const h = hucre(y);
+                        return (
+                          <div key={y.id} title={h.baslik} {...(h.props || {})}
+                            className={yazdirma
+                              ? 'flex items-center flex-1 border-b border-slate-400 last:border-b-0 min-h-[16px]'
+                              : `yatak-hucre flex items-center flex-1 border-b border-slate-200 last:border-b-0 ${h.sinif} ${h.ek || ''}`}>
+                            <span className={yazdirma
+                              ? 'num text-[9px] w-4 shrink-0 text-center border-r border-slate-400 self-stretch flex items-center justify-center'
+                              : 'num text-2xs font-bold w-4 shrink-0 text-center border-r border-black/10 self-stretch flex items-center justify-center'}>
+                              {y.yatak_no}
+                            </span>
+                            <span className={yazdirma
+                              ? 'flex-1 text-[9px] px-1 py-[1px] leading-snug'
+                              : 'flex-1 text-2xs px-1 py-[3px] truncate leading-4'}>
+                              {h.ad}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function YatakHaritasi({ katlar, yataklar, hucre, isimli = true, yukseklik = 'max-h-[460px]' }) {
   return (
     <div className={`space-y-3 ${yukseklik} overflow-auto kaydir pr-1`}>
@@ -3120,7 +3236,10 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
   const [surukleHedef, setSurukleHedef] = useState(null);
   const [seciliMisafir, setSeciliMisafir] = useState(null);
   const [geceGorunum, setGeceGorunum] = useState(null);
-  const [isimli, setIsimli] = useState(true);
+  /* Krokisi olan misafirhanede varsayılan görünüm krokidir; olmayanda isimli harita. */
+  const [gorunum, setGorunum] = useState(() => (krokiBul(s.tesis) ? 'KROKI' : 'AD'));
+  const [krokiYazdir, setKrokiYazdir] = useState(false);
+  const isimli = gorunum !== 'KOMPAKT';
   const [manuel, setManuel] = useState(null);
   const [haritaTarihi, setHaritaTarihi] = useState(s.bugun);
   const [yatakDetay, setYatakDetay] = useState(null);
@@ -3176,6 +3295,8 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
 
   const tesisYatak = useMemo(() => s.yataklar.filter(y => y.tesis === s.tesis), [s.yataklar, s.tesis]);
   const tesisOda = useMemo(() => s.odalar.filter(o => o.tesis === s.tesis), [s.odalar, s.tesis]);
+  const kroki = krokiBul(s.tesis);        /* bu misafirhanenin kâğıt krokisi (varsa) */
+  useEffect(() => { setGorunum(kroki ? 'KROKI' : 'AD'); }, [s.tesis]);
   const katlar = useMemo(() => {
     const m = new Map();
     tesisOda.forEach(o => { if (!m.has(o.kat)) m.set(o.kat, []); m.get(o.kat).push(o); });
@@ -3527,9 +3648,14 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
           ? `Yerleştirme modu — ${seciliRez.rez_no} · ${tr(seciliRez.gelis_tarihi)} – ${tr(seciliRez.cikis_tarihi)}`
           : sayfa.aciklama}
         sag={<>
-          <GorunumSecici deger={isimli ? 'AD' : 'KOMPAKT'} ayarla={v => setIsimli(v === 'AD')} secenekler={[
-            ['AD', 'İsimli', 'Yataklarda misafir adı yazar'], ['KOMPAKT', 'Kompakt', 'Yalnız yatak numaraları'],
+          <GorunumSecici deger={gorunum} ayarla={setGorunum} secenekler={[
+            ['AD', 'İsimli', 'Yataklarda misafir adı yazar'],
+            ['KOMPAKT', 'Kompakt', 'Yalnız yatak numaraları'],
+            ...(kroki ? [['KROKI', 'Kroki', 'Odalar misafirhanenin kâğıt krokisindeki düzende']] : []),
           ]} />
+          {kroki && gorunum === 'KROKI' && !yerlestirmeModu &&
+            <Buton onClick={() => setKrokiYazdir(true)}
+              data-ipucu="Krokiyi o günün misafir adlarıyla A4 yatay olarak yazdırır">🖨 Krokiyi Yazdır</Buton>}
           {!yerlestirmeModu && <>
             <Buton tur="sessiz" onClick={() => setHaritaTarihi(ekle(haritaTarihi, -1))}>◀</Buton>
             <TarihGirdi deger={haritaTarihi} onChange={setHaritaTarihi} bugun={s.bugun} />
@@ -3612,8 +3738,8 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
             {!musaitlik.tamSayi && ' — talebi bölmek veya tarihi değiştirmek gerekir.'}
           </div>
         )}
-        <YatakHaritasi katlar={katlar} yataklar={tesisYatak} isimli={isimli} yukseklik="max-h-[62vh]"
-          hucre={(y) => {
+        {(() => {
+        const hucreCiz = (y) => {
             let sinif, baslik, ad;
             const bende = seciliRez ? seciliRez.misafirler.find(g => g.yatakId === y.id) : null;
             if (yerlestirmeModu && musaitlik && geceGorunum) {
@@ -3653,7 +3779,11 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
                 onDrop: birak(y),
               },
             };
-          }} />
+        };
+        return kroki && gorunum === 'KROKI'
+          ? <OdaKrokisi kroki={kroki} odalar={tesisOda} yataklar={tesisYatak} hucre={hucreCiz} yukseklik="max-h-[62vh]" />
+          : <YatakHaritasi katlar={katlar} yataklar={tesisYatak} isimli={isimli} yukseklik="max-h-[62vh]" hucre={hucreCiz} />;
+        })()}
       </Kart>
 
       {!yerlestirmeModu && (
@@ -3662,6 +3792,9 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
         </div>
       )}
 
+      {krokiYazdir && kroki &&
+        <KrokiYazdirma kroki={kroki} odalar={tesisOda} yataklar={tesisYatak} tarih={haritaTarihi}
+          dolu={dolu} temizlik={temizlik} kapat={() => setKrokiYazdir(false)} />}
       {yatakDetay && <YatakDetayModal detay={yatakDetay} kapat={() => setYatakDetay(null)}
         acYeniKayit={acYeniKayit} izin={izin} tesis={s.tesis} />}
       {manuel && <ManuelYerlestirme s={s} rz={s.rezervasyonlar.find(r => r.id === manuel.id) || manuel}
@@ -5562,6 +5695,83 @@ function AnaMenu({ s, sayfalar, sayilar, git, gonder, tesisler, acYeniKayit, izi
 /* ── Yazdırma penceresi (yatak listesi) ────────────────────────────────────
    Kâğıt yönü seçilir, @page kuralı o an yazılır; ekrandaki arayüz baskıda
    gizlenir, yalnız .yazdir-alan basılır.                                    */
+/* ── Kroki çıktısı ────────────────────────────────────────────────────────
+   Kurumun kâğıt krokisinin birebir karşılığı: başlık, «GG.AA.YYYY TARİHLİ ODA
+   DURUMU» satırı, kat kat oda kutuları ve her yatağın karşısında o gece orada
+   kalan misafirin adı. A4 yatay basılır. */
+function KrokiYazdirma({ kroki, odalar, yataklar, tarih, dolu, temizlik, kapat }) {
+  const [adSoyad, setAdSoyad] = useState(true);       /* boş bırakılırsa elle doldurulacak çizelge */
+
+  const hucre = (y) => {
+    const { durum, kayit } = yatakDurumu(y, tarih, dolu, temizlik);
+    const misafir = kayit && kayit.misafir ? kayit.misafir.adi_soyadi : '';
+    return {
+      sinif: '', baslik: '',
+      ad: !adSoyad ? '' : durum === 'TEMIZLIK' ? 'Temizlik' : misafir || '',
+    };
+  };
+  const doluSayi = yataklar.filter(y => yatakDurumu(y, tarih, dolu, temizlik).durum === 'DOLU').length;
+
+  const yazdir = () => {
+    const etiket = document.getElementById('yazdirma-yonu') || (() => {
+      const e = document.createElement('style'); e.id = 'yazdirma-yonu';
+      document.head.appendChild(e); return e;
+    })();
+    etiket.textContent = '@page { size: A4 landscape; margin: 10mm; }';
+    document.body.classList.add('yazdiriliyor');
+    const temizleYaz = () => { document.body.classList.remove('yazdiriliyor'); window.removeEventListener('afterprint', temizleYaz); };
+    window.addEventListener('afterprint', temizleYaz);
+    window.print();
+    setTimeout(temizleYaz, 1500);
+  };
+
+  const icerik = (onizleme) => (
+    <div className={onizleme ? 'p-3 bg-white' : ''}>
+      <div className="text-center mb-2">
+        <div className={onizleme ? 'text-[12px] font-bold' : 'text-[15px] font-bold'}>
+          {kroki.kurum} {kroki.baslik}
+        </div>
+        <div className={onizleme ? 'text-[11px] font-bold num' : 'text-[13px] font-bold num'}>
+          {tr(tarih)} TARİHLİ {kroki.altBaslik}
+        </div>
+      </div>
+      <OdaKrokisi kroki={kroki} odalar={odalar} yataklar={yataklar} hucre={hucre} yazdirma />
+      <div className="mt-2 pt-1 border-t border-slate-400 text-[8px] text-slate-500 flex justify-between">
+        <span>TTK Misafirhane Bilgi Sistemi — prototip çıktısı</span>
+        <span className="num">Yazdırma: {tr(iso(new Date()))}</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <Modal baslik="Oda Krokisini Yazdır" genislik="max-w-4xl" kapat={kapat}
+      altlik={<>
+        <span className="text-2xs text-slate-500 mr-auto num">
+          {tr(tarih)} · {odalar.length} oda · {yataklar.length} yatak · {doluSayi} dolu · A4 yatay
+        </span>
+        <Buton tur="sessiz" onClick={kapat}>Vazgeç</Buton>
+        <Buton tur="birincil" onClick={yazdir} data-ipucu="Tarayıcının yazdırma penceresini açar">🖨 Yazdır</Buton>
+      </>}>
+      <div className="space-y-3 text-xs">
+        <label className="flex items-center gap-2 cursor-pointer"
+          data-ipucu="İşareti kaldırırsanız yatak satırları boş basılır — elle doldurulacak çizelge">
+          <input type="checkbox" checked={adSoyad} onChange={e => setAdSoyad(e.target.checked)} />
+          Yataklara misafir adlarını yaz
+        </label>
+        <div className="border border-slate-300 rounded overflow-hidden">
+          <div className="bg-slate-100 px-2 py-1 text-2xs text-slate-500 border-b border-slate-300">
+            Önizleme — çıktı A4 yatay, krokideki düzenin aynısı
+          </div>
+          <div className="max-h-[52vh] overflow-auto kaydir bg-white">{icerik(true)}</div>
+        </div>
+      </div>
+
+      {/* Baskıya giden asıl içerik */}
+      <div className="yazdir-alan" aria-hidden="true">{icerik(false)}</div>
+    </Modal>
+  );
+}
+
 function YazdirmaPenceresi({ baslik, altBaslik, sutunlar, satirlar, kapat }) {
   const [yon, setYon] = useState(sutunlar.length > 6 ? 'yatay' : 'dikey');
   const [cizgili, setCizgili] = useState(true);

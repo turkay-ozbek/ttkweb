@@ -117,7 +117,7 @@ bir güvencedir** ve tek başına veritabanı seçimini belirler.
 
 ```
 Konaklama-gece kaydı            ≈ 200 bayt
-4 tesis × 240 yatak × 365 gün × %70 doluluk ≈ 245.000 kayıt/yıl
+4 tesis × 240 yatak (büyüme payıyla; bugünkü gerçek toplam ~210 yatak) × 365 gün × %70 doluluk ≈ 245.000 kayıt/yıl
 Rezervasyon + misafir + tahsilat + hareket  ≈ 250 MB/yıl (dizinlerle)
 20 yıl ≈ 5 GB veri, ~12 GB dizinli
 ```

@@ -8,6 +8,48 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.9.0] — 30.09.2026
+### Eklendi — Ankara Misafirhanesi'nin gerçek oda krokisi
+- **Ankara'nın odaları artık kurumun krokisinden geliyor** (`ANKARA_KROKI`): 3 kat,
+  **24 oda, 46 yatak** — 1. kat 12·15·16 / 13·14·17; 2. kat 21·23·24·27·29 / 22·25·26·28;
+  3. kat 31·33·34·37·38 / 32·35·36·39. Yatak sayıları odaya göre 1–3. Diğer üç
+  misafirhanenin odaları örnek veri olarak üretilmeye devam ediyor.
+- **«Kroki» görünümü** (Oda ve Yatak Durumu · MSFH-W03). Odalar krokideki kat/satır/sütun
+  yerinde, her odanın içinde yatak numarası ve o gece orada kalan misafirin adı. Renkler
+  yatak durumunu (boş, dolu, rezerve, çıkış bekliyor, temizlik) gösteriyor; sürükle-bırak
+  ve tıklayarak yerleştirme kroki üzerinde de çalışıyor. Görünüm yalnız krokisi tanımlı
+  misafirhanede sunuluyor.
+- **«🖨 Krokiyi Yazdır».** Kâğıt krokinin birebir karşılığı: «TÜRKİYE TAŞKÖMÜRÜ KURUMU
+  ANKARA MİSAFİRHANESİ», «GG.AA.YYYY TARİHLİ ODA DURUMU» başlıkları, kat kat oda kutuları
+  ve yatakların karşısında misafir adları; A4 yatay, tek sayfa. «Yataklara misafir adlarını
+  yaz» işareti kaldırılırsa elle doldurulacak boş çizelge basılıyor.
+
+### Değişti — istatistikler oda düzenine göre yeniden üretiliyor
+- Demo verisi kapasiteye orantılı üretildiği için bütün sayılar yeni oda düzenine göre
+  yeniden hesaplanıyor: **4 tesis · 104 oda · 206 yatak · ~4.400 rezervasyon** (önce 120
+  oda / 240 yatak). Ankara'nın doluluk, boş yatak, giriş-çıkış, tahsilat ve kahvaltı
+  sayıları 46 yatak üzerinden çıkıyor; misafirhane karşılaştırmasında dört tesisin doluluk
+  oranı birbirine yakın kalıyor (%60–70). Kayıtların tamamı yalnız krokideki odalara
+  yerleşiyor — eski 41–55 numaralı odalara ait veri kalmadı.
+- Varsayılan görünüm: krokisi olan misafirhanede **Kroki**, diğerlerinde isimli harita.
+- `README.md` demo verisi tablosu, `docs/veritabani.md`, `docs/mimari-brifing.md` ve
+  `docs/yerlestirme-algoritmasi.md` içindeki kapasite sayıları güncellendi.
+
+### Notlar
+- Kroki protokol odası belirtmediğinden Ankara'da protokol işaretli oda yok; gerekirse
+  `ANKARA_KROKI` üzerinden işaretlenir.
+- `docs/veritabani.md`: `oda` tablosuna kroki yerleşimini taşıyan `kroki_satir` /
+  `kroki_sutun` sütunları eklendi.
+
+### Testler
+- `09-goruntuleme-tutarlilik.mjs`: kroki düzeninin (kat/satır/sütun) krokiyle birebir aynı
+  olduğu, 24 oda / 46 yatağın oda oda doğrulanması, dolu yatakta misafir adının yazması,
+  çıktının başlık ve kat sırasını koruması, krokisi olmayan misafirhanede görünümün
+  sunulmaması.
+- `10` ve `14`: iki denetim gerçek kapasiteye/aya bağımlıydı, sağlamlaştırıldı — geçmiş
+  gecelerde boş yatak yoksa motorun gerekçe yazması yeterli sayılıyor; çıkış takvimi
+  denetimi geliş ayı başka bir aya düştüğünde de çalışıyor.
+
 ## [2.8.1] — 28.09.2026
 ### Düzeltildi — çıkış yapmayan misafirin kaydı sistemden düşüyordu
 - **Konaklaması başlamış kayıt artık süre aşımından otomatik iptal edilmiyor.** Elle girilen

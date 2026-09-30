@@ -49,7 +49,7 @@ Uygulama ana menüden açılan on odaklı sayfadan oluşur; her sayfa tek bir i�
 |---|---|---|
 | MSFH-W01 | **Bugünkü Durum** | Dolu/boş yatak, giriş-çıkış, temizlik sayıları; misafirhane karşılaştırması; bugünün işleri ve son işlemler |
 | MSFH-W02 | **Doluluk Takvimi** | 30 günlük doluluk şeridi, seçili tarih aralığında garanti kalan yatak ve gece bazında boşluk |
-| MSFH-W03 | **Oda ve Yatak Durumu** | Oda kartlarında hangi yatakta kimin kaldığı (isimli/kompakt); talep seçiliyken yerleştirme modu (sürükle-bırak veya tıklayarak) |
+| MSFH-W03 | **Oda ve Yatak Durumu** | Üç görünüm: **İsimli / Kompakt / Kroki**. Kroki, Ankara Misafirhanesi'nin kâğıt krokisindeki düzeni birebir çizer (kat → satır → sütun, odadaki yatak sırası); talep seçiliyken yerleştirme modu her görünümde çalışır (sürükle-bırak veya tıklayarak). «🖨 Krokiyi Yazdır» ile aynı düzen, seçili günün misafir adlarıyla A4 yatay basılır |
 | MSFH-W04 | **Yatak Listesi** | Oda ve yatak numarasına göre misafir tablosu; dolu/boş süzgeci ve arama |
 | MSFH-W05 | **Rezervasyon Talepleri** | Talep listesi, seçili talep özeti, otomatik / manuel / haritada yerleştirme |
 | MSFH-W06 | **Dekont ve Onay** | Kapora dekontlarının PDF önizlemesiyle incelenip onaylanması (misafirhane müdürü) |
@@ -153,6 +153,22 @@ Prototipin arkasındaki mimari sorular ayrı belgelerde yanıtlanmıştır:
 | Mobil | [`docs/mobil-arayuz.md`](docs/mobil-arayuz.md) | Ayrı uygulama değil, duyarlı web + PWA. Müdür telefonla arandığında kaydı telefondan açabilir; 390 px'te taşma yok. **PWA masaüstü kadar etkili mi?** Kayıt alma, onaylama ve sorgulamada evet; oda haritasında toplu yerleştirme, 30 günlük takvim ve toplu veri girişi masaüstü işi olarak kalır |
 | Mobil güvenlik | [`docs/mobil-guvenlik.md`](docs/mobil-guvenlik.md) | **Risk mobil verinin kendisinde değil, sistemi internete açmakta ve cihazdadır.** Üç seçenek (kurum VPN'i / ZTNA / DMZ'den yayımlama) karşılaştırılır; öneri VPN ile başlayıp ZTNA'ya geçmek, uygulamayı hiç yayımlamamaktır. Oturum, veri, ağ ve cihaz katmanlarında alınacak önlemler ve KVKK etkisi listelenir |
 
+## Ankara Misafirhanesi — gerçek oda krokisi
+
+Diğer üç misafirhanenin odaları örnek veri olarak üretilir; **Ankara Misafirhanesi'nin
+odaları kurumun kendi krokisinden** alınmıştır (`ANKARA_KROKI`):
+
+| Kat | Satır 1 (soldan sağa) | Satır 2 |
+|---|---|---|
+| 1 | Oda 12 · 15 · 16 | Oda 13 · 14 · 17 |
+| 2 | Oda 21 · 23 · 24 · 27 · 29 | Oda 22 · 25 · 26 · 28 |
+| 3 | Oda 31 · 33 · 34 · 37 · 38 | Oda 32 · 35 · 36 · 39 |
+
+**24 oda · 46 yatak.** Yatak sayıları: tek kişilik 16, 21, 22, 29, 38; üç kişilik 17, 28, 39;
+kalan on altı oda iki kişilik. Kroki görünümü ve çıktısı bu satır/sütun düzenini değiştirmez.
+Kroki protokol odası belirtmediği için Ankara'da protokol işaretli oda yoktur; gerekirse
+`ANKARA_KROKI` üzerinden işaretlenebilir.
+
 ## Kapora ve dekont onayı
 
 Şahsi misafirin rezervasyon listesine girebilmesi için konaklama bedelinin bir bölümünü
@@ -182,16 +198,17 @@ kurallarının (giriş, çıkış, süre aşımından iptal) canlı çalıştı�
 
 ## Demo verisi
 
-4 tesis · 120 oda · 240 yatak · yaklaşık 5.000 rezervasyon kaydı (3 ay geçmiş +
+4 tesis · 104 oda · 206 yatak · yaklaşık 4.400 rezervasyon kaydı (3 ay geçmiş +
 3 ay gelecek), iptaller ve uzatmalar dahil. Veri deterministik üretilir; her
-açılışta aynı demo görüntülenir.
+açılışta aynı demo görüntülenir. Talep yoğunluğu **yatak kapasitesine orantılıdır**,
+bu yüzden doluluk oranları dört misafirhanede birbirine yakın çıkar (%60–70).
 
-| Tesis | Oda | Yatak |
-|---|---:|---:|
-| Yayla Konağı (Zonguldak) | 26 | 52 |
-| Ankara Misafirhanesi | 40 | 80 |
-| Amasra Misafirhanesi (Bartın) | 31 | 61 |
-| Armutçuk Misafirhanesi (Ereğli) | 23 | 47 |
+| Tesis | Oda | Yatak | Kaynak |
+|---|---:|---:|---|
+| Yayla Konağı (Zonguldak) | 26 | 52 | örnek veri |
+| **Ankara Misafirhanesi** | **24** | **46** | **kurumun oda krokisi (gerçek)** |
+| Amasra Misafirhanesi (Bartın) | 31 | 61 | örnek veri |
+| Armutçuk Misafirhanesi (Ereğli) | 23 | 47 | örnek veri |
 
 ## Belgeler
 

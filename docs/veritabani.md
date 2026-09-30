@@ -14,7 +14,7 @@ verilmesi gereken kararları ve gerekçelerini anlatır.
 
 | Gereksinim | Postgres'in karşılığı |
 |---|---|
-| **Misafir sayısı ve geçmişte sınır olmaması** | Tablo başına 32 TB, satır sayısı pratikte sınırsız. 240 yatak × 4 tesis × 365 gün ≈ **350 bin konaklama-gece/yıl**; 20 yıllık geçmiş bile tek sunucuda rahat çalışır (aşağıdaki hesap) |
+| **Misafir sayısı ve geçmişte sınır olmaması** | Tablo başına 32 TB, satır sayısı pratikte sınırsız. Bugünkü kapasite 4 tesiste ~210 yatak (Ankara krokisiyle 46); hesap büyüme payıyla **240 yatak/tesis** üzerinden yapıldı: 240 × 4 × 365 ≈ **350 bin konaklama-gece/yıl**; 20 yıllık geçmiş bile tek sunucuda rahat çalışır (aşağıdaki hesap) |
 | **Aynı yatağın iki kez satılmaması** | `EXCLUDE` kısıtı + `daterange` tipi ile **veritabanı seviyesinde** çakışma engeli — uygulama hatası yapsa bile veri bozulmaz. Bu, seçimin en güçlü gerekçesidir |
 | **Tekrar gelen misafirin hızlı bulunması** | `pg_trgm` ile adda bulanık arama, `unaccent` ile Türkçe harf duyarsızlığı, Tc kimlik no üzerinde tekil dizin |
 | **Dönemsel raporlar (ay sonu belgesi)** | Pencere fonksiyonları, `generate_series` ile gün gün doluluk, materialized view ile gecelik özet |
@@ -32,7 +32,8 @@ verilmesi gereken kararları ve gerekçelerini anlatır.
 
 ```
 Konaklama-gece satırı  ≈ 200 bayt
-4 tesis × 240 yatak × 365 gün × %70 doluluk ≈ 245.000 satır/yıl ≈ 50 MB/yıl
+4 tesis × 240 yatak (büyüme payıyla; bugünkü gerçek toplam ~210) × 365 gün × %70 doluluk
+≈ 245.000 satır/yıl ≈ 50 MB/yıl
 Misafir + rezervasyon + tahsilat + hareket kayıtları ile birlikte ≈ 250 MB/yıl
 20 yıllık geçmiş ≈ 5 GB (dizinlerle ~12 GB)
 ```
@@ -68,6 +69,9 @@ CREATE INDEX misafir_tel     ON misafir (tel_no);
 CREATE TABLE tesis (kod varchar(12) PRIMARY KEY, ad varchar(80), sehir varchar(40), aktif boolean DEFAULT true);
 CREATE TABLE oda   (id bigserial PRIMARY KEY, tesis_kod varchar(12) REFERENCES tesis, oda_no int,
                     kat int, tip varchar(8), protokol boolean DEFAULT false,
+                    -- Misafirhanenin kâğıt krokisindeki yeri: kroki ekranı ve çıktısı
+                    -- odaları bu sıraya göre dizer (boş bırakılırsa oda_no sırası kullanılır).
+                    kroki_satir smallint, kroki_sutun smallint,
                     UNIQUE (tesis_kod, oda_no));
 CREATE TABLE yatak (id bigserial PRIMARY KEY, oda_id bigint REFERENCES oda, yatak_no int,
                     gecelik_bedel numeric(10,2), UNIQUE (oda_id, yatak_no));
@@ -295,7 +299,7 @@ WHERE o.tesis_kod = $1
       )
 ORDER BY o.protokol, o.oda_no, y.yatak_no;
 ```
-`konaklama_donem` GiST dizini sayesinde 240 yataklık tesiste **1 ms altında** döner.
+`konaklama_donem` GiST dizini sayesinde birkaç yüz yataklık tesiste **1 ms altında** döner.
 
 ### 7.2 Karma oda denetimi
 

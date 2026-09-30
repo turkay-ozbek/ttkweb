@@ -84,6 +84,70 @@ try {
   await p.getByRole('button', { name: 'İsimli', exact: true }).click();
   await p.waitForTimeout(400);
 
+  /* ═══ 7.x Ankara oda krokisi — kurumun kâğıt krokisiyle aynı düzen ═══ */
+  await tesisSec(p, 'Ankara Misafirhanesi');
+  await sayfa(p, 'Odalar');
+  const krokiDugme = p.getByRole('button', { name: 'Kroki', exact: true });
+  d.bekle(await krokiDugme.count() === 1, 'Ankara\'da «Kroki» görünümü var');
+  await krokiDugme.click(); await p.waitForTimeout(600);
+  const krokiDuzen = await p.evaluate(() => {
+    /* kat başlıkları ve her satırdaki oda sırası, krokideki gibi okunur */
+    const kutular = [...document.querySelectorAll('main .grid')]
+      .filter(g => g.querySelector(':scope > div > div')?.textContent?.startsWith('Oda '));
+    const satirlar = kutular.map(g => [...g.children].map(h => {
+      const b = h.querySelector('div');
+      return b && /^Oda /.test(b.textContent) ? Number(b.textContent.replace('Oda ', '')) : null;
+    }));
+    const yatak = {};
+    document.querySelectorAll('main .grid > div').forEach(h => {
+      const b = h.querySelector('div');
+      if (!b || !/^Oda /.test(b.textContent)) return;
+      yatak[Number(b.textContent.replace('Oda ', ''))] = h.querySelectorAll('.yatak-hucre').length;
+    });
+    const katlar = [...document.querySelectorAll('main')].map(m => m.innerText)
+      .join('\n').match(/\d\. KAT/g) || [];
+    return { satirlar, yatak, katlar };
+  });
+  d.bekle(JSON.stringify(krokiDuzen.satirlar) === JSON.stringify(
+    [[12, 15, 16], [13, 14, 17], [21, 23, 24, 27, 29], [22, 25, 26, 28, null],
+     [31, 33, 34, 37, 38], [32, 35, 36, 39, null]]),
+    'kroki düzeni (kat/satır/sütun) kurumun krokisiyle birebir aynı',
+    JSON.stringify(krokiDuzen.satirlar));
+  d.bekle(krokiDuzen.katlar.join(' ') === '1. KAT 2. KAT 3. KAT', 'üç kat krokideki sırayla yazılı',
+    krokiDuzen.katlar.join(' '));
+  const beklenenYatak = { 12:2, 13:2, 14:2, 15:2, 16:1, 17:3, 21:1, 22:1, 23:2, 24:2, 25:2, 26:2,
+                          27:2, 28:3, 29:1, 31:2, 32:2, 33:2, 34:2, 35:2, 36:2, 37:2, 38:1, 39:3 };
+  const yatakFark = Object.entries(beklenenYatak).filter(([no, adet]) => krokiDuzen.yatak[no] !== adet);
+  d.bekle(yatakFark.length === 0, 'her odanın yatak sayısı krokideki gibi (24 oda / 46 yatak)',
+    yatakFark.map(([no, adet]) => `Oda ${no}: ${krokiDuzen.yatak[no]} ≠ ${adet}`).join(' · '));
+  d.bekle(Object.keys(krokiDuzen.yatak).length === 24, 'krokide 24 oda var',
+    String(Object.keys(krokiDuzen.yatak).length));
+
+  /* Krokide de misafir adları yazıyor (kroki, yatak listesiyle aynı veriyi gösterir) */
+  const krokiDolu = await p.locator('.yatak-hucre[title*="— Dolu"]').first();
+  d.bekle(await krokiDolu.count() > 0 && (await krokiDolu.innerText()).trim().length > 1,
+    'krokide dolu yatakta misafirin adı yazıyor', (await krokiDolu.innerText()).replace(/\n/g, ' '));
+
+  /* Çıktı: aynı düzen + tarih başlığı */
+  await p.getByRole('button', { name: /Krokiyi Yazdır/ }).click(); await p.waitForTimeout(700);
+  const cikti = await p.locator('.yazdir-alan').innerText();
+  d.bekle(/TÜRKİYE TAŞKÖMÜRÜ KURUMU ANKARA MİSAFİRHANESİ/.test(cikti), 'çıktının başlığı kroki başlığıyla aynı');
+  d.bekle(/TARİHLİ ODA DURUMU/.test(cikti), 'çıktıda «… TARİHLİ ODA DURUMU» satırı var');
+  d.bekle((cikti.match(/Oda \d+/g) || []).length === 24, 'çıktıda 24 odanın tamamı var',
+    String((cikti.match(/Oda \d+/g) || []).length));
+  d.bekle(/1\. KAT[\s\S]*2\. KAT[\s\S]*3\. KAT/.test(cikti), 'çıktı kat sırasını koruyor');
+  await pencereKapat(p);
+  await p.waitForTimeout(400);
+  await p.getByRole('button', { name: 'İsimli', exact: true }).click(); await p.waitForTimeout(400);
+
+  /* Krokisi olmayan misafirhanede görünüm sunulmaz */
+  await tesisSec(p, 'Yayla Konağı');
+  await sayfa(p, 'Odalar');
+  d.bekle(await p.getByRole('button', { name: 'Kroki', exact: true }).count() === 0,
+    'krokisi tanımlı olmayan misafirhanede «Kroki» görünümü çıkmıyor');
+  await tesisSec(p, 'Ankara Misafirhanesi');
+  await sayfa(p, 'Odalar');
+
   /* tarih ileri alınca harita değişiyor mu */
   const bugunDolu = await p.locator('.yatak-hucre[title*="— Dolu"]').count();
   const haritaTarih = p.getByPlaceholder('GG.AA.YYYY').first();

@@ -89,12 +89,19 @@ try {
   const gecmisAltlik = await g2.altlik();
   d.bekle(/statü: ?Talep/i.test(gecmisAltlik.replace(/\s+/g, ' ')),
     'geçmiş tarihli kayıt yataksızken «Talep» statüsünde', (gecmisAltlik.match(/statü:.*/i) || [''])[0]);
-  /* yatak verilince geçmiş tarihli kayıt doğrudan konaklamaya/çıkışa geçmeli */
+  /* yatak verilince geçmiş tarihli kayıt doğrudan konaklamaya/çıkışa geçmeli.
+     Geçmiş geceler dolu olabilir (gerçek kapasite): o zaman motor yatak bulamaz
+     ve nedenini yazar — kayıt «Talep» kalır, bu da doğru davranıştır. */
   await p.getByRole('button', { name: /Uygun Yatağı Otomatik Bul/ }).click();
   await p.waitForTimeout(700);
-  const gecmisYatakli = await g2.altlik();
-  d.bekle(/statü: ?(Konaklıyor|Çıkış)/i.test(gecmisYatakli.replace(/\s+/g, ' ')),
-    'geçmiş tarihli kayıt yatak verilince «Konaklıyor»/«Çıkış» oluyor', (gecmisYatakli.match(/statü:.*/i) || [''])[0]);
+  const gecmisYatakli = (await g2.altlik()).replace(/\s+/g, ' ');
+  if (/statü: ?(Konaklıyor|Çıkış)/i.test(gecmisYatakli)) {
+    d.ok('geçmiş tarihli kayıt yatak verilince «Konaklıyor»/«Çıkış» oluyor');
+  } else {
+    d.bekle(/yatak yok|müsait yatak|uygun .*yatak/i.test(gecmisYatakli),
+      'geçmiş gecelerde boş yatak yoksa motor gerekçesini yazıyor (kayıt «Talep» kalır)',
+      (gecmisYatakli.match(/[^.]*yatak yok[^.]*/i) || [''])[0].slice(0, 90));
+  }
   await kaydet(p, g2);
 
   /* b) kişi sayısını 1'e düşürüp tekrar artırmak — satırlar tutarlı kalmalı */

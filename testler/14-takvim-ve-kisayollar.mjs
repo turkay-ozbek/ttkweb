@@ -66,7 +66,17 @@ try {
   const gelisDeger = await p.getByLabel(/Geliş Tarihi/).inputValue();
   const cikisTakvimi = form.locator('label:has-text("Çıkış Tarihi") button[aria-label="Takvimden seç"]');
   await cikisTakvimi.click(); await p.waitForTimeout(500);
+  /* Çıkış takvimi varsayılan olarak çıkış tarihinin ayını açar; geliş başka bir
+     aydaysa (ör. 30.09 → 01.10) önce geliş ayına dönülür. */
+  const AY_ADI = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   const gelisGunu = Number(gelisDeger.slice(0, 2));
+  const gelisAyi = `${AY_ADI[Number(gelisDeger.slice(3, 5)) - 1]} ${gelisDeger.slice(6)}`;
+  for (let i = 0; i < 14; i++) {
+    if ((await takvim.innerText()).includes(gelisAyi)) break;
+    await takvim.getByRole('button', { name: '◀', exact: true }).click();
+    await p.waitForTimeout(150);
+  }
+  d.bekle((await takvim.innerText()).includes(gelisAyi), 'takvim geliş ayına dönebiliyor', gelisAyi);
   const kapaliGun = takvim.locator('button').filter({ hasText: new RegExp(`^${gelisGunu}$`) }).first();
   d.bekle(await kapaliGun.isDisabled(), 'çıkış takviminde geliş günü ve öncesi seçilemiyor');
   await p.keyboard.press('Escape'); await p.waitForTimeout(300);

@@ -30,7 +30,7 @@ arayüz «bağlantı bekleniyor» der ve girilen form içeriğini yerelde saklar
 **Kısa yanıt: günlük işlerin yaklaşık %80'inde evet, üç ekranda hayır — ve bu
 bilinçli bir tasarım kararıdır.** Telefon, masaüstünün yerine geçen bir kopya değil,
 **«o anda yapılması gereken işi yapabilen»** bir uçtur. Bir rezervasyonu telefondan
-açmak masaüstü kadar hızlıdır; 240 yataklık oda haritasında toplu yerleştirme yapmak
+açmak masaüstü kadar hızlıdır; onlarca yataklık oda haritasında toplu yerleştirme yapmak
 değildir — ve zaten telefonda yapılması beklenen bir iş de değildir.
 
 ### 2.1 İş bazında karşılaştırma
@@ -45,7 +45,7 @@ değildir — ve zaten telefonda yapılması beklenen bir iş de değildir.
 | Tahsilat girişi | ✅ Eşdeğer | Tutar + tarih; kısa form |
 | Talep listesinde arama / süzgeç | 🟡 Çalışır, dar | Tablo kendi kutusunda yatay kayar; süzgeç kutuları alt satıra iner |
 | Yatak listesi (13 sütun) | 🟡 Okunur, yazdırılamaz | Kaydırmalı okunur; **yazdırma masaüstü işidir**, telefonda PDF olarak paylaşılır |
-| Oda haritasına yerleştirme (240 yatak) | ❌ **Zayıf** | Yatak hücreleri parmak için küçük; sürükle-bırak dokunmatikte güvenilir değil. **Karşılığı:** «misafire dokun → yatağa dokun» akışı, «✋ Listeden Seç» penceresi ve «⚙ Otomatik Yerleştir» — üçü de telefonda çalışır |
+| Oda haritasına yerleştirme (oda haritası / kroki) | ❌ **Zayıf** | Yatak hücreleri parmak için küçük; sürükle-bırak dokunmatikte güvenilir değil. **Karşılığı:** «misafire dokun → yatağa dokun» akışı, «✋ Listeden Seç» penceresi ve «⚙ Otomatik Yerleştir» — üçü de telefonda çalışır |
 | 30 günlük doluluk takvimi | ❌ Zayıf | Şerit yatay kayar; telefonda tek günlük harita görünümü tercih edilmeli |
 | Ay sonu raporu / çok sayfalı PDF | 🟡 Okunur | Üretilir ve paylaşılır; incelemesi masaüstünde yapılır |
 | 10 kişilik grubun veri girişi | ❌ **Masaüstü işi** | Onlarca alan; telefonda yapılabilir ama verimsizdir |
