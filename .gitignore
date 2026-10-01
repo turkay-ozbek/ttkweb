@@ -3,6 +3,7 @@
 
 # Bağımlılıklar ve derleme çıktıları
 node_modules/
+node_modules
 dist/
 build/
 
@@ -18,3 +19,11 @@ Thumbs.db
 *.tmp
 testler/cikti/
 kroki-*.png
+parti*.png
+
+# CDN erişimi olmayan ortamda koşum için üretilen yerel test paketi
+# (hazirla.py + tailwindcss çıktısı; kaynak yalnız misafirhane-prototip.html'dir)
+test.html
+tw.css
+lib/
+lib

@@ -45,6 +45,11 @@ Bir talepteki misafirler konaklama gruplarına ayrılır:
    oda elenir. Aile grubunda oda tamamen boş olmalıdır.
 4. **Protokol odası:** Protokol odaları yalnız protokol talebine açılır.
 5. **Kapasite:** Odada, grubun tamamı için yeterli sayıda müsait yatak olmalıdır.
+6. **Servis dışı yatak:** Arıza, tadilat ya da boya için kapatılmış yatak, kapatma
+   aralığının herhangi bir gecesi talebin tarihleriyle kesişiyorsa elenir. Arıza
+   kayıtları doluluk haritasına temizlik bloğu gibi işlenir (`{ariza: ...}` damgasıyla),
+   bu yüzden motorun kendisinde ayrı bir dal gerekmez: süreklilik denetimi arızalı
+   yatağı kendiliğinden atlar.
 
 ## 4. Skorlama
 

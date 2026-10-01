@@ -23,11 +23,21 @@ export function defter(baslik) {
 }
 
 /* Tarayıcıyı aç, sayfayı yükle, konsol/JS hatalarını defterle */
-export async function tarayici(d, { genislik = 1680, yukseklik = 1050 } = {}) {
+export async function tarayici(d, { genislik = 1680, yukseklik = 1050, ayar = null } = {}) {
   const b = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
   const p = await b.newPage({ viewport: { width: genislik, height: yukseklik } });
+  /* Çalışma ayarları (oturum süresi, giriş/çıkış saati) uygulama yüklenmeden
+     önce window.TTK_AYAR ile geçersiz kılınır; testte kısa süreler kullanılır. */
+  if (ayar) await p.addInitScript(x => { window.TTK_AYAR = x; }, ayar);
   p.on('pageerror', e => d.hata('JS hatası: ' + e.message));
-  p.on('console', m => { if (m.type() === 'error') d.hata('konsol: ' + m.text()); });
+  /* Babel'in «500KB üzeri betik güzel biçimlendirilmedi» notu bir hata değil,
+     yalnız derleyici çıktısının biçimiyle ilgilidir; kurulumda betik önceden
+     derlendiği için hiç çıkmaz. Diğer bütün konsol hataları deftere yazılır. */
+  p.on('console', m => {
+    if (m.type() !== 'error') return;
+    if (/\[BABEL\].*deoptimised the styling/i.test(m.text())) return;
+    d.hata('konsol: ' + m.text());
+  });
   await p.goto(URL_);
   await p.waitForSelector('text=TTKNET', { timeout: 20000 });
   return { b, p };
@@ -62,6 +72,7 @@ export const CEKMECE_ADI = {
   'Yatak Listesi': 'Yatak Listesi', 'Talepler': 'Rezervasyon Talepleri', 'Dekont/Onay': 'Dekont ve Onay',
   'Tahsilat': 'Peşinat ve Tahsilat', 'Statü': 'Statü Takibi', 'Kahvaltı': 'Kahvaltı Takibi',
   'Ay Sonu': 'Ay Sonu Belgesi', 'Kullanıcılar': 'Kullanıcı ve Yetki', 'Ana Menü': 'Ana Menü',
+  'Kat Hizmetleri': 'Kat Hizmetleri', 'Raporlar': 'Yönetim Raporları', 'Denetim': 'Denetim İzi',
 };
 export const sayfa = async (p, ad) => {
   const serit = p.locator('nav').getByRole('button', { name: ad, exact: true });
@@ -79,7 +90,11 @@ export const sayfa = async (p, ad) => {
 export const sayfaVar = async (p, ad) => {
   const serit = p.locator('nav').getByRole('button', { name: ad, exact: true });
   if (await serit.count() && await serit.first().isVisible()) return true;
-  await p.locator('nav button').first().click();
+  /* Geniş ekranda şerit açıktır; sayfa şeritte yoksa o rol için kapalıdır.
+     Çekmece düğmesi yalnız telefonda görünür, görünmüyorsa açmaya çalışmayız. */
+  const cekmece = p.locator('nav button').first();
+  if (!(await cekmece.isVisible())) return false;
+  await cekmece.click();
   await p.waitForTimeout(250);
   const tam = CEKMECE_ADI[ad] || ad;
   const var_ = await p.locator('.fixed.inset-0').getByRole('button', { name: new RegExp('^' + tam) }).count() > 0;
@@ -185,4 +200,4 @@ export const satirSayisi = (p, kapsam = 'main') => veriSatirlari(p, kapsam).coun
 /* Sayfada yatay taşma var mı? */
 export const tasma = (p) => p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
-export const SAYFALAR = ['Özet', 'Takvim', 'Odalar', 'Yatak Listesi', 'Talepler', 'Dekont/Onay', 'Tahsilat', 'Statü', 'Kullanıcılar'];
+export const SAYFALAR = ['Özet', 'Takvim', 'Odalar', 'Yatak Listesi', 'Talepler', 'Dekont/Onay', 'Tahsilat', 'Statü', 'Raporlar', 'Denetim', 'Kullanıcılar'];

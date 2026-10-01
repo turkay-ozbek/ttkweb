@@ -229,8 +229,13 @@ try {
   const uzatilacak = await taleplerdeAra(p, 'TAHSILAT TAM', { gunSonra: 60 });
   if (await uzatilacak.count()) {
     await uzatilacak.click(); await p.waitForTimeout(400);
-    const once = (await govde(p)).match(/(\d{2}\.\d{2}\.\d{4}) – (\d{2}\.\d{2}\.\d{4})/);
-    d.bekle(!!once, 'seçili kaydın geliş–çıkış aralığı panelde görünüyor');
+    /* Panel artık saatleri de yazıyor: «01.10.2026 14:00 – 03.10.2026 12:00» */
+    const g08 = await govde(p);
+    const once = g08.match(/(\d{2}\.\d{2}\.\d{4})(?: \d{2}:\d{2})? – (\d{2}\.\d{2}\.\d{4})/);
+    d.bekle(!!once, 'seçili kaydın geliş–çıkış aralığı panelde görünüyor',
+      (g08.match(/Geliş[^\n]*\n[^\n]*/) || [''])[0]);
+    d.bekle(/\d{2}\.\d{2}\.\d{4} \d{2}:\d{2} – \d{2}\.\d{2}\.\d{4} \d{2}:\d{2}/.test(g08),
+      'panelde giriş ve çıkış saatleri de yazıyor');
   }
 
   /* ═══ 5.5 Süresi dolan kayıtların toplu iptali ═══ */

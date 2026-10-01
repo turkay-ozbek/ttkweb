@@ -53,6 +53,10 @@ Ekran görüntüleri ve testin ürettiği dosyalar `testler/cikti/` altına yaz�
 | `12-mobil.mjs` | 390 px'te on bir sayfada taşma, tablonun kendi kutusunda kayması, formun tek sütuna düşmesi, rakam klavyesi, telefondan uçtan uca kayıt, dokunma hedefi yüksekliği, yardımcının ekran içinde kalması |
 | `13-yeni-islevler.mjs` | Tc/telefon/IBAN giriş denetimi ve fazla rakam uyarısı, SMS gönderimi ve metni, kapora muafiyeti (kilit → muafiyet → yerleştirme), talep süzgecinin kalıcılığı ve «süzgeci temizle», yatak listesi yazdırma (dikey/yatay @page), kahvaltı yoklaması ve rol sınırı, ay sonu belgesi akışı ve üretilen PDF'in içeriği |
 | `14-takvim-ve-kisayollar.mjs` | Açılır takvim (panel, ay gezinme, gün seçimi, kısayollar, Esc, kaymama, sınırlı tarih), süre kısayolları, daha önce kalmış misafiri bulma ve satırın doldurulması, talep listesi statü çipleri |
+| `15-geri-al-oturum-kisayol.mjs` | Geri alma şeridi (tahsis kaldırma → geri al), klavye kısayolları (`?` `N` `B` `G` ve yazı alanında susması), beş sayfada Excel/CSV düğmesi, indirilen dosyanın BOM/`;`/CRLF biçimi, kısa ayarla oturum zaman aşımı uyarısı ve oturumun kapanması |
+| `16-ariza-temizlik-saat.mjs` | «dolu + boş + temizlikte + servis dışı = kapasite» eşitliği, yatağı servis dışı bırakma (gerekçe zorunlu) ve hizmete alma, sayaçların hareketi, kat hizmetleri dört durum çipi ve işlem saati, kat görevlisi kalıcılığı, giriş/çıkış saatlerinin kayda ve detaya işlenmesi |
+| `17-uzatma-nakil-grup.mjs` | Uzatma penceresinin yatak uygunluk denetimi, nakil ve kayıt geçmişi, grup/blok kaydı (boş adlarla kayıt, 👥 işareti, isim bildirimi, kısmi serbest bırakma), bekleme listesi (ekleme, boş yatak sayımı, rozet, çıkarma), misafir kartı (geçmiş özeti, not kaydı, ★ rozeti) |
+| `18-rapor-denetim-bildirim.mjs` | Bekleyen işler zili (rozet sayısı = satır toplamı, satırın sayfaya götürmesi), yönetim raporları (altı KPI, karşılaştırma tablosu ve toplam, dönem kısayolları, kırılım kartları, CSV ve yazdırma), denetim izi (kaynak/kullanıcı/metin süzgeçleri), rapor ve denetim sayfalarının rol sınırları |
 | `tumu.mjs` | Hepsini sırayla koşturur, özet tablo basar |
 
 ## Sürükle-bırak nasıl test ediliyor?
@@ -81,7 +85,12 @@ ve sonuç toplama işlerini içerir. Yeni test yazarken oradan başlayın. İki 
 - **Tablolarda boş durum satırı vardır** (`<td colspan>`). Satır sayarken
   `satirSayisi(p)` / `veriSatirlari(p)` kullanın.
 - **Başlıklar CSS ile büyük harfe çevrilir**; Türkçe `İ` JavaScript'in `/i` bayrağıyla
-  eşleşmez. Desenlerinizi bu harfi içermeyecek biçimde yazın.
+  eşleşmez. Kart başlığı, KPI etiketi ve tablo başlığı arayacaksanız deseni büyük harfle ve
+  `[Iİ]` biçiminde yazın (örn. `/M[Iİ]SAF[Iİ]RHANE KARŞILAŞTIRMASI/`).
+- **Girdi alanlarının içeriği `innerText`'e girmez.** Kat görevlisi gibi `<input>` değerlerini
+  `inputValue()` ya da `evaluateAll` ile okuyun.
+- **Çalışma ayarları değiştirilebilir:** `tarayici(d, { ayar: { oturumBostaDk: 0.08 } })` sayfayı
+  yüklemeden önce `window.TTK_AYAR` yazar; oturum zaman aşımı gibi uzun süreler böyle kısaltılır.
 
 ## Dikkat
 

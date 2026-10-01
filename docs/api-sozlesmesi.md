@@ -81,6 +81,11 @@ Web Prototip (React)  ──► REST API ─┘
 | `PLAKA_NO` | VARCHAR2(15) | MSFH0100 "Plaka No" |
 | `PROTOKOL_MU` | CHAR(1) | **yeni** |
 | `AILE_MI` | CHAR(1) | **yeni** — birlikte kalma talebi |
+| `BLOK_MU` | CHAR(1) | **yeni** — grup/blok kaydı: misafir adları sonra bildirilecek |
+| `GIRIS_SAAT` | VARCHAR2(5) | **yeni** — standart 14:00 |
+| `CIKIS_SAAT` | VARCHAR2(5) | **yeni** — standart 12:00 |
+| `ERKEN_GIRIS_MI` | CHAR(1) | **yeni** |
+| `GEC_CIKIS_MI` | CHAR(1) | **yeni** — kat hizmetleri planını etkiler |
 | `STATU` | VARCHAR2(20) | **yeni** — TALEP / PESINAT_BEKLENIYOR / ONAYLI / KONAKLIYOR / CIKIS / IPTAL |
 | `KAYIT_YAPAN` | VARCHAR2(20) | MSFH0100 "Kayıt Yapan" (ör. TTK7719) |
 | `KAYIT_TARIHI` | DATE | |
@@ -147,6 +152,57 @@ statü geçişleri ve API uçları için bkz. [`kapora-onay-akisi.md`](kapora-on
 | `ESKI_STATU` / `YENI_STATU` | VARCHAR2(20) | |
 | `ACIKLAMA` | VARCHAR2(400) | "Peşinat süresi doldu — otomatik iptal" gibi |
 | `KULLANICI` | VARCHAR2(20) | TTK7719 / SİSTEM |
+
+### 2.8.1 Günlük işleyiş tabloları (yeni)
+
+**MSFH_ODA_TEMIZLIK** — kat hizmetleri (MSFH-W13)
+
+| Alan | Tip | Açıklama |
+|---|---|---|
+| `MISAFIRHANE_KODU` / `TARIH` / `ODA_ID` | PK (üçlü) | Gün ve oda başına bir satır |
+| `DURUM` | VARCHAR2(14) | BEKLIYOR / TEMIZLENIYOR / TAMAM / HAZIR |
+| `GOREVLI` | VARCHAR2(80) | Kat görevlisi adı |
+| `ISLEM_SAATI` | VARCHAR2(5) | Durum değiştiğinde yazılır |
+| `KULLANICI` | VARCHAR2(20) | |
+
+**MSFH_YATAK_ARIZA** — servis dışı yatak
+
+| Alan | Tip | Açıklama |
+|---|---|---|
+| `ARIZA_ID` | NUMBER PK | |
+| `YATAK_ID` | NUMBER FK | |
+| `BAS_TARIH` / `SON_TARIH` | DATE | Yerleştirmeye kapalı aralık |
+| `GEREKCE` | VARCHAR2(200) | Zorunlu |
+| `ACAN` / `ACILMA_TARIHI` | VARCHAR2(20) / DATE | |
+| `KAPANDI_MI` / `KAPATAN` / `KAPANMA_TARIHI` | CHAR(1) / VARCHAR2(20) / DATE | «Hizmete Al» |
+
+**MSFH_BEKLEME** — bekleme listesi
+
+| Alan | Tip | Açıklama |
+|---|---|---|
+| `BEKLEME_ID` | NUMBER PK | |
+| `REZ_ID` | NUMBER FK | Kayıt iptal edilmez, statüsü değişmez |
+| `MISAFIRHANE_KODU` | VARCHAR2(10) FK | |
+| `BAS_TARIH` / `SON_TARIH` | DATE | Aranan aralık |
+| `KISI_SAYISI` | NUMBER | Yer bekleyen kişi |
+| `NOT_METNI` | VARCHAR2(200) | |
+| `ACAN` / `ACILMA_TARIHI` | VARCHAR2(20) / DATE | |
+| `COZULDU_MU` | CHAR(1) | Yerleştirildi ya da listeden çıkarıldı |
+
+**MSFH_MISAFIR_NOT** — misafir kartı (CRM)
+
+| Alan | Tip | Açıklama |
+|---|---|---|
+| `TC_KIMLIK_NO` | VARCHAR2(11) PK | Tc kimlik no yoksa normalleştirilmiş ad anahtarı |
+| `VIP_MI` | CHAR(1) | Öncelikli misafir (★) |
+| `KARA_LISTE_MI` | CHAR(1) | Dikkat işareti (⛔) |
+| `TERCIH` | VARCHAR2(160) | Oda / konaklama tercihi |
+| `NOT_METNI` | VARCHAR2(400) | Kurum içi not — SMS ve belgelerde görünmez |
+| `GUNCELLEYEN` / `GUNCELLEME_TARIHI` | VARCHAR2(20) / DATE | |
+
+> Blok (grup) kaydında `MSFH_REZ_MISAFIR` satırı yatakla birlikte açılır, `ADI_SOYADI` ve
+> `TC_KIMLIK_NO` boş kalır. Girişte ikisi de zorunlu olduğundan boşluk yalnız geliş tarihinden
+> önce geçerlidir; bu kural uygulama katmanında denetlenir.
 
 ### 2.9 Mevcut ancak prototip kapsamı dışındaki tablolar
 
@@ -346,8 +402,22 @@ sunucuda (API ve PL/SQL paketlerinde) tekrarlanmalıdır.**
 | `pesinat.tahsilat` | Peşinat tahsilatı girme | ✓ | ✓ | — | ✓ |
 | `pesinat.kural` | Peşinat kuralını değiştirme | ✓ | ✓ | — | — |
 | `pesinat.toplu_iptal` | Süresi dolanları toplu iptal | ✓ | ✓ | — | ✓ |
+| `rezervasyon.dekont` | Kapora dekontu yükleme | ✓ | ✓ | ✓ | ✓ |
+| `rezervasyon.onay` | Dekont inceleyip rezervasyonu onaylama | ✓ | ✓ | — | — |
+| `rezervasyon.kapora_muafiyet` | Kapora beklemeden yerleştirme (öncelikli misafir) | ✓ | ✓ | — | — |
+| `kahvalti.isle` | Kahvaltı yoklamasını işleme | ✓ | ✓ | ✓ | — |
+| `oda.ariza` | Yatağı servis dışı bırakma / arıza kaydı | ✓ | ✓ | ✓ | — |
+| `temizlik.isle` | Kat hizmetleri (temizlik) durumu işleme | ✓ | ✓ | ✓ | — |
+| `rapor.talep` | Ay sonu belgesini isteme | ✓ | ✓ | — | ✓ |
+| `rapor.hazirla` | Ay sonu belgesini hazırlama | ✓ | ✓ | ✓ | — |
+| `rapor.yonetim` | Yönetim raporlarını görüntüleme | ✓ | ✓ | ✓ | ✓ |
+| `sistem.denetim` | Denetim izini görüntüleme | ✓ | ✓ | — | — |
 | `sistem.tarih` | Sistem tarihini ilerletme (demo aracı) | ✓ | ✓ | — | — |
 | `sistem.kullanici` | Kullanıcı ve yetki yönetimi | ✓ | — | — | — |
+
+> Toplam 22 yetki kodu. Prototipteki `IZINLER` dizisi bu tablonun tek kaynağıdır;
+> uygulamada yetki denetimi `yetkiVar(kullanici, kod)` ile yapılır, kurulumda aynı denetim
+> sunucu tarafında yinelenir.
 
 ### 6.3 Tablolar
 

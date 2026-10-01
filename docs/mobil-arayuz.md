@@ -48,7 +48,13 @@ değildir — ve zaten telefonda yapılması beklenen bir iş de değildir.
 | Oda haritasına yerleştirme (oda haritası / kroki) | ❌ **Zayıf** | Yatak hücreleri parmak için küçük; sürükle-bırak dokunmatikte güvenilir değil. **Karşılığı:** «misafire dokun → yatağa dokun» akışı, «✋ Listeden Seç» penceresi ve «⚙ Otomatik Yerleştir» — üçü de telefonda çalışır |
 | Doluluk takvimi şeridi | 🟡 Orta | 30 günlük şerit telefonda yatay kayar; **7 gün** seçeneğiyle ekrana sığar ve okunaklı olur |
 | Ay sonu raporu / çok sayfalı PDF | 🟡 Okunur | Üretilir ve paylaşılır; incelemesi masaüstünde yapılır |
-| 10 kişilik grubun veri girişi | ❌ **Masaüstü işi** | Onlarca alan; telefonda yapılabilir ama verimsizdir |
+| 10 kişilik grubun veri girişi | ❌ **Masaüstü işi** | Onlarca alan; telefonda yapılabilir ama verimsizdir. **Karşılığı:** «Grup / blok kaydı» ile yataklar telefondan ayrılır, adlar sonra masaüstünden girilir |
+| Kat hizmetleri (temizlik) işleme | ✅ **Telefon daha iyi** | Kat görevlisi odadan çıkarken durumu telefondan çipe basarak işler; masaya dönmek gerekmez |
+| Yatağı servis dışı bırakma | ✅ Eşdeğer | Yatağa dokun → «⛔ Servis Dışı Bırak» → tarih ve gerekçe; kısa form |
+| Bekleyen işleri görme | ✅ **Telefon daha iyi** | Üst banttaki zil tek dokunuşla «bugün neye bakmam gerekiyor» listesini verir |
+| Misafir kartına bakma | ✅ Eşdeğer | Ada dokun → geçmiş, tercih ve uyarı notu tam ekran pencerede |
+| Yönetim raporları | 🟡 Okunur | KPI kutuları tek sütuna iner; karşılaştırma tablosu kendi kutusunda kayar. Yazdırma masaüstü işidir |
+| Denetim izi sorgulama | 🟡 Çalışır, dar | Süzgeç kutuları alt satıra iner; uzun işlem metinleri kart görünümünde okunur |
 
 Bu tablonun özeti: **kayıt alma, onaylama ve sorgulama telefonda tamdır; toplu
 düzenleme ve görsel planlama masaüstünde kalır.**
@@ -141,7 +147,7 @@ Ayrıntı: [`mobil-guvenlik.md`](mobil-guvenlik.md) § 3.
 13. **Yardımcı (Madenci).** Düğme telefonda 3,5 rem ve sağ alt köşede; tanıtım baloncuğu
     telefonda çıkmıyor, pencere alttan tam genişlikte açılıyor.
 
-**Ölçüm:** 390 × 844 px'de (iPhone 14 boyutu) on bir sayfanın hiçbirinde yatay taşma
+**Ölçüm:** 390 × 844 px'de (iPhone 14 boyutu) on üç sayfanın hiçbirinde yatay taşma
 yok; ölçüm `testler/12-mobil.mjs` içinde otomatik koşuyor (sayfa çekmecesi ve kart
 görünümü denetimleriyle birlikte).
 
@@ -175,8 +181,9 @@ Telefonda tek elle yapılabilmesi için:
 | Rol | Telefonda en çok yapacağı | Arayüzde önceliklendirilen |
 |---|---|---|
 | **Misafirhane müdürü** | Yeni kayıt açma, dekont onaylama, doluluk sorma | «+ Yeni Kayıt», «Dekont/Onay», yardımcıya «bugün kaç yatak boş?» |
-| **Resepsiyon** | Kahvaltı yoklaması, giriş-çıkış | «Kahvaltı» sayfası tek sütunlu ve dokunmatik kutucuklu |
-| **Muhasebe** | Tahsilat girme, belge isteme | «Tahsilat» satır işlemleri, «Ay Sonu Belgesi» |
+| **Resepsiyon** | Kahvaltı yoklaması, giriş-çıkış, oda temizliği | «Kahvaltı» ve «Kat Hizmetleri» sayfaları tek sütunlu ve dokunmatik kutucuklu/çipli |
+| **Kat görevlisi** (kurulumda ayrı rol) | Temizlik durumunu işleme | «Kat Hizmetleri» — dört çip, büyük dokunma hedefi, oda sırasına göre liste |
+| **Muhasebe** | Tahsilat girme, belge isteme, dönem raporu | «Tahsilat» satır işlemleri, «Ay Sonu Belgesi», «Yönetim Raporları» KPI kutuları |
 
 ---
 

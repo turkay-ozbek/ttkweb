@@ -43,7 +43,8 @@ ekranındadır; ayrıntısı [`docs/api-sozlesmesi.md`](docs/api-sozlesmesi.md) 
 
 ## Sayfalar
 
-Uygulama ana menüden açılan on odaklı sayfadan oluşur; her sayfa tek bir işi yapar.
+Uygulama ana menüden açılan on dört odaklı sayfadan oluşur; her sayfa tek bir işi yapar
+(kullanım rehberi şeritte görünmez, üst banttaki düğmeden açılır).
 
 | Kod | Sayfa | İçerik |
 |---|---|---|
@@ -58,6 +59,9 @@ Uygulama ana menüden açılan on odaklı sayfadan oluşur; her sayfa tek bir i�
 | MSFH-W09 | **Kullanıcı ve Yetki** (Admin) | Kullanıcılar, roller, misafirhane yetkisi ve yetki matrisi |
 | MSFH-W11 | **Kahvaltı Takibi** | Günlük kahvaltı yoklaması — kahvaltıya inmeyen misafirlerin işaretlenmesi (resepsiyon işler, muhasebe görür) |
 | MSFH-W12 | **Ay Sonu Belgesi** | Muhasebe ister, resepsiyon hazırlar; konaklama gecesi, kahvaltı ve tahsilat sayılarını içeren PDF |
+| MSFH-W13 | **Kat Hizmetleri** | Günlük temizlik listesi: çıkış temizliği / günlük temizlik ayrımı, dört durumlu çip (Bekliyor → Temizleniyor → Temizlendi → Hazır), kat görevlisi ataması, işlem saati; CSV ve A4 çıktı |
+| MSFH-W14 | **Yönetim Raporları** | Seçilen dönem için yatak-gece doluluğu, misafir ve misafir-gece sayısı, tahsilat, ortalama konaklama süresi, iptal oranı; misafirhane karşılaştırması, geliş nedeni / kurum / süre kırılımları; CSV ve A4 çıktı |
+| MSFH-W15 | **Denetim İzi** | Bütün kayıt hareketleri ve sistem günlüğü tek listede; tarih aralığı, kullanıcı, kaynak ve serbest metin süzgeci; CSV. Yalnız okunur |
 | MSFH-W10 | **Kullanım Rehberi** | Adım adım anlatım: kayıt açma, kapora, dekont onayı, yerleştirme, tahsilat, giriş-çıkış, rol yetkileri ve SSS (yalnız üst banttaki «Rehber» düğmesinden açılır) |
 
 > Form kodları (MSFH-Wxx) yalnız bu belgede ve API sözleşmesinde kullanılır; kullanıcı
@@ -66,11 +70,29 @@ Uygulama ana menüden açılan on odaklı sayfadan oluşur; her sayfa tek bir i�
 ### Üst bant ve misafirhane seçimi
 
 Üst bant sadedir: TTK logosu, **«&lt;Misafirhane&gt; Bilgi Sistemi»** başlığı (oturum açan
-kullanıcının çalıştığı misafirhaneye göre yazılır), DEMO rozeti, **Rehber** düğmesi ve
-oturumu kapatma simgesi. Birden çok misafirhaneye yetkili kullanıcılar misafirhaneyi
+kullanıcının çalıştığı misafirhaneye göre yazılır), DEMO rozeti, **bekleyen işler zili**,
+**Rehber** düğmesi ve oturumu kapatma simgesi. Birden çok misafirhaneye yetkili kullanıcılar misafirhaneyi
 **ana menünün üstündeki düğme sırasından** veya «Bugünkü Durum» sayfasındaki karşılaştırma
 tablosundan değiştirir. Çalışılan misafirhane her sayfanın başlığında yazar
 (örn. «Ankara Misafirhanesi Rezervasyon Talepleri»).
+
+## Günlük işi kolaylaştıran ortak öğeler
+
+Bu öğeler tek bir sayfaya ait değildir; uygulamanın her yerinde aynı biçimde çalışır.
+
+| Öğe | Nerede | Ne yapar |
+|---|---|---|
+| **Bekleyen işler zili** | Üst bandın sağı · **B** tuşu | Seçili misafirhanede bekleyen bütün işleri tek listede toplar: dekont onayı, süresi dolan / bugün son günü olan kapora, bugünün giriş-çıkışları, üç gün içinde yerleştirilmemiş talepler, adı bildirilmemiş grup yatakları, bekleme listesinde yatak çıkanlar, servis dışı yataklar, çıkış temizliği bekleyen odalar ve bekleyen ay sonu belge talebi. Satır sayısı zilde rozet olarak görünür (acil varsa kırmızı), satıra basmak ilgili sayfayı açar. Liste anlık hesaplanır — iş bitince kendiliğinden düşer |
+| **Geri Al şeridi** | Ekranın altı, işlemden sonra 12 saniye | Tahsis kaldırma, iptal, uzatma, nakil, toplu yerleştirme, servis dışı bırakma ve bloktan yatak serbest bırakma işlemleri geri alınabilir. Şerit `role="status"` taşır, ekran okuyucuya da okunur |
+| **Klavye kısayolları** | Her yerde · **?** listeyi açar | `Ctrl + K` işlem araması, `N` yeni kayıt, `/` sayfadaki arama kutusu, `B` bekleyen işler, `G` ana menü, `R` rehber, `↑ ↓` talep listesinde satır, `↵` manuel yerleştirme, `Esc` açık pencere. Yazı alanında ya da pencere açıkken susar |
+| **Excel/CSV dışa aktarma** | Yatak listesi, talepler, tahsilat, kahvaltı, kat hizmetleri, dönem raporu, denetim izi, bekleme listesi | Ekrandaki süzgeçle sınırlı dosya; UTF-8 BOM + `;` ayracı + CRLF ile Excel'in Türkçe sürümünde doğru açılır |
+| **Oturum zaman aşımı** | Ortak kullanılan resepsiyon bilgisayarı için | 15 dakika işlem yapılmazsa oturum kapanır; 2 dakika önce geri sayımlı uyarı çıkar («Devam Et» süreyi sıfırlar). Süreler `AYAR` nesnesindedir, kurulumda kurum politikasına göre değişir |
+| **Misafir kartı** | Misafir adına tıklayınca (yatak listesi, talep detayı) | Tc kimlik no (yoksa ad) üzerinden kişinin bütün konaklamaları: kaç kez kaldığı, toplam gecesi, sık kaldığı oda, tahsilat ve iptal geçmişi. «★ Öncelikli misafir», «⛔ Dikkat», oda tercihi ve serbest not kişide saklanır; bir sonraki kayıtta adın yanında işaret olarak görünür |
+| **Grup / blok kaydı** | Yeni kayıt formu · talep detayı | «On kişilik yer tutun, adlar sonra» durumu: yataklar baştan ayrılır, adlar `— AD BİLDİRİLECEK` kalır. Adlar geldikçe «👥 İsim Bildir», grup küçülürse «Yatak Serbest Bırak» kullanılır (kişi sayısı, yatak bedeli ve kapora yeniden hesaplanır) |
+| **Bekleme listesi** | Talepler sayfası | Yer bulunamayan talep «⏳ Bekleme Listesine Al» ile listeye alınır. Kart, o tarihlerde kaç yatağın boş olduğunu sürekli hesaplar; yeter sayıda yatak boşalınca «yatak çıktı» der ve zil sayacına düşer |
+| **Servis dışı yatak** | Oda durumu · yatak listesi | Arıza, tadilat, boya gibi durumlarda yatak tarih aralığı ve gerekçeyle kapatılır; yerleştirme motoru atlar. Kapasiteden düşmez, ayrı sayılır: `dolu + boş + temizlikte + servis dışı = kapasite` |
+| **Giriş / çıkış saati** | Yeni kayıt formu · kayıt özeti | Standart 14:00 / 12:00; erken giriş ve geç çıkış ayrıca işaretlenir (kat hizmetleri planı buna göre yapılır) |
+| **Hata sınırı** | Tüm uygulamayı sarar | Bir ekran beklenmedik biçimde çökerse boş sayfa yerine ne olduğunu, verinin kaybolmadığını ve ne yapılabileceğini anlatan kutu çıkar; teknik ayrıntı katlanmış olarak verilir |
 
 ## Yardım öğeleri
 
@@ -109,9 +131,11 @@ Uygulamanın nasıl kullanılacağı, **her iş için hangi sayfada hangi düğm
 sırasıyla anlatılmıştır. Rehbere **yalnız üst bandın sağındaki «Rehber» düğmesinden** ulaşılır; sayfa şeridini ve
 ana menüyü kalabalıklaştırmamak için oralarda görünmez.
 
-- Dokuz başlık: başlarken · yeni kayıt · kapora tahsilatı · dekont ve müdür onayı ·
-  oda/yatak yerleştirme · doluluk ve boş yatak arama · giriş-çıkış-uzatma-iptal ·
-  rol yetkileri · sık sorulan sorular.
+- On beş başlık: başlarken · yeni kayıt · kapora tahsilatı · dekont ve müdür onayı ·
+  oda/yatak yerleştirme · doluluk ve boş yatak arama · giriş-çıkış-uzatma-nakil-iptal ·
+  kahvaltı yoklaması · ay sonu belgesi · oda temizliği ve servis dışı yatak ·
+  grup kaydı, bekleme listesi ve misafir kartı · yönetim raporları ve denetim izi ·
+  geri alma, klavye kısayolları ve oturum güvenliği · rol yetkileri · sık sorulan sorular.
 - Her adımın sonundaki bağlantı doğrudan ilgili sayfayı açar; rolünüze kapalı başlıklar
   rozetle işaretlenir.
 - «Rehberi yazdır» düğmesiyle çıktı alınabilir.
@@ -133,7 +157,7 @@ doğrudan `file://` ile açar):
 
 ```bash
 npm install -D playwright && npx playwright install chromium
-node testler/tumu.mjs          # on test dosyasının tamamı, sonunda özet tablo
+node testler/tumu.mjs          # on sekiz test dosyasının tamamı, sonunda özet tablo
 node testler/tumu.mjs 05 09    # yalnız numarası verilen dosyalar
 ```
 

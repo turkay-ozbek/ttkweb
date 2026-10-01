@@ -300,7 +300,7 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
 
 1. `TTK7719` ile **Kullanıcılar**.
 2. **Yetki matrisini göster**.
-   - ✔ 14 yetki × 4 rol matrisi açılır, rol tanımlarıyla tutarlıdır.
+   - ✔ 22 yetki × 4 rol matrisi açılır, rol tanımlarıyla tutarlıdır.
 3. Bir kullanıcının rolünü değiştirin.
    - ✔ O kullanıcıyla girince yeni rolün yetkileri geçerlidir.
 4. Bir kullanıcının misafirhanelerini değiştirin (en az biri kalmalı).
@@ -403,11 +403,141 @@ Tarayıcı penceresini sırayla **1280 / 1366 / 1440 / 1600 / 1920** piksel geni
 
 ---
 
-## 12. Kabul ölçütü
+## 12. Geri alma, oturum ve klavye  `[oto: 15]`
+
+### 12.1 Geri alma şeridi
+1. Talepler sayfasında yerleştirilmiş bir kaydı seç → **«Tahsisi Kaldır»**.
+2. Ekranın altında şerit çıkmalı, içinde kaydın numarası ve **«Geri Al»** düğmesi olmalı.
+3. Yataklar «yerleşmedi» olmalı.
+4. «Geri Al»a bas → tahsis eski hâline dönmeli, şerit kapanmalı.
+5. Aynısını iptal, uzatma, nakil, servis dışı bırakma ve «Yatak Serbest Bırak» için yineleyin.
+
+### 12.2 Klavye kısayolları
+1. `?` → kısayol listesi açılmalı (en az dokuz satır); `Esc` kapatmalı.
+2. `N` → yeni kayıt formu; `B` → bekleyen işler; `G` → ana menü; `R` → rehber.
+3. Bir yazı alanına girip `n` yaz → sayfa **değişmemeli**, harf kutuya yazılmalı.
+4. Pencere açıkken `N` → yeni pencere açılmamalı.
+
+### 12.3 Excel/CSV dışa aktarma
+1. Yatak listesi, talepler, tahsilat, kahvaltı, kat hizmetleri, bekleme listesi, dönem raporu
+   ve denetim izi sayfalarında «⬇ Excel/CSV» düğmesi etkin olmalı (satır yoksa pasif).
+2. İndirilen dosya `.csv` uzantılı, **UTF-8 BOM** ile başlamalı, sütunlar `;` ile ayrılmalı,
+   satır sonu CRLF olmalı. Excel'de Türkçe karakterler bozulmamalı.
+3. Ekrandaki süzgeç dosyaya yansımalı (örn. «Yalnız boş yataklar» seçiliyken yalnız boşlar).
+
+### 12.4 Oturum zaman aşımı
+1. `window.TTK_AYAR = { oturumBostaDk: 0.08, oturumUyariDk: 0.06 }` ile sayfayı açıp giriş yap.
+2. Hiçbir şey yapmadan bekle → geri sayımlı **«Oturum kapanmak üzere»** uyarısı çıkmalı.
+3. «Devam Et» → uyarı kapanmalı, oturum sürmeli.
+4. Yeniden bekle → oturum kapanmalı, giriş ekranına dönülmeli, işlem günlüğüne not düşmeli.
+
+---
+
+## 13. Servis dışı yatak, kat hizmetleri ve saatler  `[oto: 16]`
+
+### 13.1 Servis dışı bırakma
+1. «Bugünkü Durum» ekranındaki beş sayacı not et: kapasite, dolu, boş, temizlikte, servis dışı.
+   **`dolu + boş + temizlikte + servis dışı = kapasite`** olmalı.
+2. Yatak listesinde «Yalnız boş yataklar» süzgeciyle bir yatağa tıkla → **«⛔ Servis Dışı Bırak»**.
+3. Gerekçe boşken kaydet düğmesi pasif olmalı. Gerekçe yaz → kaydet.
+4. Yatak listesinde yatağın durumu **«Servis Dışı»** olmalı; Özet'te servis dışı sayacı bir artmalı,
+   boş yatak bir azalmalı, eşitlik korunmalı.
+5. Aynı yatağa tıkla → arıza kaydı gerekçesi ve tarihleriyle görünmeli; **«✓ Hizmete Al»** ile
+   sayaç eski değerine dönmeli.
+6. Servis dışı yatak otomatik yerleştirme önerilerinde **hiç** çıkmamalı.
+
+### 13.2 Kat hizmetleri
+1. «Kat Hizmetleri» sayfasında KPI kutuları: temizlenecek oda, bekliyor, temizleniyor, temizlendi.
+2. Çıkış yapılan oda **«Çıkış temizliği»**, misafiri süren oda **«Günlük temizlik»**, diğerleri
+   «İş yok» olmalı. «Yalnız iş olanlar» kutusu listeyi daraltmalı.
+3. Dört durum çipi (Bekliyor / Temizleniyor / Temizlendi / Hazır) her satırda olmalı; çipe basınca
+   seçili olmalı ve **işlem saati** yazılmalı.
+4. Kat görevlisi adı yazıldığında sayfa değiştirip dönünce korunmalı.
+5. Servis dışı odanın çipleri pasif olmalı (arıza buradan yönetilmez).
+6. CSV ve «🖨 Yazdır» çıktısı ekrandaki süzgeci yansıtmalı.
+
+### 13.3 Giriş / çıkış saatleri
+1. Yeni kayıt formunda **Giriş saati 14:00**, **Çıkış saati 12:00** varsayılan olmalı.
+2. Saatleri değiştir, «erken» ve «geç» kutularını işaretle, kaydet.
+3. Talep detayındaki «Geliş / Çıkış» alanı saatleri ve «erken giriş / geç çıkış» notunu yazmalı.
+
+---
+
+## 14. Grup kaydı, bekleme listesi ve misafir kartı  `[oto: 17]`
+
+### 14.1 Grup / blok kaydı
+1. Yeni kayıt formunda kişi sayısını 4 yap → **«Grup / blok kaydı»** kutusu etkin olmalı
+   (tek kişilik kayıtta pasif).
+2. Kutuyu işaretle → ilk satır dışındaki ad alanları «sonra bildirilecek» olmalı.
+3. Yalnız ilk misafirin adını ve Tc kimlik numarasını yaz → **Kaydet etkin olmalı**.
+4. Kayıt adı «… Grubu» olmalı; talep listesinde **👥** işareti görünmeli.
+5. Detayda üç yatak `— AD BİLDİRİLECEK` olmalı.
+6. **«👥 İsim Bildir»** → bir ada ve Tc kimlik numarasına gir, kaydet → isimsiz sayısı ikiye düşmeli.
+7. **«Yatak Serbest Bırak»** → kişi sayısı üçe düşmeli, yatak bedeli ve kapora yeniden
+   hesaplanmalı, «Geri Al» şeridi çıkmalı.
+8. Adı bildirilmiş misafir buradan düşürülememeli.
+
+### 14.2 Bekleme listesi
+1. Yerleştirilmemiş bir kayıtta **«⏳ Bekleme Listesine Al»** düğmesi görünmeli.
+2. Not yazıp ekle → Talepler sayfasındaki bekleme kartında kayıt, notu ve o tarihlerde boş
+   yatak sayısıyla görünmeli.
+3. Aynı kayıt ikinci kez eklenememeli (düğme yerine «bekleme listesinde» rozeti çıkmalı).
+4. Yeter sayıda yatak boşsa satır yeşile dönüp **«yerleştirilebilir»** demeli; zil sayacına düşmeli.
+5. **«Çıkar»** kaydı listeden düşürmeli, rezervasyonu etkilememeli.
+
+### 14.3 Misafir kartı
+1. Yatak listesinde misafir adına tıkla → **Misafir Kartı** açılmalı.
+2. Kartta konaklama sayısı, toplam gece, tahsil edilen, sık kaldığı oda, iptal ve konaklama
+   geçmişi tablosu olmalı.
+3. **★ Öncelikli misafir** ve oda tercihi kaydet → işlem günlüğüne not düşmeli.
+4. Kartı yeniden aç → değerler korunmalı; listede adın yanında **★** görünmeli.
+5. Yetkisi olmayan rol (muhasebe) kartı görmeli ama notları değiştirememeli.
+
+### 14.4 Uzatma ve nakil
+1. Konaklayan bir kayıtta **«📅 Uzat»** → her misafir için «aynı yatakta kalabilir» ya da
+   «yeni gecelerde dolu» denmeli.
+2. Çakışma varsa «Uzatmayı Kaydet» pasif olmalı ve nakil istenmeli.
+3. Uzatma kaydedilince çıkış tarihi ileri alınmalı, kayıt geçmişine yazılmalı.
+4. **«🔁 Nakil»** → yalnız kalan gecelerin tamamında boş yataklar listelenmeli; nakil sonrası
+   oda numarası değişmeli ve işlem gerekçesiyle geçmişe yazılmalı.
+
+---
+
+## 15. Raporlar, denetim izi ve bekleyen işler  `[oto: 18]`
+
+### 15.1 Bekleyen işler (zil)
+1. Üst bantta zil olmalı; `aria-label` bekleyen iş sayısını yazmalı.
+2. Panelde satırların sayıları toplamı zildeki sayıya eşit olmalı.
+3. Satıra basınca pencere kapanmalı ve ilgili sayfa açılmalı.
+4. Bir işi bitirince (örn. dekontu onaylayınca) ilgili satır listeden düşmeli.
+5. Yetkisiz rol için o satır hiç çıkmamalı (örn. resepsiyonda dekont onayı).
+
+### 15.2 Yönetim raporları
+1. Altı KPI: doluluk, misafir, misafir-gece, ortalama konaklama, tahsilat, iptal oranı.
+2. Karşılaştırma tablosunda yetkili olunan misafirhaneler ve **TOPLAM** satırı olmalı.
+3. Doluluk = dolu yatak-gece / yatak-gece kapasitesi; toplam satırı alt satırların toplamıyla
+   tutmalı.
+4. Dönem kısayolları (bu ay / geçen ay / son 30 / son 90 / bu yıl) aralığı ve gün sayısını
+   değiştirmeli; 400 günden uzun aralıkta uyarı çıkmalı.
+5. Üç kırılım kartı: geliş nedeni, en çok konaklayan kurumlar, konaklama süresi dağılımı.
+6. CSV ve «🖨 Yazdır» (A4) çalışmalı; yazdırma penceresi «Dönem Raporunu Yazdır» başlığıyla açılmalı.
+
+### 15.3 Denetim izi
+1. Kayıt hareketleri ve sistem günlüğü birlikte listelenmeli, en yeni üstte.
+2. Kaynak süzgeci (hepsi / kayıt / sistem) listeyi daraltmalı.
+3. Kullanıcı süzgeci yalnız o kullanıcının işlemlerini bırakmalı.
+4. Serbest metin araması rezervasyon no, ad ve işlem metninde aramalı.
+5. CSV dışa aktarma süzgeçli listeyi vermeli.
+6. Sayfada hiçbir düzenleme alanı olmamalı (yalnız okunur).
+7. Resepsiyon rolünde sayfa **görünmemeli**; müdür ve admin görmeli.
+
+---
+
+## 16. Kabul ölçütü
 
 Aşağıdakilerin tamamı sağlanıyorsa sürüm kabul edilebilir:
 
-1. Bölüm 1–10'daki her senaryo beklenen sonucu veriyor.
+1. Bölüm 1–15'teki her senaryo beklenen sonucu veriyor.
 2. Beş çözünürlükte hiçbir sayfada yatay taşma yok.
 3. Tarayıcı konsolunda hata yok.
 4. Kaporalı hiçbir kayıt, dekontu onaylanmadan yatak alamıyor (üç yerleştirme yolunda da).
@@ -439,6 +569,13 @@ node testler/tumu.mjs 05 09    # yalnız seçilen dosyalar
 | `09-goruntuleme-tutarlilik.mjs` | 7.1–7.4 ve 4.2, 4.5 |
 | `10-arayuz-ve-sinir-durumlari.mjs` | 1.6, 9.4, 11.1–11.5 |
 | `11-ipucu-arama-bot.mjs` | 10.1–10.3 — ipucu, işlem araması ve yardımcı bot |
+| `12-mobil.mjs` | 11.1 telefon ve tablet genişlikleri, sayfa çekmecesi, kart görünümü, dokunma hedefleri |
+| `13-yeni-islevler.mjs` | 2.x Tc kimlik/telefon doğrulaması, SMS günlüğü, kapora muafiyeti |
+| `14-takvim-ve-kisayollar.mjs` | 2.x açılır takvim, süre kısayolları, statü çipleri, misafir arama |
+| `15-geri-al-oturum-kisayol.mjs` | 12.1–12.4 — geri alma şeridi, klavye kısayolları, CSV, oturum zaman aşımı |
+| `16-ariza-temizlik-saat.mjs` | 13.1–13.3 — servis dışı yatak, kat hizmetleri, giriş/çıkış saatleri |
+| `17-uzatma-nakil-grup.mjs` | 14.1–14.4 — grup kaydı, bekleme listesi, misafir kartı, uzatma ve nakil |
+| `18-rapor-denetim-bildirim.mjs` | 15.1–15.3 — bekleyen işler zili, yönetim raporları, denetim izi |
 
 ### Elle bakılması gerekenler
 

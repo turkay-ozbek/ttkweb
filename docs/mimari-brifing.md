@@ -155,7 +155,11 @@ operatör onayıyla birleştirme.
 | `konaklama` | Hangi misafir, hangi yatak, hangi gece | **Çakışma kısıtı burada** |
 | `dekont` / `tahsilat` | Kapora belgesi ve tahsilat hareketi | Dosya yolu tutulur, dosyanın kendisi MinIO'da |
 | `kahvalti_yoklama` | Gün gün kahvaltıya inmeyenler | Ay sonu belgesinin kaynağı |
-| `hareket` | Kim, ne zaman, ne yaptı | Denetim izi; silinmez |
+| `oda_temizlik` | Odanın günlük temizlik durumu ve kat görevlisi | Çıkış temizliği bitmeden yatak verilmez |
+| `yatak_ariza` | Servis dışı yatak (arıza, tadilat) | Açık kayıtlarda tarih çakışması kısıtı |
+| `bekleme_listesi` | Yer bulunamayan talepler | Yatak boşaldığında eşleşme sorgusu |
+| `misafir_not` | Misafir kartı: öncelikli / dikkat / tercih | Rezervasyonda değil **kişide** durur |
+| `hareket` | Kim, ne zaman, ne yaptı | Denetim izi; silinmez. Arayüzdeki «Denetim İzi» sayfası bu tablodan okur |
 | `bildirim` | Gönderilen SMS/e-posta | Sağlayıcı yanıtıyla birlikte |
 
 Tam şema: [`veritabani.md`](veritabani.md) § 2.
@@ -226,11 +230,12 @@ Yapılandırma örnekleri: [`dagitim-mimarisi.md`](dagitim-mimarisi.md) § 3–4
 | Konu | Uygulama |
 |---|---|
 | **Kimlik** | Kurum LDAP/AD; parola uygulamada tutulmaz |
-| **Yetki** | Her istekte sunucuda denetlenir; 18 yetki kodu × 4 rol matrisi |
+| **Yetki** | Her istekte sunucuda denetlenir; 22 yetki kodu × 4 rol matrisi |
+| **Oturum** | Ortak kullanılan resepsiyon bilgisayarı için boşta kalma zaman aşımı (varsayılan 15 dk, uyarı 2 dk önce); süre kurum politikasına göre ayarlanır |
 | **Veri sınıfı** | Tc kimlik no, telefon, konaklama bilgisi = **kişisel veri**; konaklama nedeni bazı hâllerde özel nitelikli olabilir |
 | **Aktarım** | Uçtan uca TLS; veritabanı bağlantısı da TLS |
 | **Saklama** | Disk şifreleme (LUKS); istenirse Tc kimlik no sütununda `pgcrypto` |
-| **Erişim kaydı** | Kim hangi misafir kaydını açtı — `hareket` tablosunda |
+| **Erişim kaydı** | Kim hangi misafir kaydını açtı — `hareket` tablosunda; müdür ve admin «Denetim İzi» sayfasından süzerek görür, kimse değiştiremez |
 | **Saklama süresi** | Mali mevzuat gereği belgeler 10 yıl; sonrasında kişisel alanlar maskelenir, istatistik anonim kalır |
 | **Aydınlatma** | Rezervasyon sırasında KVKK aydınlatma metni ve rıza tarihi kaydı (`misafir.kvkk_riza_tarihi`) |
 | **Yedeklerin şifrelenmesi** | pgBackRest/restic şifreli depoya yazar |
@@ -345,7 +350,14 @@ Bu belgedeki kararların çoğu, çalışan prototipte **görülebilir** durumda
 - Yerleştirme motoru, kapora akışı, dekont onayı, kahvaltı yoklaması, ay sonu belgesi,
   rol yetkileri, SMS günlüğü, mobil arayüz: hepsi çalışıyor.
 - Tekrar gelen misafirin bulunup formun kendiliğinden dolması: çalışıyor.
-- 14 dosyalık otomatik test takımı (`testler/`) her değişiklikte koşuyor.
+- Günlük işleyişin tamamı: kat hizmetleri (temizlik) listesi, servis dışı yatak, giriş/çıkış
+  saatleri, uzatma ve nakil, grup/blok kaydı, bekleme listesi, misafir kartı.
+- Yönetim tarafı: dönem raporları (yatak-gece doluluk, misafir-gece, tahsilat, ortalama
+  konaklama, iptal oranı) ve denetim izi — ikisi de aynı veriden okunuyor, ayrı rapor
+  tablosu yok.
+- Kullanım kolaylığı: bekleyen işler merkezi (zil), geri alma şeridi, klavye kısayolları,
+  Excel/CSV dışa aktarma, oturum zaman aşımı, hata sınırı.
+- 18 dosyalık otomatik test takımı (`testler/`) her değişiklikte koşuyor.
 
 **Prototipte olmayan ve kurulumda eklenecekler:** gerçek kimlik doğrulama, sunucu taraflı
 yetki denetimi, gerçek veritabanı ve çakışma kısıtı, gerçek SMS gönderimi, muhasebe entegrasyonu.

@@ -94,6 +94,11 @@ CREATE TABLE rezervasyon (
   gelis_nedeni    varchar(40),
   protokol        boolean DEFAULT false,
   aile            boolean DEFAULT false,
+  blok            boolean DEFAULT false,           -- grup kaydı: adlar sonra bildirilecek
+  giris_saat      time DEFAULT '14:00',            -- standart giriş saati
+  cikis_saat      time DEFAULT '12:00',            -- standart çıkış saati
+  erken_giris     boolean DEFAULT false,
+  gec_cikis       boolean DEFAULT false,           -- kat hizmetleri planını etkiler
   statu           varchar(24) NOT NULL,
   pesinat_tutari  numeric(10,2) DEFAULT 0,
   tahsil_edilen   numeric(10,2) DEFAULT 0,
@@ -115,6 +120,10 @@ CREATE TABLE konaklama (
   donem        daterange NOT NULL,                 -- [gelis, cikis) — çıkış günü dahil değil
   temizlik_gun smallint NOT NULL DEFAULT 1,
   iptal        boolean NOT NULL DEFAULT false,
+  -- Blok (grup) kaydında yatak ayrılmış ama misafir henüz bildirilmemiş olabilir:
+  -- misafir_id NULL kalır, arayüzde «— AD BİLDİRİLECEK» gösterilir. Girişte ad ve
+  -- Tc kimlik no zorunlu olduğundan NULL'a izin yalnız geliş tarihinden önce geçerlidir;
+  -- bu kural uygulama katmanında (giriş işlemi) denetlenir.
   -- Aynı yatak, temizlik boşluğu dahil, aynı anda iki kez verilemez:
   EXCLUDE USING gist (
     yatak_id WITH =,
@@ -146,6 +155,41 @@ CREATE TABLE kahvalti_yoklama (
   isleyen varchar(20), islenme timestamptz DEFAULT now(),
   PRIMARY KEY (tarih, konaklama_id)
 );
+CREATE TABLE oda_temizlik (                        -- kat hizmetleri (MSFH-W13)
+  tesis_kod varchar(12) REFERENCES tesis, tarih date NOT NULL,
+  oda_id bigint REFERENCES oda,
+  durum varchar(14) NOT NULL,                      -- BEKLIYOR / TEMIZLENIYOR / TAMAM / HAZIR
+  gorevli varchar(80), islem_saati time,
+  kullanici varchar(20), guncelleme timestamptz DEFAULT now(),
+  PRIMARY KEY (tesis_kod, tarih, oda_id)
+);
+CREATE TABLE yatak_ariza (                         -- servis dışı yatak
+  id bigserial PRIMARY KEY, yatak_id bigint REFERENCES yatak,
+  donem daterange NOT NULL, gerekce text NOT NULL,
+  acan varchar(20) NOT NULL, acilma_tarihi date NOT NULL DEFAULT current_date,
+  kapandi boolean NOT NULL DEFAULT false, kapatan varchar(20), kapanma_tarihi date,
+  -- Aynı yatakta aynı tarihlerde iki açık arıza kaydı olamaz:
+  EXCLUDE USING gist (yatak_id WITH =, donem WITH &&) WHERE (NOT kapandi)
+);
+CREATE INDEX ariza_acik ON yatak_ariza USING gist (donem) WHERE NOT kapandi;
+
+CREATE TABLE bekleme_listesi (                     -- yer bulunamayan talepler
+  id bigserial PRIMARY KEY, rezervasyon_id bigint REFERENCES rezervasyon ON DELETE CASCADE,
+  tesis_kod varchar(12) REFERENCES tesis, donem daterange NOT NULL,
+  kisi_sayisi smallint NOT NULL, not_metni text,
+  acan varchar(20) NOT NULL, acilma_tarihi date NOT NULL DEFAULT current_date,
+  cozuldu boolean NOT NULL DEFAULT false
+);
+CREATE INDEX bekleme_acik ON bekleme_listesi USING gist (donem) WHERE NOT cozuldu;
+
+CREATE TABLE misafir_not (                         -- misafir kartı (CRM)
+  misafir_id bigint PRIMARY KEY REFERENCES misafir ON DELETE CASCADE,
+  vip boolean NOT NULL DEFAULT false,
+  kara_liste boolean NOT NULL DEFAULT false,
+  tercih varchar(160), not_metni text,
+  guncelleyen varchar(20), guncelleme timestamptz DEFAULT now()
+);
+
 CREATE TABLE ay_sonu_belge (
   id bigserial PRIMARY KEY, tesis_kod varchar(12), donem char(7),   -- 'YYYY-MM'
   isteyen varchar(20), talep_tarihi date, not_metni text,

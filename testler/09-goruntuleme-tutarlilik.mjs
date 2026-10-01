@@ -17,11 +17,13 @@ try {
     const dolu = num(t, /DOLU YATAK\s*\n\s*(\d[\d.]*)/);
     const bos = num(t, /BOŞ YATAK\s*\n\s*(\d[\d.]*)/);
     const temizlik = num(t, /TEMİZLİKTE\s*\n\s*(\d[\d.]*)/);
+    const ariza = num(t, /SERVİS DIŞI\s*\n\s*(\d[\d.]*)/) || 0;
     const kapasite = num(t, /(\d[\d.]*) yatak kapasite/);
     const oran = num(t, /DOLULUK\s*\n\s*%(\d+)/);
-    /* Temizlikteki yatak ne dolu ne boştur: dolu + boş + temizlik = kapasite */
-    d.bekle(dolu + bos + temizlik === kapasite,
-      `${tesis}: dolu (${dolu}) + boş (${bos}) + temizlik (${temizlik}) = kapasite (${kapasite})`);
+    /* Temizlikteki ve servis dışı yatak ne dolu ne boştur:
+       dolu + boş + temizlik + servis dışı = kapasite */
+    d.bekle(dolu + bos + temizlik + ariza === kapasite,
+      `${tesis}: dolu (${dolu}) + boş (${bos}) + temizlik (${temizlik}) + servis dışı (${ariza}) = kapasite (${kapasite})`);
     d.bekle(oran === Math.round(dolu / kapasite * 100),
       `${tesis}: doluluk oranı (%${oran}) dolu/kapasite ile tutarlı`);
     const bosYuzde = num(t, /kapasitenin %(\d+)/);

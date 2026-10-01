@@ -34,8 +34,18 @@ arayüzünde gösterilmez.
    soruları canlı veriyle, «kapora nasıl işlenir?» gibi soruları bu rehberden adım adım
    yanıtlar ve ilgili sayfaya bağlantı verir. Bir **demo asistandır**: kural tabanlı çalışır,
    dış bir yapay zekâ servisine bağlanılmaz.
-8. **Rehber ve oturum.** Üst bandın sağındaki **Rehber** düğmesi bu sayfayı her ekrandan açar;
+8. **Bugün neye bakmanız gerektiğini görün.** Üst bandın sağındaki **zil**, o misafirhanede
+   bekleyen bütün işleri tek listede toplar (dekont onayı, süresi dolan kapora, bugünün
+   giriş-çıkışları, yerleştirilmeyen talepler, bekleme listesi, temizlik, servis dışı yatak).
+   Zildeki sayı bekleyen iş sayısıdır; acil iş varsa kırmızı olur. Kısayolu **B**.
+9. **Klavyeyle hızlanın.** **`?`** tuşu bütün kısayolları listeler: `N` yeni kayıt,
+   `/` arama kutusu, `B` bekleyen işler, `G` ana menü, `R` rehber, `Esc` açık pencere.
+10. **Yanlış tıkladıysanız.** Çoğu işlemden sonra ekranın altında 12 saniye duran bir
+   **«Geri Al»** şeridi çıkar; basınca veri işlemden önceki hâline döner.
+11. **Rehber ve oturum.** Üst bandın sağındaki **Rehber** düğmesi bu sayfayı her ekrandan açar;
    en sağdaki güç simgesi oturumu kapatır. Kullanıcı adınız alt bilgi çubuğunun solunda yazar.
+   Ortak kullanılan bilgisayarda **15 dakika** işlem yapılmazsa oturum kendiliğinden kapanır;
+   kapanmadan önce geri sayımlı uyarı çıkar.
 
 > Bir düğme soluk (pasif) görünüyorsa üzerine gelin: o işlem için hangi yetkinin gerektiği
 > ipucu olarak yazar.
@@ -170,9 +180,13 @@ onay `rezervasyon.onay` (Müdür, Admin)
    erken gelen misafir satırdaki statü düğmesiyle elle de konaklatılabilir.
 3. **Çıkış.** Kayıt **Çıkış** statüsüne alınır; yatak serbest kalır, bir günlük temizlik boşluğu
    başlar. «Peşinat ve Tahsilat» sayfasındaki «Bugün çıkış» iş listesi o günkü çıkışları toplar.
-4. **Uzatma.** Çıkış tarihi ileri alınır; aynı yatak boşsa misafir yerinde kalır, değilse sistem
-   uyarır ve yeniden yerleştirme gerekir.
-5. **İptal.** Her aşamada mümkündür; tahsis edilmiş yataklar anında boşa düşer. Ödeme süresi dolan
+4. **Uzatma.** Talep detayındaki **«📅 Uzat»** düğmesi yeni çıkış tarihini sorar ve her misafir
+   için yeni gecelerde yatağın boş olup olmadığını denetler: boşsa misafir yerinde kalır, değilse
+   uzatma kilitlenir ve önce nakil istenir.
+5. **Nakil (oda değişikliği).** **«🔁 Nakil»** misafiri kalan gecelerin tamamında kesintisiz boş
+   olan bir yatağa taşır; yalnız bu yataklar listelenir. İşlem gerekçesiyle kayıt geçmişine yazılır
+   ve gerekirse «Geri Al» şeridinden döndürülebilir.
+6. **İptal.** Her aşamada mümkündür; tahsis edilmiş yataklar anında boşa düşer. Ödeme süresi dolan
    kapora talepleri sistem tarafından kendiliğinden iptal edilir — **ancak yalnız konaklaması
    henüz başlamamış talepler.** Misafir içerideyken kayıt kendiliğinden düşmez; kapora alacağa
    döner ve «Peşinat ve Tahsilat» sayfasındaki **«Konaklıyor, kapora eksik»** listesinde izlenir.
@@ -183,7 +197,113 @@ onay `rezervasyon.onay` (Müdür, Admin)
 
 ---
 
-## 8. Hangi rol neyi yapabilir?
+## 8. Kahvaltı yoklaması nasıl işlenir? — MSFH-W11
+
+1. «Kahvaltı Takibi» sayfası o gün konaklayan misafirleri oda/yatak sırasıyla listeler.
+2. **Kahvaltıya inmeyen** misafirin satırındaki kutu işaretlenir — işaretlenmeyen herkes kahvaltı
+   yapmış sayılır. Yoklama güne bağlıdır; tarih kutusundan başka bir güne geçilebilir.
+3. Sayılar ay sonu belgesine buradan gelir; yoklama eksikse belge de eksik olur.
+4. İşaretleme yetkisi müdür ve resepsiyondadır; muhasebe sayfayı görür, değiştiremez.
+
+---
+
+## 9. Ay sonu belgesi nasıl hazırlanır? — MSFH-W12
+
+1. **Muhasebe ister.** Dönem (ay) seçilip «Belgeyi İste» düğmesine basılır, istenirse not eklenir.
+2. **Resepsiyon hazırlar.** Bekleyen talebin yanındaki «Belgeyi Hazırla» düğmesi dönemin konaklama
+   gecesini, kahvaltı sayılarını ve tahsilatı hesaplayıp PDF üretir.
+3. **Muhasebe alır.** Durum «Teslim edildi»ye döner; «Belgeyi Gör» ekranda açar, «İndir» kaydeder.
+   Kim istedi, kim hazırladı, ne zaman — hepsi listede yazılıdır.
+
+---
+
+## 10. Oda temizliği ve servis dışı yatak — MSFH-W13 / MSFH-W03
+
+1. **Günlük liste.** «Kat Hizmetleri» sayfası o gün iş olan odaları iki başlıkta getirir:
+   çıkış yapılan odalar **«Çıkış temizliği»**, misafiri süren odalar **«Günlük temizlik»**.
+   İşi olmayan odalar «İş yok» sayılır; «Yalnız iş olanlar» kutusuyla liste daraltılır.
+2. **Durum ilerletme.** Her satırda dört çip vardır: Bekliyor → Temizleniyor → Temizlendi → Hazır.
+   Çipe basıldığında **işlem saati** kendiliğinden yazılır; odanın ne zaman hazır olduğu belli olur.
+3. **Kat görevlisi.** Odayı kimin temizlediği yazılır. Liste «🖨 Yazdır» ile kâğıda alınıp kat
+   görevlisine verilir, «⬇ Excel/CSV» ile dışa aktarılır.
+4. **Kullanılamayan yatak.** Arıza, tadilat ya da boya durumunda «Oda ve Yatak Durumu» veya
+   «Yatak Listesi» sayfasından yatağa tıklanıp **«⛔ Servis Dışı Bırak»** denir; tarih aralığı ve
+   gerekçe zorunludur. Yerleştirme motoru o yatağı hiç önermez.
+5. **Hizmete alma.** Arıza giderildiğinde aynı pencereden **«✓ Hizmete Al»** denir.
+
+> Servis dışı yatak kapasiteden düşmez, ayrı sayılır:
+> **`dolu + boş + temizlikte + servis dışı = kapasite`** eşitliği «Bugünkü Durum» ekranında yazılıdır.
+
+---
+
+## 11. Grup kaydı, bekleme listesi ve misafir kartı — MSFH-W05 / MSFH-W04
+
+1. **Grup / blok kaydı.** «On kişilik yer tutun, adları sonra bildireceğiz» denildiğinde yeni kayıt
+   formunda kişi sayısı girilir ve **«Grup / blok kaydı»** kutusu işaretlenir. İlk misafir dışındaki
+   ad alanları boş bırakılabilir; yataklar yine ayrılır ve adlar `— AD BİLDİRİLECEK` kalır.
+   Kayıt adı «… Grubu» olarak yazılır, talep listesinde **👥** işaretiyle görünür.
+2. **İsim bildirimi.** Adlar geldikçe kayıt seçilip **«👥 İsim Bildir»** penceresinden girilir.
+   Girişte Tc kimlik no zorunlu olduğu için adla birlikte alınması iyidir.
+3. **Grup küçülürse.** **«Yatak Serbest Bırak»** ile adı bildirilmemiş yataklardan istenen kadarı
+   başka taleplere açılır; kişi sayısı, yatak bedeli ve kapora yeniden hesaplanır. Yanlışlıkla
+   yapıldıysa «Geri Al» şeridinden dönülür.
+4. **Yer yoksa bekleme listesi.** Yerleştirilemeyen kayıtta **«⏳ Bekleme Listesine Al»** düğmesine
+   basılır; kayıt iptal edilmez, statüsü değişmez. Talepler sayfasındaki bekleme kartı o tarihlerde
+   kaç yatağın boş olduğunu sürekli hesaplar ve yeter sayıda yatak boşalınca **«yatak çıktı»** der.
+5. **Misafir kartı.** Yatak listesinde ya da talep detayında misafir adına tıklanır: kart kişinin
+   kaç kez kaldığını, toplam gecesini, sık kaldığı odayı, tahsilat ve iptal geçmişini gösterir.
+   **«★ Öncelikli misafir»**, **«⛔ Dikkat işareti»**, oda tercihi ve serbest not buradan kaydedilir;
+   bunlar rezervasyonda değil **kişide** durur ve bir sonraki kayıtta adın yanında görünür.
+   Kart notları kurum içi bilgidir, misafire giden SMS ve belgelerde yer almaz.
+
+---
+
+## 12. Yönetim raporları ve denetim izi — MSFH-W14 / MSFH-W15
+
+1. **Dönem seçimi.** «Yönetim Raporları» sayfasında tarih aralığı elle girilir ya da
+   **Bu ay / Geçen ay / Son 30 gün / Son 90 gün / Bu yıl** kısayolları kullanılır.
+2. **Doluluk okuma.** Doluluk, aralığın her günü için dolu yatak sayısının yatak kapasitesine
+   oranıdır («yatak-gece»). Karşılaştırma tablosu yetkili olunan bütün misafirhaneleri yan yana
+   getirir ve toplam satırını verir.
+3. **Kırılımlar.** Seçili misafirhane için geliş nedeni, en çok konaklayan kurumlar ve konaklama
+   süresi dağılımı ayrı kartlarda çıkar. Kısa konaklama ağırlığı yüksekse çıkış temizliği yükü de
+   yüksektir — kat hizmetleri planı buna göre yapılır.
+4. **Teslim.** «⬇ Excel/CSV» tabloyu dışa aktarır, «🖨 Yazdır» A4 çıktı alır. Muhasebenin istediği
+   ay sonu belgesi ayrı bir sayfadadır (bölüm 9).
+5. **Denetim izi.** «Denetim İzi» sayfası bütün kayıt hareketlerini ve sistem günlüğünü tek listede
+   toplar; tarih aralığı, kullanıcı, kaynak (kayıt / sistem) ve serbest metinle süzülür, Excel'e
+   aktarılır. Sayfa **yalnız okunur** — buradan hiçbir kayıt değiştirilemez.
+
+> Raporlar müdür, resepsiyon ve muhasebeye açıktır; denetim izi yalnız müdür ve admin rolündedir.
+
+---
+
+## 13. Yanlış işlem, klavye kısayolları ve oturum güvenliği
+
+1. **Geri alma.** Tahsis kaldırma, iptal, uzatma, nakil, toplu yerleştirme, servis dışı bırakma ve
+   bloktan yatak serbest bırakma işlemlerinden sonra ekranın altında **«Geri Al»** şeridi çıkar.
+   Şerit 12 saniye durur; düğme veriyi işlemden önceki hâline döndürür. Şerit kapandıktan sonra
+   işlem kalıcıdır.
+2. **Bekleyen işler.** Üst bandın sağındaki **zil**, o misafirhanede bekleyen bütün işleri tek
+   listede toplar: dekont onayı, süresi dolan kapora, bugünün giriş-çıkışları, yerleştirilmeyen
+   talepler, adı bildirilmemiş gruplar, bekleme listesi, servis dışı yatak, çıkış temizliği bekleyen odalar ve
+   bekleyen ay sonu belgesi. Satıra basmak ilgili sayfayı açar.
+3. **Klavye kısayolları.** **`?`** listeyi açar. En çok kullanılanlar: `Ctrl + K` işlem araması,
+   `N` yeni kayıt, `/` sayfadaki arama kutusu, `B` bekleyen işler, `G` ana menü, `R` rehber,
+   `↑ ↓` talep listesinde satır, `↵` manuel yerleştirme, `Esc` açık pencere. Yazı alanında ya da
+   pencere açıkken kısayollar çalışmaz.
+4. **Oturum.** Resepsiyon bilgisayarı ortak kullanıldığı için **15 dakika** işlem yapılmayan oturum
+   kapanır; kapanmadan **2 dakika** önce geri sayımlı uyarı çıkar. «Devam Et» süreyi sıfırlar,
+   «Şimdi çık» hemen kapatır.
+5. **Excel'e aktarma.** Yatak listesi, talep listesi, tahsilat, kahvaltı, kat hizmetleri, bekleme
+   listesi, dönem raporu ve denetim izi sayfalarındaki **«⬇ Excel/CSV»** düğmesi ekrandaki süzgeçle
+   sınırlı dosya üretir; Türkçe karakterler Excel'de doğru açılır.
+6. **Beklenmeyen hata.** Bir ekran çökerse boş sayfa yerine ne olduğunu ve verinin kaybolmadığını
+   anlatan bir kutu çıkar; «Ekranı yeniden dene» çoğu durumda yeterlidir.
+
+---
+
+## 14. Hangi rol neyi yapabilir?
 
 | İşlem | Yetkili roller |
 |---|---|
@@ -195,6 +315,14 @@ onay `rezervasyon.onay` (Müdür, Admin)
 | Kapora kuralını değiştirme | Müdür, Admin |
 | Kayıt iptali | Müdür, Admin |
 | Süresi dolan talepleri toplu iptal | Müdür, Muhasebe, Admin |
+| Kahvaltı yoklaması işleme | Müdür, Resepsiyon, Admin |
+| Ay sonu belgesini isteme | Müdür, Muhasebe, Admin |
+| Ay sonu belgesini hazırlama | Müdür, Resepsiyon, Admin |
+| Kapora beklemeden yerleştirme (öncelikli misafir) | Müdür, Admin |
+| Yatağı servis dışı bırakma (arıza) | Müdür, Resepsiyon, Admin |
+| Kat hizmetleri (temizlik) işleme | Müdür, Resepsiyon, Admin |
+| Yönetim raporlarını görüntüleme | Müdür, Resepsiyon, Muhasebe, Admin |
+| Denetim izini görüntüleme | Müdür, Admin |
 | Kullanıcı ve yetki yönetimi | Admin |
 
 Her kullanıcı yalnız yetkili olduğu misafirhaneleri görür. Yetkisi olmayan sayfalar menüde
@@ -202,7 +330,7 @@ görünmez; yetkisi olmayan düğmeler pasif kalır ve üzerine gelince gerekçe
 
 ---
 
-## 9. Sık sorulan sorular
+## 15. Sık sorulan sorular
 
 **Yerleştir düğmesi neden pasif / neden yatak veremiyorum?**
 Ya rolünüzün yerleştirme yetkisi yoktur, ya da kaydın kaporası tahsil edilip dekontu müdürce
@@ -219,6 +347,24 @@ Kural «Peşinat ve Tahsilat» sayfasının altındaki bölümden müdür taraf�
 **Listede göremediğim kayıt nerede?**
 Dönem filtresi ve statü süzgecini kontrol edin; varsayılan olarak yalnız seçili tarih aralığıyla
 kesişen kayıtlar listelenir. «Tüm dönem» + «Tüm statüler» hepsini gösterir.
+
+**Yanlış işlem yaptım, geri alabilir miyim?**
+Tahsis kaldırma, iptal, uzatma, nakil, toplu yerleştirme, servis dışı bırakma ve bloktan yatak
+serbest bırakma işlemlerinden hemen sonra ekranın altındaki **«Geri Al»** şeridini kullanın.
+Şerit 12 saniye durur; sonrasında işlem kalıcıdır ve düzeltme yeni bir işlemle yapılır.
+
+**Misafir adının yanındaki ★ veya ⛔ ne demek?**
+Misafir kartına kaydedilmiş not var: ★ öncelikli misafir, ⛔ dikkat işareti, ✎ oda tercihi ya da
+serbest not. Ada tıklayarak kartı açıp ayrıntısını görebilirsiniz.
+
+**Yer bulamadığım talebi nasıl takip ederim?**
+«⏳ Bekleme Listesine Al» ile bekleme listesine alın. Talepler sayfasındaki kart o tarihlerde kaç
+yatağın boş olduğunu sürekli hesaplar; yeter sayıda yatak boşalınca «yatak çıktı» yazar ve üst
+banttaki zil sayacına düşer.
+
+**Bugün neye bakmam gerektiğini nereden anlarım?**
+Üst bandın sağındaki **zil**: bekleyen bütün işler (onay, kapora, giriş-çıkış, yerleştirme,
+temizlik, grup isimleri, bekleme listesi) tek listede, sayısıyla birlikte durur.
 
 **Yanlış tahsilat girdim, ne yapmalıyım?**
 Kaydı **Detay** ile açın; bütün hareketler (tahsilat, dekont, onay, statü değişikliği) tarih ve

@@ -8,6 +8,113 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.13.0] — 01.10.2026
+### Eklendi — kullanıcı deneyimi ve endüstri standardı paketi (öneri listesinin ilk 15 maddesi)
+
+Bu sürüm tek bir ekran eklemiyor; **günlük işin kendisini** hedefliyor. Maddeler
+«resepsiyon gün boyu ne yapıyor, nerede tıkanıyor» sorusundan çıktı.
+
+**1 · Geri alma şeridi.** Tahsis kaldırma, iptal, uzatma, nakil, toplu yerleştirme, servis
+dışı bırakma ve bloktan yatak serbest bırakma işlemlerinden sonra ekranın altında 12 saniye
+duran bir şerit çıkıyor; «Geri Al» veriyi işlemden önceki hâline döndürüyor. Şerit
+`role="status"` taşıdığı için ekran okuyucuya da okunuyor.
+
+**2 · Hata sınırı.** Bir ekran beklenmedik biçimde çökerse kullanıcı beyaz sayfayla
+karşılaşmıyor: ne olduğunu, **girilen kayıtların kaybolmadığını** ve ne yapılabileceğini
+anlatan bir kutu çıkıyor, teknik ayrıntı katlanmış duruyor. «Ekranı yeniden dene» ve
+«Uygulamayı yeniden başlat» düğmeleri var.
+
+**3 · Bekleyen işler merkezi (zil).** Üst bandın sağındaki zil, seçili misafirhanede
+bekleyen bütün işleri tek listede topluyor: dekont onayı, süresi dolan ve bugün son günü
+olan kapora, bugünün giriş-çıkışları, üç gün içinde yerleştirilmemiş talepler, adı
+bildirilmemiş grup yatakları, bekleme listesinde yatak çıkanlar, servis dışı yataklar,
+çıkış temizliği bekleyen odalar, bekleyen ay sonu belge talebi. Sayı zilde rozet olarak görünüyor
+(acil varsa kırmızı); satıra basmak ilgili sayfayı açıyor. Liste **anlık hesaplanıyor**,
+saklanmıyor — iş bitince kendiliğinden düşüyor. Kısayolu `B`.
+
+**4 · Klavye kısayolları.** `?` listeyi açıyor; `Ctrl + K` işlem araması, `N` yeni kayıt,
+`/` sayfadaki arama kutusu, `B` bekleyen işler, `G` ana menü, `R` rehber, `Esc` açık
+pencere. Yazı alanında ya da pencere açıkken kısayollar susuyor.
+
+**5 · Excel/CSV dışa aktarma.** Yatak listesi, talep listesi, tahsilat, kahvaltı yoklaması,
+kat hizmetleri, bekleme listesi, dönem raporu ve denetim izi sayfalarında «⬇ Excel/CSV»
+düğmesi var. Dosya **UTF-8 BOM + `;` ayracı + CRLF** ile üretiliyor; Excel'in Türkçe
+sürümünde sütunlar ve karakterler doğru açılıyor. Dışa aktarma ekrandaki süzgeçle sınırlı.
+
+**6 · Oturum zaman aşımı.** Ortak kullanılan resepsiyon bilgisayarı için 15 dakika işlem
+yapılmayan oturum kapanıyor; kapanmadan 2 dakika önce geri sayımlı uyarı çıkıyor
+(«Devam Et» süreyi sıfırlıyor, «Şimdi çık» hemen kapatıyor). Süreler `AYAR` nesnesinde,
+kurulumda kurum politikasına göre değiştirilir.
+
+**7 · Giriş ve çıkış saatleri.** Kayıt artık yalnız tarih değil saat de tutuyor: standart
+14:00 / 12:00, ayrıca «erken giriş» ve «geç çıkış» işaretleri. Saat kayıt özetinde ve talep
+detayında görünüyor; kat hizmetleri planı geç çıkışları dikkate alıyor.
+
+**8 · Servis dışı (arızalı) yatak.** Arıza, tadilat, boya gibi durumlarda yatak tarih
+aralığı ve gerekçeyle kapatılıyor; yerleştirme motoru o yatağı hiç önermiyor. Kapasiteden
+düşmüyor, ayrı sayılıyor: **`dolu + boş + temizlikte + servis dışı = kapasite`** eşitliği
+«Bugünkü Durum» ekranında yazılı. «✓ Hizmete Al» ile yatak geri açılıyor.
+
+**9 · Kat Hizmetleri sayfası (MSFH-W13).** Günlük temizlik listesi: çıkış yapılan odalar
+«Çıkış temizliği», misafiri süren odalar «Günlük temizlik». Dört durumlu çip
+(Bekliyor → Temizleniyor → Temizlendi → Hazır) ve işlem saati; kat görevlisi ataması;
+CSV ve kat görevlisine verilecek A4 çıktı.
+
+**10 · Misafir kartı.** Misafir adına tıklandığında Tc kimlik no (yoksa ad) üzerinden
+kişinin bütün konaklamaları bir araya geliyor: kaç kez kaldığı, toplam gecesi, sık kaldığı
+oda, tahsilat ve iptal geçmişi, konaklama tablosu. «★ Öncelikli misafir», «⛔ Dikkat
+işareti», oda tercihi ve serbest not **rezervasyonda değil kişide** duruyor; bir sonraki
+kayıtta adın yanında işaret olarak görünüyor. Notlar kurum içi — SMS ve belgelerde yer almıyor.
+
+**11 · Grup / blok kaydı.** «On kişilik yer tutun, adları sonra bildireceğiz» durumu:
+formda «Grup / blok kaydı» kutusu işaretlenince ilk misafir dışındaki ad alanları boş
+bırakılabiliyor, yataklar yine ayrılıyor (`— AD BİLDİRİLECEK`). Adlar geldikçe
+«👥 İsim Bildir» penceresinden giriliyor; grup küçülürse «Yatak Serbest Bırak» ile
+kullanılmayan yataklar başka taleplere açılıyor (kişi sayısı, yatak bedeli ve kapora
+yeniden hesaplanıyor, işlem geri alınabiliyor). Kayıt adı «… Grubu» olarak yazılıyor,
+listede 👥 işaretiyle görünüyor.
+
+**12 · Bekleme listesi.** Yer bulunamayan talep «⏳ Bekleme Listesine Al» ile listeye
+alınıyor; kayıt iptal edilmiyor, statüsü değişmiyor. Talepler sayfasındaki kart o tarihlerde
+kaç yatağın boş olduğunu sürekli hesaplıyor ve yeter sayıda yatak boşalınca «yatak çıktı»
+diyor; aynı kayıt zil sayacına da düşüyor.
+
+**13 · Uzatma ve nakil pencereleri.** «📅 Uzat» her misafir için yeni gecelerde yatağın boş
+olup olmadığını denetliyor: boşsa misafir yerinde kalıyor, değilse uzatma kilitleniyor ve
+önce nakil isteniyor. «🔁 Nakil» misafiri kalan gecelerin tamamında kesintisiz boş olan bir
+yatağa taşıyor; iki işlem de gerekçesiyle kayıt geçmişine yazılıyor ve geri alınabiliyor.
+
+**14 · Yönetim Raporları sayfası (MSFH-W14).** Seçilen dönem için yatak-gece doluluğu,
+misafir ve misafir-gece sayısı, ortalama konaklama süresi, tahsilat ve iptal oranı.
+Yetkili olunan bütün misafirhaneler yan yana karşılaştırılıyor (toplam satırıyla); seçili
+misafirhane için geliş nedeni, en çok konaklayan kurumlar ve konaklama süresi dağılımı ayrı
+kartlarda. Dönem kısayolları: bu ay · geçen ay · son 30 gün · son 90 gün · bu yıl.
+CSV ve A4 çıktı.
+
+**15 · Denetim İzi sayfası (MSFH-W15).** Bütün kayıt hareketleri ve sistem günlüğü tek
+listede; tarih aralığı, kullanıcı, kaynak (kayıt / sistem) ve serbest metinle süzülüyor,
+Excel'e aktarılıyor. Sayfa **yalnız okunur** — buradan hiçbir kayıt değiştirilemiyor.
+
+### Değişti
+- Yeni iki yetki eklendi: **`rapor.yonetim`** (müdür, resepsiyon, muhasebe, admin) ve
+  **`sistem.denetim`** (müdür, admin). Yetki matrisi ve rehberdeki rol tablosu güncellendi.
+- Talep detayındaki «Geliş / Çıkış» alanı artık saatleri ve erken giriş / geç çıkış
+  işaretlerini de yazıyor.
+- `YazdirmaPenceresi` başlığı parametrik oldu (`pencereBasligi`); dönem raporu aynı
+  yazdırma altyapısını kullanıyor.
+- Kullanım rehberine dört yeni başlık eklendi: oda temizliği ve servis dışı yatak ·
+  grup kaydı, bekleme listesi ve misafir kartı · yönetim raporları ve denetim izi ·
+  geri alma, klavye kısayolları ve oturum güvenliği.
+- Giriş/çıkış saati yanındaki «erken» ve «geç» kutularına `aria-label` eklendi.
+
+### Testler
+- Yeni dört dosya: `15-geri-al-oturum-kisayol.mjs` (26 denetim),
+  `16-ariza-temizlik-saat.mjs` (28), `17-uzatma-nakil-grup.mjs` (37),
+  `18-rapor-denetim-bildirim.mjs` (30).
+- `ortak.mjs`: `tarayici()` artık `ayar` seçeneğiyle `window.TTK_AYAR` yazabiliyor
+  (kısa oturum süresiyle zaman aşımı denemesi için); `sayfaVar()` geniş ekranda artık
+  telefon çekmecesini açmaya çalışmıyor; sayfa listesine «Raporlar» ve «Denetim» eklendi.
+
 ## [2.12.0] — 01.10.2026
 ### Eklendi — doluluk şeridinde 7 / 14 / 30 gün seçeneği
 - «Doluluk Takvimi» sayfasındaki şerit artık **7, 14 veya 30 günlük** olabiliyor. 7 günlük
