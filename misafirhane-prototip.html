@@ -174,7 +174,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useLayoutEffect, useCa
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.11.0';
+const SURUM = '2.12.0';
 const SURUM_TARIHI = '2026-10-01';
 
 const GUN_MS = 86400000;
@@ -2306,6 +2306,7 @@ function YatakDetayModal({ detay, kapat, acYeniKayit, izin, tesis }) {
 function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolum }) {
   const tesisAd = (TESISLER.find(t => t.kod === s.tesis) || {}).ad || '';
   const [seritBas, setSeritBas] = useState(s.bugun);
+  const [seritGun, setSeritGun] = useState(30);        /* şerit uzunluğu: 7 · 14 · 30 gün */
   const [haritaTarihi, setHaritaTarihi] = useState(s.bugun);
   const [aralikBas, setAralikBas] = useState(s.bugun);
   const [aralikSon, setAralikSon] = useState(ekle(s.bugun, 3));
@@ -2316,7 +2317,7 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolu
 
   useEffect(() => { setSeritBas(s.bugun); setHaritaTarihi(s.bugun); setAralikBas(s.bugun); setAralikSon(ekle(s.bugun, 3)); }, [s.bugun]);
 
-  const gunler = useMemo(() => Array.from({ length: 30 }, (_, i) => ekle(seritBas, i)), [seritBas]);
+  const gunler = useMemo(() => Array.from({ length: seritGun }, (_, i) => ekle(seritBas, i)), [seritBas, seritGun]);
   const ist = useMemo(() => gunIstatistikleri(s.tesis, gunler, s.yataklar, s.rezervasyonlar, dolu, temizlik),
     [s.tesis, gunler, s.yataklar, s.rezervasyonlar, dolu, temizlik]);
   const tesisYatak = useMemo(() => s.yataklar.filter(y => y.tesis === s.tesis), [s.yataklar, s.tesis]);
@@ -2455,15 +2456,22 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolu
       {/* ── DOLULUK TAKVİMİ ───────────────────────────────────────────── */}
       {bolum === 'TAKVIM' && (
         <div className="space-y-3">
-          <Kart baslik="30 Günlük Doluluk"
+          <Kart baslik={`${seritGun} Günlük Doluluk`}
             sag={<>
-              <Buton tur="sessiz" onClick={() => setSeritBas(ekle(seritBas, -30))}>◀ Önceki 30 gün</Buton>
+              {/* Şerit uzunluğu: haftalık bakmak için 7, iki haftalık için 14,
+                  uzun vadeli planlama için 30 gün. */}
+              <GorunumSecici deger={String(seritGun)} ayarla={(v) => setSeritGun(Number(v))} secenekler={[
+                ['7', '7 gün', 'Bu haftaya odaklan — günler geniş ve okunaklı'],
+                ['14', '14 gün', 'İki haftalık görünüm'],
+                ['30', '30 gün', 'Aylık planlama görünümü'],
+              ]} />
+              <Buton tur="sessiz" onClick={() => setSeritBas(ekle(seritBas, -seritGun))}>◀ Önceki {seritGun} gün</Buton>
               <Buton tur="sessiz" onClick={() => setSeritBas(s.bugun)}>Bugün</Buton>
-              <Buton tur="sessiz" onClick={() => setSeritBas(ekle(seritBas, 30))}>Sonraki 30 gün ▶</Buton>
+              <Buton tur="sessiz" onClick={() => setSeritBas(ekle(seritBas, seritGun))}>Sonraki {seritGun} gün ▶</Buton>
             </>}
             govdeSinif="p-2">
             <div className="kaydir-x kaydir">
-              <div className="flex gap-[2px]" style={{ minWidth: '60rem' }}>
+              <div className="flex gap-[2px]" style={{ minWidth: seritGun >= 30 ? '60rem' : seritGun >= 14 ? '30rem' : '18rem' }}>
                 {ist.map(g => {
                   const secili = g.tarih >= aralikBas && g.tarih < aralikSon;
                   const bugunMu = g.tarih === s.bugun;
@@ -5350,7 +5358,7 @@ const SAYFALAR = [
   { kod:'OZET',      ad:'Bugünkü Durum',        kisa:'Özet',      form:'MSFH-W01', izin:'pano.goruntule',
     ikon:'ozet',   grup:'Görüntüleme', aciklama:'Dolu/boş yatak, giriş-çıkış sayıları ve dört tesisin karşılaştırması' },
   { kod:'TAKVIM',    ad:'Doluluk Takvimi',      kisa:'Takvim',    form:'MSFH-W02', izin:'pano.goruntule',
-    ikon:'takvim', grup:'Görüntüleme', aciklama:'30 günlük doluluk ve seçili tarih aralığında kalan yatak hesabı' },
+    ikon:'takvim', grup:'Görüntüleme', aciklama:'7 / 14 / 30 günlük doluluk şeridi ve seçili tarih aralığında kalan yatak hesabı' },
   { kod:'ODALAR',    ad:'Oda ve Yatak Durumu',  kisa:'Odalar',    form:'MSFH-W03', izin:'pano.goruntule',
     ikon:'oda',    grup:'Görüntüleme', aciklama:'Oda kartlarında hangi yatakta kimin kaldığı; yerleştirme de buradan yapılır' },
   { kod:'YATAK_LISTESI', ad:'Yatak Listesi',    kisa:'Yatak Listesi', form:'MSFH-W04', izin:'pano.goruntule',
@@ -5477,11 +5485,11 @@ const REHBER_KONULARI = [
   {
     anahtarlar: ['doluluk', 'bos yatak', 'takvim', 'musait', 'yer var', 'kapasite', 'bos yer'],
     kod: 'DOLULUK', baslik: 'Doluluğu görme ve boş yatak arama', ikon: 'takvim', sayfa: 'TAKVIM',
-    ozet: 'Bugünkü durum, 30 günlük takvim ve belirli bir tarih aralığında kaç yatak kaldığı.',
+    ozet: 'Bugünkü durum, 7 / 14 / 30 günlük takvim ve belirli bir tarih aralığında kaç yatak kaldığı.',
     roller: ['ADMIN', 'YONETICI', 'RESEPSIYON', 'MUHASEBE'],
     adimlar: [
       { b: 'Günlük özet', m: '«Bugünkü Durum» sayfası dolu/boş yatak, bugün giriş ve çıkış yapacak misafir sayısı, temizlikteki yatak ve doluluk oranını gösterir; altta dört misafirhanenin karşılaştırması vardır. Tesis adına tıklayarak o misafirhaneye geçebilirsiniz.', sayfa: 'OZET' },
-      { b: '30 günlük takvim', m: '«Doluluk Takvimi» sayfasında her gün için doluluk çubuğu, giriş (▲) ve çıkış (▼) sayıları görünür. «◀ Önceki 30 gün» ve «Sonraki 30 gün ▶» düğmeleriyle dönemi kaydırabilirsiniz.', sayfa: 'TAKVIM' },
+      { b: 'Doluluk takvimi', m: '«Doluluk Takvimi» sayfasında her gün için doluluk çubuğu, giriş (▲) ve çıkış (▼) sayıları görünür. Şeridin uzunluğunu sağ üstten seçersiniz: «7 gün» bu haftaya odaklanır (günler geniş ve okunaklı, telefonda da sığar), «14 gün» iki haftaya, «30 gün» aylık planlamaya bakar. «◀ Önceki … / Sonraki … ▶» düğmeleri seçtiğiniz uzunluk kadar ilerler, «Bugün» sistem tarihine döner.', sayfa: 'TAKVIM' },
       { b: 'Aralıkta kalan yatağı hesaplayın', m: 'Takvim sayfasındaki tarih aralığı kutularına geliş ve çıkış tarihini yazın; seçtiğiniz aralığın bütün gecelerinde kesintisiz boş kalan yatak sayısı hesaplanır. Telefonda misafire «yeriniz var mı?» sorusunu buradan yanıtlayabilirsiniz.', sayfa: 'TAKVIM' },
       { b: 'Oda oda bakın', m: '«Oda ve Yatak Durumu» sayfasında oda kartları üzerinde yatak yatak durum (dolu / boş / temizlikte) ve kalan misafirin adı yazar. Tarihi değiştirerek ileri bir günün durumunu da görebilirsiniz.', sayfa: 'ODALAR' },
     ],

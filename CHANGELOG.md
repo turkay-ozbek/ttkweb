@@ -8,6 +8,20 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.12.0] — 01.10.2026
+### Eklendi — doluluk şeridinde 7 / 14 / 30 gün seçeneği
+- «Doluluk Takvimi» sayfasındaki şerit artık **7, 14 veya 30 günlük** olabiliyor. 7 günlük
+  görünümde hücreler genişliyor (telefonda da yatay kaymadan sığıyor), 30 günlük görünüm
+  aylık planlama için duruyor. Kart başlığı, «◀ Önceki … / Sonraki … ▶» düğmeleri ve adım
+  miktarı seçilen uzunluğa göre değişiyor; «Bugün» sistem tarihine döndürüyor.
+- Takvim sayfası günlüğe indirgenmedi: tek günün verisi zaten Bugünkü Durum, Oda Durumu
+  (kroki), Yatak Listesi ve Kahvaltı sayfalarında var; takvimin işi «hangi tarihte yer var»
+  sorusunu yanıtlamak. Şerit uzunluğu seçeneği bu işi bozmadan haftalık bakışı kolaylaştırıyor.
+
+### Testler
+- `09-goruntuleme-tutarlilik.mjs`: 7 / 14 / 30 seçeneklerinin hücre sayısını, başlığı ve
+  gezinme adımını değiştirdiği denetleniyor.
+
 ## [2.11.0] — 01.10.2026
 ### Değişti — talep listesi günlük oldu
 - **Rezervasyon Talepleri artık üç aylık değil, günlük.** Üstteki **«Geliş günü»** kutusunda

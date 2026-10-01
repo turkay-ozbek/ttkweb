@@ -46,7 +46,7 @@ değildir — ve zaten telefonda yapılması beklenen bir iş de değildir.
 | Talep listesinde arama / süzgeç | 🟡 Çalışır, dar | Tablo kendi kutusunda yatay kayar; süzgeç kutuları alt satıra iner |
 | Yatak listesi (13 sütun) | 🟡 Okunur, yazdırılamaz | Kaydırmalı okunur; **yazdırma masaüstü işidir**, telefonda PDF olarak paylaşılır |
 | Oda haritasına yerleştirme (oda haritası / kroki) | ❌ **Zayıf** | Yatak hücreleri parmak için küçük; sürükle-bırak dokunmatikte güvenilir değil. **Karşılığı:** «misafire dokun → yatağa dokun» akışı, «✋ Listeden Seç» penceresi ve «⚙ Otomatik Yerleştir» — üçü de telefonda çalışır |
-| 30 günlük doluluk takvimi | ❌ Zayıf | Şerit yatay kayar; telefonda tek günlük harita görünümü tercih edilmeli |
+| Doluluk takvimi şeridi | 🟡 Orta | 30 günlük şerit telefonda yatay kayar; **7 gün** seçeneğiyle ekrana sığar ve okunaklı olur |
 | Ay sonu raporu / çok sayfalı PDF | 🟡 Okunur | Üretilir ve paylaşılır; incelemesi masaüstünde yapılır |
 | 10 kişilik grubun veri girişi | ❌ **Masaüstü işi** | Onlarca alan; telefonda yapılabilir ama verimsizdir |
 

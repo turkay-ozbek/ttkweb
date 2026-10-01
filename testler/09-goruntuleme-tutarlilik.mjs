@@ -53,6 +53,27 @@ try {
   d.bekle(await p.locator('main [title*="Dolu"]').first().getAttribute('title') === ilkGun,
     '«Önceki 30 gün» dönemi geri alıyor');
 
+  /* Şerit uzunluğu: 7 / 14 / 30 gün */
+  for (const uzunluk of [7, 14, 30]) {
+    await p.getByRole('button', { name: `${uzunluk} gün`, exact: true }).click();
+    await p.waitForTimeout(500);
+    const adet = await p.locator('main [title*="Dolu"]').count();
+    d.bekle(adet === uzunluk, `şerit «${uzunluk} gün» seçilince ${uzunluk} gün gösteriyor`, `${adet} gün`);
+    d.bekle(new RegExp(`${uzunluk} GÜNLÜK DOLULUK`).test(await govde(p)),
+      `kart başlığı «${uzunluk} Günlük Doluluk» oluyor`);
+    d.bekle(await p.getByRole('button', { name: new RegExp(`Sonraki ${uzunluk} gün`) }).count() === 1,
+      `gezinme düğmesi ${uzunluk} günlük adımı yazıyor`);
+  }
+  /* 7 günlük şeritte ileri gidince tam bir hafta ilerlemeli */
+  await p.getByRole('button', { name: '7 gün', exact: true }).click(); await p.waitForTimeout(500);
+  const haftaIlk = await p.locator('main [title*="Dolu"]').first().getAttribute('title');
+  await p.getByRole('button', { name: /Sonraki 7 gün/ }).click(); await p.waitForTimeout(500);
+  const haftaSonraki = await p.locator('main [title*="Dolu"]').first().getAttribute('title');
+  d.bekle(haftaIlk !== haftaSonraki, '«Sonraki 7 gün» şeridi bir hafta ileri alıyor',
+    `${(haftaIlk || '').slice(0, 10)} → ${(haftaSonraki || '').slice(0, 10)}`);
+  await p.getByRole('button', { name: 'Bugün', exact: true }).first().click(); await p.waitForTimeout(400);
+  await p.getByRole('button', { name: '30 gün', exact: true }).click(); await p.waitForTimeout(500);
+
   /* 7.2 aralık daraldıkça kesintisiz boş yatak azalmamalı */
   const aralikKutulari = p.getByPlaceholder('GG.AA.YYYY');
   const musaitOku = async () => num(await govde(p), /Kesintisiz aynı yatakta müsait\s*\n?\s*(\d[\d.]*) yatak/i);

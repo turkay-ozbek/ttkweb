@@ -151,8 +151,10 @@ onay `rezervasyon.onay` (Müdür, Admin)
 
 1. **Günlük özet.** «Bugünkü Durum»: dolu/boş yatak, bugünkü giriş-çıkış, temizlikteki yatak,
    doluluk oranı ve dört misafirhanenin karşılaştırması. Tesis adına tıklayarak geçiş yapılır.
-2. **30 günlük takvim.** «Doluluk Takvimi»: her gün için doluluk çubuğu, giriş (▲) ve çıkış (▼)
-   sayıları; **◀ Önceki 30 gün** / **Sonraki 30 gün ▶** ile dönem kaydırılır.
+2. **Doluluk takvimi.** «Doluluk Takvimi»: her gün için doluluk çubuğu, giriş (▲) ve çıkış (▼)
+   sayıları. Şeridin uzunluğu sağ üstten seçilir — **7 gün** (bu haftaya odaklanır, günler geniş
+   ve okunaklıdır, telefonda da sığar), **14 gün**, **30 gün** (aylık planlama). **◀ Önceki …** /
+   **Sonraki … ▶** seçilen uzunluk kadar ilerler, **Bugün** sistem tarihine döner.
 3. **Aralıkta kalan yatak.** Takvim sayfasındaki tarih aralığı kutuları; seçilen aralığın bütün
    gecelerinde **kesintisiz** boş kalan yatak sayısı hesaplanır.
 4. **Oda oda.** «Oda ve Yatak Durumu»: oda kartlarında yatak yatak durum (dolu / boş / temizlikte)

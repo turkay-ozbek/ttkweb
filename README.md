@@ -48,7 +48,7 @@ Uygulama ana menüden açılan on odaklı sayfadan oluşur; her sayfa tek bir i�
 | Kod | Sayfa | İçerik |
 |---|---|---|
 | MSFH-W01 | **Bugünkü Durum** | Dolu/boş yatak, giriş-çıkış, temizlik sayıları; misafirhane karşılaştırması; bugünün işleri ve son işlemler |
-| MSFH-W02 | **Doluluk Takvimi** | 30 günlük doluluk şeridi, seçili tarih aralığında garanti kalan yatak ve gece bazında boşluk |
+| MSFH-W02 | **Doluluk Takvimi** | Doluluk şeridi — **7 / 14 / 30 gün** seçilebilir (haftalık bakışta günler geniş ve okunaklı, aylık bakışta planlama); ileri-geri gezinme seçili uzunluk kadar adımlar. Seçili tarih aralığında garanti kalan yatak ve gece bazında boşluk |
 | MSFH-W03 | **Oda ve Yatak Durumu** | Üç görünüm: **İsimli / Kompakt / Kroki**. Kroki, Ankara Misafirhanesi'nin kâğıt krokisindeki düzeni birebir çizer (kat → satır → sütun, odadaki yatak sırası); talep seçiliyken yerleştirme modu her görünümde çalışır (sürükle-bırak veya tıklayarak). «🖨 Yazdır» ile aynı düzen, seçili günün misafir adlarıyla A4 yatay basılır |
 | MSFH-W04 | **Yatak Listesi** | Oda ve yatak numarasına göre misafir tablosu; dolu/boş süzgeci ve arama |
 | MSFH-W05 | **Rezervasyon Talepleri** | **Günlük liste:** seçili günde gelişi olan kayıtlar (◀ ▶ ile gün değiştirilir, «Bugün» sistem tarihine döner). Arama kutusu gün süzgecini aşar, bütün günlerde arar. Seçili talep özeti, otomatik / manuel / haritada yerleştirme |
