@@ -65,6 +65,14 @@ try {
   if (/kesintisiz müsait/.test(baslik)) ok('harita konaklanacak gecelerin tamamına göre hesaplanıyor');
   else hata.push('1b: kesintisiz müsaitlik şeridi yok');
 
+  /* Dolu yatakta «Dolu» değil, o yatakta kalan misafirin adı yazmalı */
+  const doluMetinleri = await p.evaluate(() =>
+    [...document.querySelectorAll('.yatak-hucre')].map(h => h.innerText.replace(/\n/g, ' ').trim()));
+  const kuruDolu = doluMetinleri.filter(x => /^\d?\s*Dolu$/.test(x)).length;
+  const isimli = doluMetinleri.filter(x => /[A-ZÇĞİÖŞÜ]{2,}\s+[A-ZÇĞİÖŞÜ]{2,}/.test(x)).length;
+  if (kuruDolu === 0 && isimli > 0) ok(`yerleştirme modunda dolu yataklarda misafir adı yazıyor (${isimli} yatak)`);
+  else hata.push(`1c: dolu yatakta ad yerine «Dolu» yazan ${kuruDolu} hücre var`);
+
   const kart = p.locator('main div[draggable="true"]').first();
   if (!(await kart.count())) hata.push('1: sürüklenebilir misafir kartı yok');
   else ok('misafir kartı sürüklenebilir (draggable)');

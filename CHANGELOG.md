@@ -8,6 +8,31 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.10.0] — 01.10.2026
+### Düzeltildi — çift kişilik yataklar krokideki gibi ikiye bölündü
+- **Oda 16, 29 ve 38**'de tek bir **çift kişilik yatak** var; bunlar tek kişilik gibi
+  görünüyordu. Artık iki yatma yeri taşıyorlar ve krokideki çizimin aynısı uygulanıyor:
+  **yatak numarası tek hücrede birleşik**, karşısındaki ad alanı ikiye bölünmüş. Ankara'nın
+  kapasitesi 46 → **49 yatma yeri** oldu; bu odalar iki kişilik (750 ₺) olarak fiyatlanıyor
+  ve doluluk, boş yatak, tahsilat, kahvaltı sayıları buna göre yeniden üretiliyor.
+- **Yerleştirme modunda dolu yatakta «Dolu» yerine misafirin adı yazıyor.** Yatak seçili
+  talebin bütün gecelerinde dolu değilse ad yanında «· 6/10 gece» gibi kaç gece dolu olduğu
+  da görünüyor; kimse yoksa (çıkış sonrası blok) «Temizlik» yazıyor.
+- **Tarayıcının geri düğmesi artık uygulamadan çıkmıyor.** Her sayfa geçişi tarayıcı
+  geçmişine yazılıyor; «geri» bir önceki sayfayı, «ileri» sonrakini açıyor. İlk sayfa
+  geçmişe eklenmediği için uygulamadan çıkmak isteyen kullanıcı yine tek adımda çıkabiliyor.
+
+### Testler
+- `09-goruntuleme-tutarlilik.mjs`: yatak sayıları 49'a göre denetleniyor; çift kişilik
+  yataklı odalarda tek yatak numarası ve iki ad satırı olduğu doğrulanıyor.
+- `05-surukle-birak-ve-dekont.mjs`: yerleştirme modunda hiçbir dolu yatakta «Dolu»
+  yazmadığı, misafir adlarının göründüğü denetleniyor.
+- `10-arayuz-ve-sinir-durumlari.mjs`: geri/ileri düğmeleri — iki adım geri gidip bir adım
+  ileri alınıyor, uygulamadan çıkılmadığı doğrulanıyor.
+- `07-yeni-kayit-dogrulama.mjs`: otomatik yatak bulma denetimi 13 gecelik aile kaydı yerine
+  olağan iki gecelik kayıtla yapılıyor (24 odalı gerçek misafirhanede 13 gece boyunca aynı
+  odada iki boş yatak nadiren bulunur).
+
 ## [2.9.1] — 01.10.2026
 ### Değişti
 - Kroki görünümündeki düğme **«🖨 Yazdır»** oldu (önce «🖨 Krokiyi Yazdır»); hangi

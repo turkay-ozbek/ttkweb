@@ -113,7 +113,7 @@ Motorun çıktısı doğrudan uygulanmaz:
 ## 9. Karmaşıklık ve ölçüm
 
 Talep başına maliyet `O(oda sayısı × gece sayısı × oda başına yatak)`. Prototipte
-104 oda / 206 yatak ve ~50 bekleyen talep için motor tipik olarak **60–150 ms**
+104 oda / 209 yatak ve ~50 bekleyen talep için motor tipik olarak **60–150 ms**
 içinde sonuç üretir (tarayıcıda ölçülmüştür, onay ekranının altında gösterilir).
 
 ## 10. Üretime alınırken gözden geçirilmesi gerekenler

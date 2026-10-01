@@ -83,6 +83,22 @@ try {
   const korunan = await taleplerdeAra(p, 'OTURUM TESTI');
   d.bekle(await korunan.count() === 1, 'oturum kapatıp yeniden girince kayıtlar korunuyor');
 
+  /* ═══ 10.4 Tarayıcının geri düğmesi uygulamadan çıkarmamalı ═══ */
+  const sayfaAdi = async () => (await govde(p)).split('\n')[0].trim();
+  await sayfa(p, 'Odalar');
+  await sayfa(p, 'Talepler');
+  await sayfa(p, 'Tahsilat');
+  const ucuncu = await sayfaAdi();
+  await p.goBack(); await p.waitForTimeout(600);
+  const geri1 = await sayfaAdi();
+  d.bekle(await p.locator('nav').count() > 0, 'geri düğmesi uygulamadan çıkarmıyor');
+  d.bekle(geri1 !== ucuncu && /Talep/i.test(geri1), 'geri düğmesi bir önceki sayfaya dönüyor',
+    `${ucuncu} → ${geri1}`);
+  await p.goBack(); await p.waitForTimeout(600);
+  d.bekle(/Oda ve Yatak/i.test(await sayfaAdi()), 'ikinci geri bir öncekine daha dönüyor', await sayfaAdi());
+  await p.goForward(); await p.waitForTimeout(600);
+  d.bekle(/Talep/i.test(await sayfaAdi()), '«ileri» düğmesi sayfayı geri alıyor', await sayfaAdi());
+
   /* ═══ 10.5 Sınır durumları ═══ */
   /* a) geçmiş tarihe kayıt */
   const g2 = await yeniKayit(p, { ad: 'GECMIS TARIH', ekGun: -5, gece: 3 });

@@ -115,11 +115,28 @@ try {
     JSON.stringify(krokiDuzen.satirlar));
   d.bekle(krokiDuzen.katlar.join(' ') === '1. KAT 2. KAT 3. KAT', 'üç kat krokideki sırayla yazılı',
     krokiDuzen.katlar.join(' '));
-  const beklenenYatak = { 12:2, 13:2, 14:2, 15:2, 16:1, 17:3, 21:1, 22:1, 23:2, 24:2, 25:2, 26:2,
-                          27:2, 28:3, 29:1, 31:2, 32:2, 33:2, 34:2, 35:2, 36:2, 37:2, 38:1, 39:3 };
+  /* 16, 29 ve 38'de tek bir çift kişilik yatak var: iki yatma yeri, tek yatak numarası */
+  const beklenenYatak = { 12:2, 13:2, 14:2, 15:2, 16:2, 17:3, 21:1, 22:1, 23:2, 24:2, 25:2, 26:2,
+                          27:2, 28:3, 29:2, 31:2, 32:2, 33:2, 34:2, 35:2, 36:2, 37:2, 38:2, 39:3 };
   const yatakFark = Object.entries(beklenenYatak).filter(([no, adet]) => krokiDuzen.yatak[no] !== adet);
-  d.bekle(yatakFark.length === 0, 'her odanın yatak sayısı krokideki gibi (24 oda / 46 yatak)',
+  d.bekle(yatakFark.length === 0, 'her odanın yatak sayısı krokideki gibi (24 oda / 49 yatak)',
     yatakFark.map(([no, adet]) => `Oda ${no}: ${krokiDuzen.yatak[no]} ≠ ${adet}`).join(' · '));
+  /* Çift kişilik yatakta numara tek hücrede birleşik yazılır */
+  const ciftYatakli = await p.evaluate(() => {
+    const sonuc = {};
+    document.querySelectorAll('main .grid > div').forEach(h => {
+      const b = h.querySelector('div');
+      if (!b || !/^Oda /.test(b.textContent)) return;
+      const no = Number(b.textContent.replace('Oda ', ''));
+      sonuc[no] = [...h.querySelectorAll('.num')].map(x => x.textContent.trim()).filter(x => /^\d$/.test(x)).join(',');
+    });
+    return sonuc;
+  });
+  const ciftHata = [16, 29, 38].filter(no => ciftYatakli[no] !== '1')
+    .concat([12, 17].filter(no => ciftYatakli[no] === '1'));
+  d.bekle(ciftHata.length === 0,
+    'çift kişilik yataklı odada (16 · 29 · 38) tek yatak numarası, iki ad satırı var',
+    ciftHata.map(no => `Oda ${no}: ${ciftYatakli[no]}`).join(' · '));
   d.bekle(Object.keys(krokiDuzen.yatak).length === 24, 'krokide 24 oda var',
     String(Object.keys(krokiDuzen.yatak).length));
 

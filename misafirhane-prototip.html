@@ -174,7 +174,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useLayoutEffect, useCa
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.9.1';
+const SURUM = '2.10.0';
 const SURUM_TARIHI = '2026-10-01';
 
 const GUN_MS = 86400000;
@@ -365,11 +365,15 @@ const ANKARA_KROKI = {
     { kat: 2, satirlar: [[21, 23, 24, 27, 29], [22, 25, 26, 28, null]] },
     { kat: 3, satirlar: [[31, 33, 34, 37, 38], [32, 35, 36, 39, null]] },
   ],
+  /* yatak: odadaki yatma yeri sayısı */
   yatak: {
-    12: 2, 13: 2, 14: 2, 15: 2, 16: 1, 17: 3,
-    21: 1, 22: 1, 23: 2, 24: 2, 25: 2, 26: 2, 27: 2, 28: 3, 29: 1,
-    31: 2, 32: 2, 33: 2, 34: 2, 35: 2, 36: 2, 37: 2, 38: 1, 39: 3,
+    12: 2, 13: 2, 14: 2, 15: 2, 16: 2, 17: 3,
+    21: 1, 22: 1, 23: 2, 24: 2, 25: 2, 26: 2, 27: 2, 28: 3, 29: 2,
+    31: 2, 32: 2, 33: 2, 34: 2, 35: 2, 36: 2, 37: 2, 38: 2, 39: 3,
   },
+  /* Tek bir çift kişilik yatakta iki kişi kalan odalar. Krokide yatak numarası
+     tek hücrede birleşik yazılır, karşısındaki ad alanı ikiye bölünür. */
+  ciftYatak: [16, 29, 38],
 };
 const KROKILER = { ANKARA: ANKARA_KROKI };
 const krokiBul = (tesisKod) => KROKILER[tesisKod] || null;
@@ -416,16 +420,17 @@ const telUret   = r => '5' + tamsayi(r, 30, 55) + ' ' + tamsayi(r, 100, 999) + '
 function odalariUret(r) {
   const odalar = [], yataklar = [];
   let yid = 1;
-  const odaEkle = (t, oda_no, kat, yatakSayisi, protokol) => {
+  const odaEkle = (t, oda_no, kat, yatakSayisi, protokol, ciftYatak = false) => {
     const tip = yatakSayisi === 1 ? 'TEK' : yatakSayisi === 2 ? 'CIFT' : 'UCLU';
     const taban = tip === 'TEK' ? 900 : tip === 'CIFT' ? 750 : 600;
     const yatak_fiyati = Math.round(taban * t.carpan / 50) * 50;
-    odalar.push({ id: t.kod + '-' + oda_no, tesis: t.kod, oda_no, kat, tip, yatakSayisi, protokol, yatak_fiyati });
+    odalar.push({ id: t.kod + '-' + oda_no, tesis: t.kod, oda_no, kat, tip, yatakSayisi, protokol,
+                  yatak_fiyati, cift_yatak: ciftYatak });
     for (let y = 1; y <= yatakSayisi; y++) {
       yataklar.push({
         id: t.kod + '-' + oda_no + '-' + y,
         odaId: t.kod + '-' + oda_no,
-        tesis: t.kod, oda_no, yatak_no: y, tip, protokol, kat, yatak_fiyati,
+        tesis: t.kod, oda_no, yatak_no: y, tip, protokol, kat, yatak_fiyati, cift_yatak: ciftYatak,
       });
     }
   };
@@ -438,7 +443,8 @@ function odalariUret(r) {
         for (const satir of k.satirlar) {
           for (const oda_no of satir) {
             if (oda_no == null) continue;
-            odaEkle(t, oda_no, k.kat, kroki.yatak[oda_no], false);
+            odaEkle(t, oda_no, k.kat, kroki.yatak[oda_no], false,
+                    (kroki.ciftYatak || []).includes(oda_no));
           }
         }
       }
@@ -2025,7 +2031,35 @@ function OdaKrokisi({ kroki, odalar, yataklar, hucre, yukseklik = '', yazdirma =
                         : 'text-center num text-xs font-bold text-ttk-900 bg-slate-100 border-b border-slate-300 py-0.5'}>
                         Oda {oda.oda_no}
                       </div>
-                      {ys.map(y => {
+                      {/* Çift kişilik yataklı odada (ör. Oda 16) yatak numarası tek
+                          hücrede birleşik yazılır, karşısındaki ad alanı ikiye bölünür —
+                          krokideki çizim böyledir. */}
+                      {oda.cift_yatak ? (
+                        <div className={`flex items-stretch flex-1 ${yazdirma ? '' : ''}`}>
+                          <span className={yazdirma
+                            ? 'num text-[9px] w-4 shrink-0 text-center border-r border-slate-400 flex items-center justify-center'
+                            : 'num text-2xs font-bold w-4 shrink-0 text-center border-r border-black/10 flex items-center justify-center bg-slate-50 text-slate-600'}>
+                            1
+                          </span>
+                          <div className="flex-1 flex flex-col min-w-0">
+                            {ys.map(y => {
+                              const h = hucre(y);
+                              return (
+                                <div key={y.id} title={h.baslik} {...(h.props || {})}
+                                  className={yazdirma
+                                    ? 'flex items-center flex-1 border-b border-slate-400 last:border-b-0 min-h-[16px]'
+                                    : `yatak-hucre flex items-center flex-1 border-b border-slate-200 last:border-b-0 ${h.sinif} ${h.ek || ''}`}>
+                                  <span className={yazdirma
+                                    ? 'flex-1 text-[9px] px-1 py-[1px] leading-snug'
+                                    : 'flex-1 text-2xs px-1 py-[3px] truncate leading-4'}>
+                                    {h.ad}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : ys.map(y => {
                         const h = hucre(y);
                         return (
                           <div key={y.id} title={h.baslik} {...(h.props || {})}
@@ -3754,14 +3788,27 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
             } else if (yerlestirmeModu && musaitlik) {
               const m = musaitlik.harita.get(y.id) || { tam: false, engel: 0, gece: 0 };
               const kismi = !m.tam && m.engel < m.gece;
+              /* Dolu yatakta «Dolu» yerine o yatakta kalan misafirin adı yazar;
+                 kimse yoksa (çıkış sonrası blok) «Temizlik» denir. */
+              let sakin = null, temizlikte = false;
+              for (const t of geceler) {
+                const k = musaitlik.dolu.get(y.id + '|' + t);
+                if (k && k.misafir) { sakin = k.misafir; break; }
+                if (!temizlikte && musaitlik.temizlik.has(y.id + '|' + t)) temizlikte = true;
+              }
               sinif = bende ? 'bg-emerald-600 border-emerald-700 text-white font-semibold'
                 : m.tam ? 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-50'
                 : kismi ? 'bg-amber-50 border-amber-300 text-amber-800'
                 : 'bg-slate-200 border-slate-300 text-slate-500';
-              ad = bende ? bende.adi_soyadi : m.tam ? 'Müsait' : kismi ? `${m.engel}/${m.gece} gece dolu` : 'Dolu';
+              ad = bende ? bende.adi_soyadi
+                : m.tam ? 'Müsait'
+                : sakin ? (kismi ? `${sakin.adi_soyadi} · ${m.engel}/${m.gece} gece` : sakin.adi_soyadi)
+                : temizlikte ? 'Temizlik'
+                : kismi ? `${m.engel}/${m.gece} gece dolu` : 'Dolu';
               baslik = bende ? `${bende.adi_soyadi} — bu talebe tahsis edildi`
                 : m.tam ? `${m.gece} gecenin tamamında müsait — yerleştirmek için tıklayın`
-                : `Kesintisiz müsait değil — ${m.gece} gecenin ${m.engel} tanesinde dolu/temizlikte`;
+                : `${sakin ? sakin.adi_soyadi + ' kalıyor — ' : ''}kesintisiz müsait değil: ` +
+                  `${m.gece} gecenin ${m.engel} tanesinde dolu/temizlikte`;
             } else {
               const { durum, kayit } = yatakDurumu(y, haritaTarihi, dolu, temizlik);
               sinif = YATAK_DURUM[durum].kutu;
@@ -6833,6 +6880,35 @@ function Uygulama() {
     setMenuAcik(false);
     if (kod === 'REHBER') setRehberKonu(konu || null);
   };
+
+  /* ── Tarayıcının geri düğmesi ──────────────────────────────────────────
+     Tek sayfalık uygulamada «geri», hiçbir şey yapılmazsa uygulamadan çıkar.
+     Her sayfa geçişi tarayıcı geçmişine yazılır; «geri» bir önceki sayfayı
+     açar, «ileri» tekrar öne alır. Geçmişten gelen değişiklikte yeniden
+     geçmişe yazılmaması için geriDonus bayrağı kullanılır. */
+  const geriDonus = useRef(false);
+  useEffect(() => {
+    const geriyeGit = (e) => {
+      const ekran = (e.state && e.state.msfhEkran) || 'ANA_MENU';
+      geriDonus.current = true;
+      gonder({ tip: 'EKRAN', ekran });
+      setMenuAcik(false);
+      setSayfaListesi(false);
+    };
+    window.addEventListener('popstate', geriyeGit);
+    return () => window.removeEventListener('popstate', geriyeGit);
+  }, []);
+  useEffect(() => {
+    if (!s.kullanici) return;                       /* giriş ekranında geçmiş tutulmaz */
+    if (geriDonus.current) { geriDonus.current = false; return; }
+    try {
+      const mevcut = window.history.state;
+      if (mevcut && mevcut.msfhEkran === s.ekran) return;
+      const durum = { msfhEkran: s.ekran };
+      if (mevcut && mevcut.msfhEkran) window.history.pushState(durum, '');
+      else window.history.replaceState(durum, '');  /* ilk sayfa geçmişe eklenmez */
+    } catch (_) { /* file:// gibi kısıtlı ortamlarda sessizce geç */ }
+  }, [s.ekran, s.kullanici]);
 
   /* Ctrl/⌘ + K her yerden komut aramasını açar */
   useEffect(() => {

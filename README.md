@@ -164,8 +164,10 @@ odaları kurumun kendi krokisinden** alınmıştır (`ANKARA_KROKI`):
 | 2 | Oda 21 · 23 · 24 · 27 · 29 | Oda 22 · 25 · 26 · 28 |
 | 3 | Oda 31 · 33 · 34 · 37 · 38 | Oda 32 · 35 · 36 · 39 |
 
-**24 oda · 46 yatak.** Yatak sayıları: tek kişilik 16, 21, 22, 29, 38; üç kişilik 17, 28, 39;
-kalan on altı oda iki kişilik. Kroki görünümü ve çıktısı bu satır/sütun düzenini değiştirmez.
+**24 oda · 49 yatma yeri.** Tek kişilik: 21, 22 · üç kişilik: 17, 28, 39 · kalanı iki kişilik.
+**16, 29 ve 38'de tek bir çift kişilik yatak** vardır: iki kişi kalır ama krokideki gibi tek
+yatak numarasıyla, ad alanı ikiye bölünmüş olarak çizilir. Kroki görünümü ve çıktısı bu
+satır/sütun düzenini değiştirmez.
 Kroki protokol odası belirtmediği için Ankara'da protokol işaretli oda yoktur; gerekirse
 `ANKARA_KROKI` üzerinden işaretlenebilir.
 
@@ -198,7 +200,7 @@ kurallarının (giriş, çıkış, süre aşımından iptal) canlı çalıştı�
 
 ## Demo verisi
 
-4 tesis · 104 oda · 206 yatak · yaklaşık 4.400 rezervasyon kaydı (3 ay geçmiş +
+4 tesis · 104 oda · 209 yatak · yaklaşık 4.500 rezervasyon kaydı (3 ay geçmiş +
 3 ay gelecek), iptaller ve uzatmalar dahil. Veri deterministik üretilir; her
 açılışta aynı demo görüntülenir. Talep yoğunluğu **yatak kapasitesine orantılıdır**,
 bu yüzden doluluk oranları dört misafirhanede birbirine yakın çıkar (%60–70).
@@ -206,7 +208,7 @@ bu yüzden doluluk oranları dört misafirhanede birbirine yakın çıkar (%60�
 | Tesis | Oda | Yatak | Kaynak |
 |---|---:|---:|---|
 | Yayla Konağı (Zonguldak) | 26 | 52 | örnek veri |
-| **Ankara Misafirhanesi** | **24** | **46** | **kurumun oda krokisi (gerçek)** |
+| **Ankara Misafirhanesi** | **24** | **49** | **kurumun oda krokisi (gerçek)** |
 | Amasra Misafirhanesi (Bartın) | 31 | 61 | örnek veri |
 | Armutçuk Misafirhanesi (Ereğli) | 23 | 47 | örnek veri |
 

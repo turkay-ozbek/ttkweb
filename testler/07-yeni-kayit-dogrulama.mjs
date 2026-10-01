@@ -81,6 +81,12 @@ try {
     (kurumAltlik.match(/statü:.*/i) || [''])[0]);
 
   /* ═══ 2.5 Formdan otomatik yatak bulma ═══ */
+  /* Tarih denemelerinden kalan uzun aralık yerine olağan bir konaklama: iki kişilik
+     aile, iki gece. (24 odalı gerçek misafirhanede 13 gecelik aynı oda nadiren boştur;
+     burada sınanan şey yatak bulununca statünün «Onaylı»ya dönmesi.) */
+  await tarihYaz(gelisKutu, await trTarih(p, 10));
+  await tarihYaz(cikisKutu, await trTarih(p, 12));
+  await p.waitForTimeout(300);
   await p.getByRole('button', { name: /Uygun Yatağı Otomatik Bul/ }).click();
   await p.waitForTimeout(700);
   const otoAltlik = await p.locator('.fixed.inset-0').last().innerText();
