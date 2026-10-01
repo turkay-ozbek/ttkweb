@@ -118,14 +118,14 @@ export const gunEkle = (gg_aa_yyyy, n) => {
 export const tarihYaz = async (kutu, deger) => { await kutu.fill(deger); await kutu.press('Enter'); await kutu.page().waitForTimeout(200); };
 
 /* Talepler sayfasında geliş aralığını ve statü süzgecini aç */
-export const taleplerdeAra = async (p, ad, { statu = 'HEPSI', gunSonra = 60 } = {}) => {
-  const bas = p.getByPlaceholder('GG.AA.YYYY').first(), son = p.getByPlaceholder('GG.AA.YYYY').nth(1);
-  await tarihYaz(bas, await trTarih(p, -60));
-  await tarihYaz(son, await trTarih(p, gunSonra));
+/* Talep listesi günlüktür; arama kutusu ise bütün günlerde arar, bu yüzden
+   kayıt aramak için gün süzgecini değiştirmek gerekmez. */
+export const taleplerdeAra = async (p, ad, { statu = 'HEPSI' } = {}) => {
   await p.locator('main select').first().selectOption(statu);
   await p.getByPlaceholder(/Ad soyad/).first().fill(ad);
   await p.waitForTimeout(450);
-  return p.locator('table tbody tr', { hasText: ad }).first();
+  /* Boş durum satırı aranan metni yazdığı için colspan'li satırlar hariç tutulur */
+  return p.locator('table tbody tr:not(:has(td[colspan]))', { hasText: ad }).first();
 };
 
 /* Yeni kayıt aç. dolgu: { ad, ekGun, gece, kisi, sahis, aile } */

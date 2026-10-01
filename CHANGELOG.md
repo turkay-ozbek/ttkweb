@@ -8,6 +8,34 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.11.0] — 01.10.2026
+### Değişti — talep listesi günlük oldu
+- **Rezervasyon Talepleri artık üç aylık değil, günlük.** Üstteki **«Geliş günü»** kutusunda
+  seçili günde gelişi olan kayıtlar listelenir; **◀ ▶** gün değiştirir, **Bugün** sistem
+  tarihine döner, takvim simgesinden doğrudan bir güne gidilir. Liste başlığı ve sayaç hangi
+  günün gösterildiğini yazar («Talep Listesi — 02.10.2026 Cum gelişleri»).
+- **Arama gün süzgecini aşar.** Ad, Tc kimlik ya da rezervasyon no yazıldığında bütün günlerde
+  aranır ve başlık «(bütün günler)» der — böylece başka güne ait kayıt «kayboldu» denmez.
+  Aramayı temizleyince günlük listeye dönülür.
+- **Yeni açılan kayıt kendi gününe götürür.** Uzak tarihli bir kayıt açıldığında liste o güne
+  geçer ve kayıt seçili gelir; aramadan açılan kayıt için de aynısı geçerli.
+- Varsayılan statü süzgeci «Bekleyen işler» yerine **«Tümü»** oldu: günlük liste o günün bütün
+  rezervasyonlarını gösterir, iş listeleri çiplerden seçilir.
+- Sayfaya her dönüşte gün süzgeci sıfırlanmıyor; yalnız sistem tarihi gerçekten ilerlediğinde
+  yeni güne geçiyor.
+- Toplu öneri düğmesi **«⚙ Listeyi Otomatik Yerleştir»** oldu: ekranda görünen listeye
+  (seçili günün kayıtlarına ya da arama sonucuna) uygulanır.
+
+### Değişti — çift kişilik yataklar
+- **Oda 21 ve 22**'de de tek bir çift kişilik yatak var; 16, 29 ve 38 gibi ikiye bölündüler.
+  Ankara **51 yatma yeri** (24 oda) oldu, istatistikler buna göre yeniden üretiliyor.
+
+### Testler
+- `13-yeni-islevler.mjs`: günlük listenin başlığı, yeni kaydın kendi gününe götürmesi, sayfadan
+  dönünce gün süzgecinin korunması ve bulunamayan aramada açıklama.
+- `ortak.mjs → taleplerdeAra()` artık tarih aralığı ayarlamıyor, aramayı kullanıyor;
+  `03` ve `05` buna göre güncellendi.
+
 ## [2.10.0] — 01.10.2026
 ### Düzeltildi — çift kişilik yataklar krokideki gibi ikiye bölündü
 - **Oda 16, 29 ve 38**'de tek bir **çift kişilik yatak** var; bunlar tek kişilik gibi

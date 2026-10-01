@@ -94,18 +94,23 @@ try {
     await p.waitForTimeout(300);
   }
 
-  /* ═══ 4) Talep süzgeci sayfa değişince korunuyor ═══ */
+  /* ═══ 4) Günlük talep listesi ve süzgeç ═══ */
   const f2 = await yeniKayit(p, { ad: 'UZAK TARIHLI', ekGun: 60, gece: 2 });
   await kaydet(p, f2);
+  /* Liste günlüktür: yeni kayıt uzak tarihli olsa da liste onun gününe gider */
   d.bekle(await veriSatirlari(p).filter({ hasText: 'UZAK TARIHLI' }).count() === 1,
-    'uzak tarihli kayıt açılınca listede');
+    'uzak tarihli kayıt açılınca liste o güne geçip kaydı gösteriyor');
+  const gunBasligi = (await govde(p)).match(/TALEP LİSTESİ — \d\d\.\d\d\.\d{4}[^\n]*/i);
+  d.bekle(!!gunBasligi, 'liste başlığında hangi günün gelişleri olduğu yazıyor',
+    gunBasligi ? gunBasligi[0] : '—');
   await sayfa(p, 'Özet'); await sayfa(p, 'Talepler'); await p.waitForTimeout(500);
   d.bekle(await veriSatirlari(p).filter({ hasText: 'UZAK TARIHLI' }).count() === 1,
-    'sayfadan çıkıp dönünce kayıt hâlâ listede (süzgeç sıfırlanmıyor)');
+    'sayfadan çıkıp dönünce kayıt hâlâ listede (gün süzgeci korunuyor)');
 
-  /* Süzgeç dışında kayıt kalırsa uyarı ve tek tuşla temizleme */
+  /* Arama bütün günlerde yapılır; bulunamazsa açıklama ve tek tuşla temizleme */
   await p.getByPlaceholder(/Ad soyad/).first().fill('zzzyokboyle'); await p.waitForTimeout(500);
-  d.bekle(/süzgeç dışında kaldı/i.test(await govde(p)), 'süzgeç dışında kalan kayıt sayısı uyarılıyor');
+  d.bekle(/hiçbir günde kayıt bulunamadı|bütün günlerde arandı/i.test(await govde(p)),
+    'bulunamayan aramada bütün günlerde arandığı yazıyor');
   await p.getByRole('button', { name: /Süzgeci temizle/ }).click(); await p.waitForTimeout(500);
   d.bekle(await satirSayisi(p) > 0, '«Süzgeci temizle» listeyi geri getiriyor');
 

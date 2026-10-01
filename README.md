@@ -51,7 +51,7 @@ Uygulama ana menüden açılan on odaklı sayfadan oluşur; her sayfa tek bir i�
 | MSFH-W02 | **Doluluk Takvimi** | 30 günlük doluluk şeridi, seçili tarih aralığında garanti kalan yatak ve gece bazında boşluk |
 | MSFH-W03 | **Oda ve Yatak Durumu** | Üç görünüm: **İsimli / Kompakt / Kroki**. Kroki, Ankara Misafirhanesi'nin kâğıt krokisindeki düzeni birebir çizer (kat → satır → sütun, odadaki yatak sırası); talep seçiliyken yerleştirme modu her görünümde çalışır (sürükle-bırak veya tıklayarak). «🖨 Yazdır» ile aynı düzen, seçili günün misafir adlarıyla A4 yatay basılır |
 | MSFH-W04 | **Yatak Listesi** | Oda ve yatak numarasına göre misafir tablosu; dolu/boş süzgeci ve arama |
-| MSFH-W05 | **Rezervasyon Talepleri** | Talep listesi, seçili talep özeti, otomatik / manuel / haritada yerleştirme |
+| MSFH-W05 | **Rezervasyon Talepleri** | **Günlük liste:** seçili günde gelişi olan kayıtlar (◀ ▶ ile gün değiştirilir, «Bugün» sistem tarihine döner). Arama kutusu gün süzgecini aşar, bütün günlerde arar. Seçili talep özeti, otomatik / manuel / haritada yerleştirme |
 | MSFH-W06 | **Dekont ve Onay** | Kapora dekontlarının PDF önizlemesiyle incelenip onaylanması (misafirhane müdürü) |
 | MSFH-W07 | **Peşinat ve Tahsilat** | Dönem filtresi, iş listeleri, ₺ Tahsilat Al, süresi dolanlar, peşinat kuralı |
 | MSFH-W08 | **Statü Takibi** | Talep → Kapora Bekleniyor → Müdür Onayı Bekliyor → Onaylı → Konaklıyor → Çıkış → İptal akışı |
@@ -164,10 +164,10 @@ odaları kurumun kendi krokisinden** alınmıştır (`ANKARA_KROKI`):
 | 2 | Oda 21 · 23 · 24 · 27 · 29 | Oda 22 · 25 · 26 · 28 |
 | 3 | Oda 31 · 33 · 34 · 37 · 38 | Oda 32 · 35 · 36 · 39 |
 
-**24 oda · 49 yatma yeri.** Tek kişilik: 21, 22 · üç kişilik: 17, 28, 39 · kalanı iki kişilik.
-**16, 29 ve 38'de tek bir çift kişilik yatak** vardır: iki kişi kalır ama krokideki gibi tek
-yatak numarasıyla, ad alanı ikiye bölünmüş olarak çizilir. Kroki görünümü ve çıktısı bu
-satır/sütun düzenini değiştirmez.
+**24 oda · 51 yatma yeri.** Üç kişilik: 17, 28, 39 · kalanı iki kişilik.
+**16, 21, 22, 29 ve 38'de tek bir çift kişilik yatak** vardır: iki kişi kalır ama krokideki
+gibi tek yatak numarasıyla, ad alanı ikiye bölünmüş olarak çizilir. Kroki görünümü ve çıktısı
+bu satır/sütun düzenini değiştirmez.
 Kroki protokol odası belirtmediği için Ankara'da protokol işaretli oda yoktur; gerekirse
 `ANKARA_KROKI` üzerinden işaretlenebilir.
 
@@ -200,7 +200,7 @@ kurallarının (giriş, çıkış, süre aşımından iptal) canlı çalıştı�
 
 ## Demo verisi
 
-4 tesis · 104 oda · 209 yatak · yaklaşık 4.500 rezervasyon kaydı (3 ay geçmiş +
+4 tesis · 104 oda · 211 yatak · yaklaşık 4.500 rezervasyon kaydı (3 ay geçmiş +
 3 ay gelecek), iptaller ve uzatmalar dahil. Veri deterministik üretilir; her
 açılışta aynı demo görüntülenir. Talep yoğunluğu **yatak kapasitesine orantılıdır**,
 bu yüzden doluluk oranları dört misafirhanede birbirine yakın çıkar (%60–70).
@@ -208,7 +208,7 @@ bu yüzden doluluk oranları dört misafirhanede birbirine yakın çıkar (%60�
 | Tesis | Oda | Yatak | Kaynak |
 |---|---:|---:|---|
 | Yayla Konağı (Zonguldak) | 26 | 52 | örnek veri |
-| **Ankara Misafirhanesi** | **24** | **49** | **kurumun oda krokisi (gerçek)** |
+| **Ankara Misafirhanesi** | **24** | **51** | **kurumun oda krokisi (gerçek)** |
 | Amasra Misafirhanesi (Bartın) | 31 | 61 | örnek veri |
 | Armutçuk Misafirhanesi (Ereğli) | 23 | 47 | örnek veri |
 

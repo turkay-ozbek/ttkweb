@@ -132,6 +132,9 @@ try {
   /* ═══ 5) Talep listesi statü çipleri ═══ */
   const cipler = await p.locator('main button').filter({ hasText: /^(Bekleyen işler|Yatağı yok|Kapora bekleyen|Onayda|Tümü)$/ }).allInnerTexts();
   d.bekle(cipler.length === 5, 'beş statü çipi gösteriliyor', cipler.join(' · '));
+  /* Liste günlük olduğu için tek günde her statüden kayıt bulunmayabilir; çipin
+     süzme davranışı, bütün günlerde arama yapan arama kutusuyla birlikte denetlenir. */
+  await p.getByPlaceholder(/Ad soyad/).first().fill('A'); await p.waitForTimeout(500);
   const oncekiSayi = await satirSayisi(p);
   await p.getByRole('button', { name: 'Kapora bekleyen', exact: true }).click(); await p.waitForTimeout(500);
   const kaporaSatirlari = await veriSatirlari(p).allInnerTexts();

@@ -125,11 +125,15 @@ if (await satir.count()) {
 /* ══ 6) Onay sonrası otomatik yerleştirme ════════════════════════ */
 await sayfa('Talepler');
 await p.waitForTimeout(400);
-const bekleyenListe = await p.locator('table tbody tr', { hasText: 'TEST MISAFIR BIR' }).count();
-if (!bekleyenListe) hata.push('6a: onaylanmış ama yatağı olmayan kayıt «Bekleyen işler» listesinde görünmüyor');
-else ok('onay sonrası kayıt «Bekleyen işler» listesinde kaldı');
-await p.locator('main select').first().selectOption('HEPSI');
+/* Liste günlüktür; kayıt başka bir günde geldiği için «Bekleyen işler» çipiyle
+   bütün günlerde aranır (arama kutusu gün süzgecini aşar). */
+await p.locator('main select').first().selectOption('BEKLEYEN');
 await p.getByPlaceholder(/Ad soyad/).first().fill('TEST MISAFIR BIR');
+await p.waitForTimeout(450);
+const bekleyenListe = await p.locator('table tbody tr', { hasText: 'TEST MISAFIR BIR' }).count();
+if (!bekleyenListe) hata.push('6a: onaylanmış ama yatağı olmayan kayıt «Bekleyen işler» süzgecinde görünmüyor');
+else ok('onay sonrası kayıt «Bekleyen işler» süzgecinde kaldı');
+await p.locator('main select').first().selectOption('HEPSI');
 await p.waitForTimeout(400);
 const satir6 = p.locator('table tbody tr', { hasText: 'TEST MISAFIR BIR' }).first();
 if (!(await satir6.count())) {

@@ -204,11 +204,9 @@ try {
 
   /* ═══════════════ 12) Görsel (PNG) dekont önizlemesi ═══════════════ */
   await sayfa('Talepler');
-  // sayfa yeniden kurulduğunda geliş aralığı bugün..+21'e döner; kaydımız +24'te
-  const aralikSon = p.getByPlaceholder('GG.AA.YYYY').nth(1);
-  await aralikSon.fill(await trTarih(40)); await aralikSon.press('Enter'); await p.waitForTimeout(400);
+  /* Liste günlüktür; arama kutusu bütün günlerde arar, gün süzgecine dokunmaya gerek yok */
   await p.locator('main select').first().selectOption('HEPSI');
-  await p.getByPlaceholder(/Ad soyad/).first().fill('KAPORALI SURUKLE'); await p.waitForTimeout(400);
+  await p.getByPlaceholder(/Ad soyad/).first().fill('KAPORALI SURUKLE'); await p.waitForTimeout(450);
   await p.locator('table tbody tr', { hasText: 'KAPORALI SURUKLE' }).first().click(); await p.waitForTimeout(300);
   await p.getByRole('button', { name: /Dekont Yükle/ }).first().click(); await p.waitForTimeout(400);
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAG0lEQVQoz2P8//8/AzZgYmDEBaMGjBowagAAtqQG8bLxTxkAAAAASUVORK5CYII=', 'base64');
@@ -252,11 +250,12 @@ try {
     const d = p.locator('main').getByRole('button', { name: tesis, exact: true });
     if (await d.count()) { await d.click(); await p.waitForTimeout(300); }
     await sayfa('Talepler');
-    const bas = p.getByPlaceholder('GG.AA.YYYY').first(), son = p.getByPlaceholder('GG.AA.YYYY').nth(1);
-    await bas.fill('01.01.2026'); await bas.press('Enter');
-    await son.fill('31.12.2026'); await son.press('Enter'); await p.waitForTimeout(400);
+    /* Statü tutarlılığı bütün günlerde denetlenir: arama kutusuna boşluk yerine
+       geniş bir desen yazmak yerine, aramayı boş bırakıp statü süzgeciyle o günün
+       kayıtlarına bakılır; gün gün dolaşmak yerine arama kutusu kullanılır. */
+    await p.getByPlaceholder(/Ad soyad/).first().fill('A'); await p.waitForTimeout(450);
     for (const [kod, ad] of [['PESINAT_BEKLENIYOR','Kapora Bekleniyor'], ['ONAY_BEKLIYOR','Müdür Onayı Bekliyor']]) {
-      await p.locator('main select').first().selectOption(kod); await p.waitForTimeout(400);
+      await p.locator('main select').first().selectOption(kod); await p.waitForTimeout(450);
       const satirlar = await p.locator('table tbody tr').allInnerTexts();
       const celiskili = satirlar.filter(x => /aranmıyor/.test(x));
       if (celiskili.length) hata.push(`14: ${tesis} — «${ad}» statüsünde kaporası aranmayan ${celiskili.length} kayıt var`);

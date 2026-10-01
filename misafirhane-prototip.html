@@ -174,7 +174,7 @@ const { useState, useMemo, useReducer, useRef, useEffect, useLayoutEffect, useCa
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.10.0';
+const SURUM = '2.11.0';
 const SURUM_TARIHI = '2026-10-01';
 
 const GUN_MS = 86400000;
@@ -368,12 +368,12 @@ const ANKARA_KROKI = {
   /* yatak: odadaki yatma yeri sayısı */
   yatak: {
     12: 2, 13: 2, 14: 2, 15: 2, 16: 2, 17: 3,
-    21: 1, 22: 1, 23: 2, 24: 2, 25: 2, 26: 2, 27: 2, 28: 3, 29: 2,
+    21: 2, 22: 2, 23: 2, 24: 2, 25: 2, 26: 2, 27: 2, 28: 3, 29: 2,
     31: 2, 32: 2, 33: 2, 34: 2, 35: 2, 36: 2, 37: 2, 38: 2, 39: 3,
   },
   /* Tek bir çift kişilik yatakta iki kişi kalan odalar. Krokide yatak numarası
      tek hücrede birleşik yazılır, karşısındaki ad alanı ikiye bölünür. */
-  ciftYatak: [16, 29, 38],
+  ciftYatak: [16, 21, 22, 29, 38],
 };
 const KROKILER = { ANKARA: ANKARA_KROKI };
 const krokiBul = (tesisKod) => KROKILER[tesisKod] || null;
@@ -1284,7 +1284,9 @@ function baslangicDurumu() {
     odakRezId: null, odakTip: null,
     /* Talep listesi süzgeci genel durumda tutulur; sayfa değiştirip geri dönünce
        sıfırlanmaz (kullanıcı «az önce açtığım kaydı bulamıyorum» demesin). */
-    talepSuzgec: { bas: ekle(SISTEM_TARIHI_BASLANGIC, -7), son: ekle(SISTEM_TARIHI_BASLANGIC, 90), statu: 'BEKLEYEN', arama: '' },
+    /* Talep listesi günlüktür: seçili günde gelişi olan kayıtlar listelenir.
+       Arama yazıldığında gün süzgeci devre dışı kalır, bütün günlerde aranır. */
+    talepSuzgec: { gun: SISTEM_TARIHI_BASLANGIC, statu: 'HEPSI', arama: '' },
     smsler: [],
     kahvalti: {},     /* 'TESIS|YYYY-AA-GG' → { 'rezId|misafirIndex': true }  (kahvaltıya inmeyenler) */
     raporlar: [],     /* ay sonu belge talepleri */
@@ -3257,10 +3259,9 @@ function ManuelYerlestirme({ s, rz, gonder, kapat }) {
 function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolum }) {
   const tesisAd = (TESISLER.find(t => t.kod === s.tesis) || {}).ad || '';
   /* Süzgeç genel durumdan okunur; böylece başka sayfaya gidip dönünce korunur. */
-  const { bas: filtreBas, son: filtreSon, statu: statuFiltre } = s.talepSuzgec;
+  const { gun: filtreGun, statu: statuFiltre } = s.talepSuzgec;
   const suzgecYaz = (degisiklik) => gonder({ tip: 'TALEP_SUZGEC', degisiklik });
-  const setFiltreBas = (v) => suzgecYaz({ bas: v });
-  const setFiltreSon = (v) => suzgecYaz({ son: v });
+  const setFiltreGun = (v) => suzgecYaz({ gun: v });
   const setStatuFiltre = (v) => suzgecYaz({ statu: v });
   const arama = s.talepSuzgec.arama;
   const setArama = (v) => suzgecYaz({ arama: v });
@@ -3285,8 +3286,14 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
   const setSecili = (id) => gonder({ tip: 'SECILI_REZ', rezId: id });
   const seciliRez = secili ? s.rezervasyonlar.find(r => r.id === secili) : null;
 
-  /* Demo tarihi ilerleyince süzgeci yeniden çıpala (kullanıcının yazdığı arama korunur) */
-  useEffect(() => { suzgecYaz({ bas: ekle(s.bugun, -7), son: ekle(s.bugun, 90) }); setHaritaTarihi(s.bugun); }, [s.bugun]);
+  /* Demo tarihi ilerleyince liste yeni güne geçer. DİKKAT: yalnız tarih gerçekten
+     değiştiğinde — sayfaya her dönüşte sıfırlansaydı, başka güne ait kayda bakan
+     kullanıcı sayfadan çıkıp dönünce kaydını kaybederdi. */
+  const oncekiBugun = useRef(s.bugun);
+  useEffect(() => {
+    if (oncekiBugun.current !== s.bugun) { oncekiBugun.current = s.bugun; suzgecYaz({ gun: s.bugun }); }
+    setHaritaTarihi(s.bugun);
+  }, [s.bugun]);
   useEffect(() => { if (!uyari) return; const t = setTimeout(() => setUyari(null), 5000); return () => clearTimeout(t); }, [uyari]);
   useEffect(() => { setSeciliMisafir(null); setGeceGorunum(null); }, [secili]);
 
@@ -3294,9 +3301,8 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
     if (!s.odakRezId) return;
     const rz = s.rezervasyonlar.find(r => r.id === s.odakRezId);
     if (!rz) return;
-    suzgecYaz({ statu: 'HEPSI', arama: '',
-      bas: rz.gelis_tarihi < filtreBas ? rz.gelis_tarihi : filtreBas,
-      son: rz.gelis_tarihi > filtreSon ? rz.gelis_tarihi : filtreSon });
+    /* Yeni açılan / aramadan gelen kayıt hangi güne aitse liste o güne gider */
+    suzgecYaz({ statu: 'HEPSI', arama: '', gun: rz.gelis_tarihi });
     setUyari(s.odakTip === 'ARAMA'
       ? { tip: 'bilgi', metin: `${rz.rez_no} — ${rz.ad_soyad} aramadan açıldı (${statuAd(rz.statu)}).` }
       : { tip: 'bilgi', metin: `${rz.rez_no} — ${rz.ad_soyad} kaydı açıldı (${statuAd(rz.statu)}). ` +
@@ -3304,9 +3310,12 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
     gonder({ tip: 'ODAK_TEMIZLE' });
   }, [s.odakRezId]);
 
+  const aramaVar = !!arama.trim();
   const talepler = useMemo(() => s.rezervasyonlar.filter(rz => {
     if (rz.tesis !== s.tesis) return false;
-    if (rz.gelis_tarihi < filtreBas || rz.gelis_tarihi > filtreSon) return false;
+    /* Günlük liste: yalnız seçili günde gelişi olan kayıtlar. Arama yazıldığında
+       kayıt kaybolmasın diye gün süzgeci uygulanmaz, bütün günlerde aranır. */
+    if (!aramaVar && rz.gelis_tarihi !== filtreGun) return false;
     /* «Bekleyen talepler» = işi bitmemiş kayıtlar: dekont onayındakiler ve
        onaylanmış olup henüz yatağı olmayanlar da listede kalır. */
     if (statuFiltre === 'BEKLEYEN') {
@@ -3325,7 +3334,7 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
     }
     return true;
   }).sort((a, b) => a.gelis_tarihi < b.gelis_tarihi ? -1 : a.gelis_tarihi > b.gelis_tarihi ? 1 : (a.rez_no < b.rez_no ? -1 : 1)),
-    [s.rezervasyonlar, s.tesis, filtreBas, filtreSon, statuFiltre, arama]);
+    [s.rezervasyonlar, s.tesis, filtreGun, statuFiltre, arama, aramaVar]);
 
   const tesisYatak = useMemo(() => s.yataklar.filter(y => y.tesis === s.tesis), [s.yataklar, s.tesis]);
   const tesisOda = useMemo(() => s.odalar.filter(o => o.tesis === s.tesis), [s.odalar, s.tesis]);
@@ -3355,9 +3364,12 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
 
   const yerlesmemisSayi = talepler.filter(rz => rz.misafirler.some(g => !g.yatakId)).length;
   /* Süzgeç yüzünden gizlenen kayıt varsa kullanıcı «kaydım kayboldu» demesin diye sayısı yazılır. */
-  const tesistekiToplam = s.rezervasyonlar.filter(rz => rz.tesis === s.tesis && rz.statu !== 'IPTAL').length;
-  const gizlenen = Math.max(0, tesistekiToplam - talepler.length);
-  const suzgecTemizle = () => suzgecYaz({ bas: ekle(s.bugun, -7), son: ekle(s.bugun, 90), statu: 'HEPSI', arama: '' });
+  /* Seçili günde statü/arama süzgecine takılan kayıt sayısı — «kaydım kayboldu»
+     denmesin diye uyarı olarak gösterilir. */
+  const gunToplami = s.rezervasyonlar.filter(rz =>
+    rz.tesis === s.tesis && rz.statu !== 'IPTAL' && rz.gelis_tarihi === filtreGun).length;
+  const gizlenen = Math.max(0, gunToplami - (aramaVar ? 0 : talepler.length));
+  const suzgecTemizle = () => suzgecYaz({ gun: s.bugun, statu: 'HEPSI', arama: '' });
 
   const otomatikYerlestir = (hedefListe) => {
     const aday = (hedefListe || talepler).filter(rz => rz.misafirler.some(g => !g.yatakId) && !['IPTAL', 'CIKIS'].includes(rz.statu));
@@ -3451,18 +3463,25 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
                 <span className="flex items-center gap-1" data-ipucu="Yeni misafir kaydı / rezervasyon formunu açar"><Ikon ad="yeni" sinif="w-3.5 h-3.5" /> Yeni Kayıt</span>
               </Buton>}
             <Buton tur="birincil" onClick={() => otomatikYerlestir()} disabled={!izin('rezervasyon.yerlestir')}
-              data-ipucu={izin('rezervasyon.yerlestir') ? 'Listedeki bütün bekleyen talepler için tek seferde öneri üretir' : yetkiNotu(s.kullanici, 'rezervasyon.yerlestir')}>
-              ⚙ Tümünü Otomatik Yerleştir
+              data-ipucu={izin('rezervasyon.yerlestir')
+                ? 'Ekranda görünen listedeki (seçili günün ya da aramanın) bütün bekleyen talepler için tek seferde öneri üretir'
+                : yetkiNotu(s.kullanici, 'rezervasyon.yerlestir')}>
+              ⚙ Listeyi Otomatik Yerleştir
             </Buton>
           </>} />
         {uyariKutusu}
 
         <div className="bg-white border border-slate-200 rounded px-3 py-2.5 flex items-center gap-3 flex-wrap mb-3">
           <div className="flex items-center gap-1.5">
-            <span className="text-2xs uppercase font-semibold text-slate-500">Geliş</span>
-            <TarihGirdi deger={filtreBas} onChange={setFiltreBas} bugun={s.bugun} />
-            <span className="text-slate-400 text-xs">–</span>
-            <TarihGirdi deger={filtreSon} onChange={setFiltreSon} bugun={s.bugun} enAz={filtreBas} />
+            <span className="text-2xs uppercase font-semibold text-slate-500">Geliş günü</span>
+            <Buton tur="sessiz" onClick={() => setFiltreGun(ekle(filtreGun, -1))}
+              data-ipucu="Önceki gün">◀</Buton>
+            <TarihGirdi deger={filtreGun} onChange={setFiltreGun} bugun={s.bugun} />
+            <Buton tur="sessiz" onClick={() => setFiltreGun(ekle(filtreGun, 1))}
+              data-ipucu="Sonraki gün">▶</Buton>
+            <span className="text-2xs text-slate-500 num">{hg(filtreGun)}</span>
+            {filtreGun !== s.bugun &&
+              <Buton tur="sessiz" onClick={() => setFiltreGun(s.bugun)} data-ipucu="Sistem tarihine dön">Bugün</Buton>}
           </div>
           <div className="flex items-center gap-1 flex-wrap">
             {[['BEKLEYEN', 'Bekleyen işler', 'Yerleştirilmeyi bekleyen bütün kayıtlar'],
@@ -3489,21 +3508,28 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
           <input value={arama} onChange={e => setArama(e.target.value)} placeholder="Ad soyad / Tc kimlik / Rez. no ara…"
             className="border border-slate-300 rounded px-2 py-1 text-xs w-full sm:w-56 min-w-0" />
           <span className="text-xs text-slate-500 num ml-auto">
-            <b className="text-ttk-800">{talepler.length}</b> kayıt · yerleştirilmemiş <b className="text-rose-600">{yerlesmemisSayi}</b>
+            <b className="text-ttk-800">{talepler.length}</b> kayıt
+            <span className="text-2xs"> {aramaVar ? '(arama · bütün günler)' : `(${tr(filtreGun)} gelişli)`}</span>
+            {' · '}yerleştirilmemiş <b className="text-rose-600">{yerlesmemisSayi}</b>
           </span>
         </div>
-        {gizlenen > 0 && (
+        {(gizlenen > 0 || (aramaVar && !talepler.length)) && (
           <div className="flex items-center gap-2 flex-wrap px-3 py-1.5 -mt-2 mb-3 rounded border
                           bg-amber-50 border-amber-200 text-2xs text-amber-900">
-            <b className="num">{gizlenen}</b> kayıt süzgeç dışında kaldı (tarih aralığı, statü ya da arama).
-            Aradığınızı bulamıyorsanız süzgeci temizleyin.
+            {aramaVar
+              ? <>«{arama}» bütün günlerde arandı, <b>{talepler.length}</b> kayıt bulundu — bu arama süzgeç dışında kalan
+                  kayıtları da kapsar. Günlük listeye dönmek için aramayı temizleyin.</>
+              : <><b className="num">{gizlenen}</b> kayıt {tr(filtreGun)} gelişli olduğu hâlde statü süzgeci dışında kaldı.
+                  Aradığınızı bulamıyorsanız süzgeci temizleyin ya da ad/Tc kimlik ile arayın.</>}
             <Buton tur="sessiz" className="ml-auto sm:ml-auto" onClick={suzgecTemizle}
-              data-ipucu="Tarih aralığını, statü süzgecini ve aramayı varsayılana döndürür">Süzgeci temizle</Buton>
+              data-ipucu="Günü bugüne, statü süzgecini ve aramayı varsayılana döndürür">Süzgeci temizle</Buton>
           </div>
         )}
 
         <div className="grid gap-3 items-start" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(28rem, 100%), 1fr))' }}>
-          <Kart baslik="Talep Listesi" govdeSinif="p-0"
+          <Kart govdeSinif="p-0"
+            baslik={aramaVar ? `Talep Listesi — «${arama}» araması (bütün günler)`
+                             : `Talep Listesi — ${tr(filtreGun)} ${hg(filtreGun)} gelişleri`}
             sag={<span className="text-2xs text-slate-500">satıra tıklayın</span>}>
             <div className="max-h-[60vh] overflow-auto kaydir">
               <table className="veri w-full mobil-kart">
@@ -3540,7 +3566,10 @@ function RezervasyonEkrani({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, 
                       </tr>
                     );
                   })}
-                  {!talepler.length && <tr><td colSpan="7" className="text-center text-slate-400 py-6">Filtreye uyan talep yok.</td></tr>}
+                  {!talepler.length && <tr><td colSpan="7" className="text-center text-slate-400 py-6">
+                    {aramaVar ? `«${arama}» için hiçbir günde kayıt bulunamadı.`
+                              : `${tr(filtreGun)} günü için geliş kaydı yok — ◀ ▶ ile günü değiştirin.`}
+                  </td></tr>}
                 </tbody>
               </table>
             </div>
@@ -5327,7 +5356,7 @@ const SAYFALAR = [
   { kod:'YATAK_LISTESI', ad:'Yatak Listesi',    kisa:'Yatak Listesi', form:'MSFH-W04', izin:'pano.goruntule',
     ikon:'liste',  grup:'Görüntüleme', aciklama:'Oda ve yatak numarasına göre misafir tablosu' },
   { kod:'TALEPLER',  ad:'Rezervasyon Talepleri',kisa:'Talepler',  form:'MSFH-W05', izin:'rezervasyon.goruntule',
-    ikon:'talep',  grup:'İşlemler',    aciklama:'Talep listesi, otomatik ve manuel yerleştirme' },
+    ikon:'talep',  grup:'İşlemler',    aciklama:'Günlük talep listesi, otomatik ve manuel yerleştirme' },
   { kod:'ONAY',      ad:'Dekont ve Onay',       kisa:'Dekont/Onay', form:'MSFH-W06', izin:'rezervasyon.goruntule',
     ikon:'onay',   grup:'İşlemler',    aciklama:'Kapora dekontlarını inceleyip rezervasyonu onaylama (misafirhane müdürü)' },
   { kod:'TAHSILAT',  ad:'Peşinat ve Tahsilat',  kisa:'Tahsilat',  form:'MSFH-W07', izin:'pesinat.goruntule',
@@ -5432,6 +5461,7 @@ const REHBER_KONULARI = [
     ozet: 'Otomatik öneri, manuel seçim ve oda haritasında sürükleyerek yerleştirme.',
     yetki: 'rezervasyon.yerlestir', roller: ['ADMIN', 'YONETICI', 'RESEPSIYON'],
     adimlar: [
+      { b: 'Günü seçin', m: 'Talep listesi günlüktür: üstteki «Geliş günü» kutusunda seçili günde gelişi olan kayıtlar listelenir. ◀ ▶ ile gün değiştirilir, «Bugün» sistem tarihine döner, takvim simgesinden doğrudan bir güne gidilir. Aradığınız kayıt başka bir güne aitse ad, Tc kimlik ya da rezervasyon no yazmanız yeter — arama kutusu gün süzgecini aşar, bütün günlerde arar.', sayfa: 'TALEPLER' },
       { b: 'Yerleştirilecek talebi seçin', m: '«Rezervasyon Talepleri» sayfasında soldaki listeden kaydı seçin. Sağ panelin altında üç yerleştirme düğmesi bulunur.', sayfa: 'TALEPLER' },
       { b: 'Yol 1 — Otomatik', m: '«⚙ Otomatik Yerleştir» düğmesi; kapasite, aile birlikteliği, cinsiyet ayrımı, protokol önceliği, ardışık gecelerde aynı oda ve temizlik boşluğu kurallarını gözeterek bir öneri üretir. Öneri doğrudan uygulanmaz: onay penceresinde hangi misafirin hangi oda/yatağa verildiğini görür, isterseniz onaylarsınız. Yerleşemeyen talep için okunabilir gerekçe yazılır.' },
       { b: 'Yol 2 — Manuel', m: '«✋ Manuel Yerleştir» düğmesiyle açılan pencerede her misafir için oda ve yatak numarasını kendiniz seçersiniz. Listede yalnız seçili tarih aralığının tüm gecelerinde boş olan yataklar çıkar. «Yerleşimi Kaydet» ile tahsis işlenir.' },
@@ -6548,7 +6578,7 @@ function botYanit(soru, b) {
 
   if (gecer('bekleyen talep', 'talep bekl', 'yerlestirilmemis', 'yerlestirme bekleyen', 'kac talep'))
     return { metin: `${b.tesisAd} için 21 gün içinde yerleştirme bekleyen ${b.canli.bekleyen} talep var. ` +
-                    `«Rezervasyon Talepleri» sayfasında «⚙ Tümünü Otomatik Yerleştir» ile toplu öneri alabilirsiniz; öneri onaylanmadan doluluk değişmez.`,
+                    `«Rezervasyon Talepleri» sayfasında «⚙ Listeyi Otomatik Yerleştir» ile o listedeki talepler için toplu öneri alabilirsiniz; öneri onaylanmadan doluluk değişmez.`,
              eylemler: sayfaEylemi('TALEPLER') };
 
   if (gecer('onay bekleyen', 'onaydaki dekont', 'kac dekont', 'onay kuyrugu'))

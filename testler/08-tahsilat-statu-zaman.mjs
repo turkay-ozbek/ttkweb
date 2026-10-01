@@ -148,16 +148,13 @@ try {
   }
 
   /* ═══ 6.2 Gün ilerletme — otomatik statü değişiklikleri ═══ */
-  /* Önce ileri tarihli, süresi dolmuş bir talebi not al: gün ilerleyince bunun
-     iptale düşmesi gerekir (otomatik iptal kuralı çalışmaya devam ediyor mu?). */
-  await sayfa(p, 'Tahsilat');
-  await p.getByRole('button', { name: 'Tüm dönem', exact: true }).click(); await p.waitForTimeout(400);
-  await p.locator('main button', { hasText: 'Süresi dolan' }).first().click(); await p.waitForTimeout(500);
-  const dolanSatirlar = await veriSatirlari(p).allInnerTexts();
-  const ileriTarihli = dolanSatirlar.map(x => x.split('\t').map(y => y.trim()))
-    .find(h => h[1] && /^\d{4}-\d+$/.test(h[1]));
-  const ileriRezNo = ileriTarihli ? ileriTarihli[1] : null;
-  await p.locator('main button', { hasText: 'Tüm kayıtlar' }).first().click(); await p.waitForTimeout(300);
+  /* Otomatik iptal kuralının çalışmaya devam ettiğini kendi kaydımızla ölçelim:
+     30 gün sonrasına şahsi kayıt → kapora son ödeme tarihi 7 gün sonra dolar.
+     Sekiz gün ilerleyince süre dolmuş, geliş hâlâ ilerideyken iptale düşmeli. */
+  await sayfa(p, 'Talepler');
+  const fSure = await yeniKayit(p, { ad: 'SURESI DOLACAK', ekGun: 30, gece: 2, sahis: true });
+  await kaydet(p, fSure);
+  const ileriRezNo = 'SURESI DOLACAK';
 
   await sayfa(p, 'Özet');
   const tarihAl = async () => (await p.locator('footer').innerText()).match(/\d{2}\.\d{2}\.\d{4}/)[0];
@@ -182,15 +179,13 @@ try {
   await pencereKapat(p);
 
   /* Süresi dolan ileri tarihli talep gerçekten iptale düşmüş mü? */
-  if (ileriRezNo) {
-    await sayfa(p, 'Tahsilat');
-    await p.getByRole('button', { name: 'Tüm dönem', exact: true }).click(); await p.waitForTimeout(400);
-    await p.getByPlaceholder(/Ad soyad/).first().fill(ileriRezNo); await p.waitForTimeout(500);
-    const bulunan = veriSatirlari(p).first();
-    const statu = await bulunan.count() ? (await bulunan.locator('td').last().innerText()).trim() : '—';
-    d.bekle(statu === 'İptal', `süresi dolan ileri tarihli talep (${ileriRezNo}) otomatik iptale düştü`, statu);
-    await p.getByPlaceholder(/Ad soyad/).first().fill(''); await p.waitForTimeout(300);
-  } else d.ok('süresi dolan ileri tarihli talep yok (otomatik iptal denetimi atlandı)');
+  await sayfa(p, 'Tahsilat');
+  await p.getByRole('button', { name: 'Tüm dönem', exact: true }).click(); await p.waitForTimeout(400);
+  await p.getByPlaceholder(/Ad soyad/).first().fill(ileriRezNo); await p.waitForTimeout(500);
+  const bulunan = veriSatirlari(p).first();
+  const statu = await bulunan.count() ? (await bulunan.locator('td').last().innerText()).trim() : '—';
+  d.bekle(statu === 'İptal', `kapora süresi dolan ileri tarihli talep (${ileriRezNo}) otomatik iptale düştü`, statu);
+  await p.getByPlaceholder(/Ad soyad/).first().fill(''); await p.waitForTimeout(300);
 
   /* ═══ 6.2b Konaklaması başlamış kayıt, kapora süresi dolsa da düşmemeli ═══
      (Gerçek hata: elle girilen 3 gecelik kayıt, kapora ödenmediği için ikinci

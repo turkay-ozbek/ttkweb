@@ -184,7 +184,7 @@ Her rolle girip **sayfa şeridini** ve düğmeleri karşılaştırın:
    - ✔ Onaylayınca oda no sütunu dolar.
 
 ### 4.2 Otomatik (toplu)
-1. **⚙ Tümünü Otomatik Yerleştir**.
+1. **⚙ Listeyi Otomatik Yerleştir**.
    - ✔ Yerleşenler ve yerleşemeyenler ayrı ayrı listelenir.
    - ✔ Yerleşemeyen her talep için okunabilir gerekçe yazar (kapora, doluluk, cinsiyet…).
 

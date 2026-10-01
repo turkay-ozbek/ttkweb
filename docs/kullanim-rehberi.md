@@ -119,7 +119,10 @@ onay `rezervasyon.onay` (Müdür, Admin)
 
 **Yetki:** `rezervasyon.yerlestir` · **Roller:** Müdür, Resepsiyon, Admin
 
-1. **Talebi seçin.** «Rezervasyon Talepleri» sayfasında soldaki listeden kayıt seçilir.
+1. **Günü ve talebi seçin.** «Rezervasyon Talepleri» listesi **günlüktür**: üstteki **Geliş günü**
+   kutusunda seçili günde gelişi olan kayıtlar listelenir; **◀ ▶** ile gün değiştirilir, **Bugün**
+   sistem tarihine döner. Aradığınız kayıt başka bir güne aitse arama kutusuna ad, Tc kimlik ya da
+   rezervasyon no yazın — arama bütün günlerde yapılır. Sonra soldaki listeden kayıt seçilir.
 2. **Yol 1 — Otomatik.** **⚙ Otomatik Yerleştir**; kapasite, aile birlikteliği, cinsiyet ayrımı,
    protokol önceliği, ardışık gecelerde aynı oda ve temizlik boşluğu kurallarını gözeterek öneri
    üretir. Öneri doğrudan uygulanmaz; onay penceresinde görülür ve onaylanır. Yerleşemeyen talep

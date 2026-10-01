@@ -116,10 +116,10 @@ try {
   d.bekle(krokiDuzen.katlar.join(' ') === '1. KAT 2. KAT 3. KAT', 'üç kat krokideki sırayla yazılı',
     krokiDuzen.katlar.join(' '));
   /* 16, 29 ve 38'de tek bir çift kişilik yatak var: iki yatma yeri, tek yatak numarası */
-  const beklenenYatak = { 12:2, 13:2, 14:2, 15:2, 16:2, 17:3, 21:1, 22:1, 23:2, 24:2, 25:2, 26:2,
+  const beklenenYatak = { 12:2, 13:2, 14:2, 15:2, 16:2, 17:3, 21:2, 22:2, 23:2, 24:2, 25:2, 26:2,
                           27:2, 28:3, 29:2, 31:2, 32:2, 33:2, 34:2, 35:2, 36:2, 37:2, 38:2, 39:3 };
   const yatakFark = Object.entries(beklenenYatak).filter(([no, adet]) => krokiDuzen.yatak[no] !== adet);
-  d.bekle(yatakFark.length === 0, 'her odanın yatak sayısı krokideki gibi (24 oda / 49 yatak)',
+  d.bekle(yatakFark.length === 0, 'her odanın yatak sayısı krokideki gibi (24 oda / 51 yatak)',
     yatakFark.map(([no, adet]) => `Oda ${no}: ${krokiDuzen.yatak[no]} ≠ ${adet}`).join(' · '));
   /* Çift kişilik yatakta numara tek hücrede birleşik yazılır */
   const ciftYatakli = await p.evaluate(() => {
@@ -132,10 +132,10 @@ try {
     });
     return sonuc;
   });
-  const ciftHata = [16, 29, 38].filter(no => ciftYatakli[no] !== '1')
+  const ciftHata = [16, 21, 22, 29, 38].filter(no => ciftYatakli[no] !== '1')
     .concat([12, 17].filter(no => ciftYatakli[no] === '1'));
   d.bekle(ciftHata.length === 0,
-    'çift kişilik yataklı odada (16 · 29 · 38) tek yatak numarası, iki ad satırı var',
+    'çift kişilik yataklı odada (16 · 21 · 22 · 29 · 38) tek yatak numarası, iki ad satırı var',
     ciftHata.map(no => `Oda ${no}: ${ciftYatakli[no]}`).join(' · '));
   d.bekle(Object.keys(krokiDuzen.yatak).length === 24, 'krokide 24 oda var',
     String(Object.keys(krokiDuzen.yatak).length));
@@ -216,9 +216,12 @@ try {
   }
 
   /* ═══ 4.2 Toplu otomatik yerleştirme ═══ */
+  /* Liste günlüktür; toplu öneri için listede yerleşmemiş kayıt bulunsun diye
+     arama kutusuyla bütün günlerdeki kayıtlar listelenir. */
   await sayfa(p, 'Talepler');
+  await p.getByPlaceholder(/Ad soyad/).first().fill('A'); await p.waitForTimeout(600);
   const oncekiYerlesmemis = num(await govde(p), /yerleştirilmemiş\s*(\d[\d.]*)/);
-  await p.getByRole('button', { name: /Tümünü Otomatik Yerleştir/ }).click();
+  await p.getByRole('button', { name: /Listeyi Otomatik Yerleştir/ }).click();
   await p.waitForTimeout(1500);
   const oneriMetni = await p.locator('.fixed.inset-0').last().innerText();
   d.bekle(/yerleş|öneri/i.test(oneriMetni), 'toplu yerleştirme öneri penceresi açıldı');
