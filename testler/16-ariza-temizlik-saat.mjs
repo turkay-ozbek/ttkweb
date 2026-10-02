@@ -92,36 +92,47 @@ d.bekle(await isSatir.count() === 1, 'temizlenecek oda listelendi');
 const isTuru = await isSatir.innerText();
 d.bekle(/Çıkış temizliği|Günlük temizlik/.test(isTuru), 'iş türü (çıkış / günlük temizlik) yazıyor');
 
-/* durum çipleri — dört durumun hepsi her satırda duruyor, tıklanan seçili olur */
-const cipler = isSatir.locator('td').nth(2).locator('button');
-d.bekle(await cipler.count() === 4, 'her satırda dört temizlik durumu çipi var', await cipler.count() + ' çip');
-const seciliCip = async () => {
-  const n = await cipler.count();
-  for (let i = 0; i < n; i++) {
-    const sinif = await cipler.nth(i).getAttribute('class');
-    if (/ring-1/.test(sinif)) return (await cipler.nth(i).innerText()).trim();
-  }
-  return '';
-};
-await isSatir.getByRole('button', { name: 'Temizleniyor' }).click();
+/* Durum kontrolü — dört bölmeli segment (role=radiogroup), tek satır, 44 px.
+   Önceki hâlinde dört ayrı çipti, ~21 px'ti ve iki satıra sarıyordu. */
+const grup = isSatir.locator('[role="radiogroup"]');
+const bolmeler = grup.locator('[role="radio"]');
+d.bekle(await bolmeler.count() === 4, 'her satırda dört durum bölmesi var', await bolmeler.count() + ' bölme');
+const olcu = await grup.evaluate(g => {
+  const r = [...g.querySelectorAll('[role="radio"]')].map(x => x.getBoundingClientRect());
+  return { satir: new Set(r.map(x => Math.round(x.top))).size,
+           enDusuk: Math.round(Math.min(...r.map(x => Math.min(x.height, x.width)))),
+           bitisik: r.slice(1).every((x, i) => Math.round(x.left) <= Math.round(r[i].right) + 1) };
+});
+d.bekle(olcu.satir === 1, 'bölmeler tek satırda — iki satıra sarmıyor', olcu.satir + ' satır');
+d.bekle(olcu.enDusuk >= 44, 'her bölme en az 44 px (WCAG 2.5.5)', olcu.enDusuk + 'px');
+d.bekle(olcu.bitisik, 'bölmeler bitişik — aralarında tıklanamayan boşluk yok');
+
+const seciliDurum = async () => (await grup.locator('[role="radio"][aria-checked="true"]').innerText()).trim();
+await grup.getByRole('radio', { name: /Temizleniyor/ }).click();
 await p.waitForTimeout(500);
-d.bekle(await seciliCip() === 'Temizleniyor', 'oda «Temizleniyor» durumuna geçti', await seciliCip());
-await isSatir.getByRole('button', { name: 'Temizlendi' }).click();
+d.bekle(/Temizleniyor/.test(await seciliDurum()), 'oda «Temizleniyor» durumuna geçti', await seciliDurum());
+await grup.getByRole('radio', { name: /Temizlendi/ }).click();
 await p.waitForTimeout(500);
-d.bekle(await seciliCip() === 'Temizlendi', 'oda «Temizlendi» olarak işaretlendi', await seciliCip());
+d.bekle(/Temizlendi/.test(await seciliDurum()), 'oda «Temizlendi» olarak işaretlendi', await seciliDurum());
 const saatHucre = (await isSatir.locator('td').last().innerText()).trim();
 d.bekle(/^\d{2}:\d{2}$/.test(saatHucre), 'durum değişince işlem saati yazıldı', saatHucre);
 
-/* kat görevlisi */
-const gorevliKutu = isSatir.locator('input[placeholder="ad soyad"]').first();
-await gorevliKutu.fill('F. Yıldız');
+/* Kat görevlisi — serbest metin değil, tanımlı personelden seçim */
+const gorevliSecim = isSatir.locator('select[aria-label*="kat görevlisi"]').first();
+d.bekle(await gorevliSecim.count() === 1, 'kat görevlisi alanı seçim listesi');
+d.bekle(await isSatir.locator('input[placeholder="ad soyad"]').count() === 0,
+  'serbest metinli görevli alanı kaldırıldı');
+const adaylar = (await gorevliSecim.locator('option').allInnerTexts()).slice(1);
+d.bekle(adaylar.length >= 3, 'listede tesisin kat görevlileri var', adaylar.join(' · '));
+const gorevliAdi = adaylar[0];
+await gorevliSecim.selectOption({ label: gorevliAdi });
 await p.waitForTimeout(500);
-d.bekle(await gorevliKutu.inputValue() === 'F. Yıldız', 'kat görevlisi kaydedildi');
+d.bekle(await gorevliSecim.inputValue() === gorevliAdi, 'kat görevlisi kaydedildi', gorevliAdi);
 await sayfa(p, 'Özet');
 await sayfa(p, 'Kat Hizmetleri');
 await p.waitForTimeout(400);
-const kaliciSayi = await p.locator('main input[placeholder="ad soyad"]')
-  .evaluateAll(xs => xs.filter(x => x.value === 'F. Yıldız').length);
+const kaliciSayi = await p.locator('main select[aria-label*="kat görevlisi"]')
+  .evaluateAll((xs, ad) => xs.filter(x => x.value === ad).length, gorevliAdi);
 d.bekle(kaliciSayi === 1, 'kat görevlisi sayfa değişince de duruyor', kaliciSayi + ' satırda yazılı');
 
 /* ═══ 4) Giriş / çıkış saatleri ═══ */

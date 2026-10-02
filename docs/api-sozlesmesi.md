@@ -161,9 +161,24 @@ statü geçişleri ve API uçları için bkz. [`kapora-onay-akisi.md`](kapora-on
 |---|---|---|
 | `MISAFIRHANE_KODU` / `TARIH` / `ODA_ID` | PK (üçlü) | Gün ve oda başına bir satır |
 | `DURUM` | VARCHAR2(14) | BEKLIYOR / TEMIZLENIYOR / TAMAM / HAZIR |
-| `GOREVLI` | VARCHAR2(80) | Kat görevlisi adı |
+| `GOREVLI_ID` | NUMBER FK | MSFH_KAT_PERSONELI referansı (serbest metin değil) |
 | `ISLEM_SAATI` | VARCHAR2(5) | Durum değiştiğinde yazılır |
 | `KULLANICI` | VARCHAR2(20) | |
+
+**MSFH_KAT_PERSONELI** — kat hizmetleri görevlileri (yeni)
+
+| Alan | Tip | Açıklama |
+|---|---|---|
+| `PERSONEL_ID` | NUMBER PK | |
+| `MISAFIRHANE_KODU` | VARCHAR2(10) FK | Görevli tesise bağlıdır |
+| `ADI_SOYADI` | VARCHAR2(80) | |
+| `DIZIN_KODU` | VARCHAR2(64) | AD/LDAP karşılığı; eşleşme bu alandan kurulur |
+| `GOREV` | VARCHAR2(40) | Kat görevlisi / kat şefi |
+| `AKTIF_MI` | CHAR(1) | Ayrılan personel silinmez, pasife alınır |
+
+> `MSFH_ODA_TEMIZLIK.GOREVLI` alanı serbest metin değil bu tabloya referanstır.
+> Serbest metinde aynı kişi birkaç yazımla kaydedilir ve kişi bazlı iş yükü raporu
+> üretilemez hâle gelir.
 
 **MSFH_YATAK_ARIZA** — servis dışı yatak
 

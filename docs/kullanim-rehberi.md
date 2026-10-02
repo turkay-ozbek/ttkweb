@@ -125,6 +125,19 @@ onay `rezervasyon.onay` (Müdür, Admin)
 
 ---
 
+> **Tutar mutabakatı.** Dekont incelemesinde «İstenen Kapora → Yatırılan → Fark»
+> bloğu panelin tepesindedir ve farkı sistem hesaplar. Tutar tutmuyorsa onay düğmesi
+> doğrudan açılmaz: farkı bilerek kabul ettiğinizi işaretlemeniz gerekir ve bu kabul
+> kayıt geçmişine yazılır. Listede de her satırda `Tam` / `−350 ₺` biçiminde rozet vardır;
+> «Yalnız tutarı tutmayan» kutusuyla liste bunlara daraltılabilir.
+
+> **Reddederken misafire ne gittiğini görürsünüz.** Red gerekçesi misafire **aynen**
+> iletilir. Pencerede gönderilecek mesajın tamamı, hane sayısı ve kaç SMS olacağı
+> yazılıdır; dört hazır gerekçeden biri tek tıkla seçilebilir. Kayıtta telefon numarası
+> yoksa bu da açıkça belirtilir.
+
+---
+
 ## 5. Oda ve yatak yerleştirmesi nasıl yapılır? — MSFH-W05 / MSFH-W03
 
 **Yetki:** `rezervasyon.yerlestir` · **Roller:** Müdür, Resepsiyon, Admin
@@ -223,8 +236,12 @@ onay `rezervasyon.onay` (Müdür, Admin)
    çıkış yapılan odalar **«Çıkış temizliği»**, misafiri süren odalar **«Günlük temizlik»**.
    İşi olmayan odalar «İş yok» sayılır; «Yalnız iş olanlar» kutusuyla liste daraltılır.
 2. **Durum ilerletme.** Her satırda dört çip vardır: Bekliyor → Temizleniyor → Temizlendi → Hazır.
-   Çipe basıldığında **işlem saati** kendiliğinden yazılır; odanın ne zaman hazır olduğu belli olur.
-3. **Kat görevlisi.** Odayı kimin temizlediği yazılır. Liste «🖨 Yazdır» ile kâğıda alınıp kat
+   Bölmeye basıldığında **işlem saati** kendiliğinden yazılır; odanın ne zaman hazır
+   olduğu belli olur. Kontrol tek satırda ve parmağa göre büyüktür; bölmeler bitişiktir,
+   aralarında yanlışlıkla basılacak boşluk yoktur.
+3. **Kat görevlisi.** Odayı kimin temizlediği **listeden seçilir** — serbest metin
+   yazılmaz. Böylece aynı kişi her satırda birebir aynı değerle kaydedilir ve kişi
+   bazlı iş yükü raporu üretilebilir. Liste tesisin kat hizmetleri personelinden gelir. Liste «🖨 Yazdır» ile kâğıda alınıp kat
    görevlisine verilir, «⬇ Excel/CSV» ile dışa aktarılır.
 4. **Kullanılamayan yatak.** Arıza, tadilat ya da boya durumunda «Oda ve Yatak Durumu» veya
    «Yatak Listesi» sayfasından yatağa tıklanıp **«⛔ Servis Dışı Bırak»** denir; tarih aralığı ve

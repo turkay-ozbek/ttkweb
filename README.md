@@ -82,7 +82,7 @@ Bu öğeler tek bir sayfaya ait değildir; uygulamanın her yerinde aynı biçim
 
 | Öğe | Nerede | Ne yapar |
 |---|---|---|
-| **Bekleyen işler zili** | Üst bandın sağı · **B** tuşu | Seçili misafirhanede bekleyen bütün işleri tek listede toplar: dekont onayı, süresi dolan / bugün son günü olan kapora, bugünün giriş-çıkışları, üç gün içinde yerleştirilmemiş talepler, adı bildirilmemiş grup yatakları, bekleme listesinde yatak çıkanlar, servis dışı yataklar, çıkış temizliği bekleyen odalar ve bekleyen ay sonu belge talebi. Satır sayısı zilde rozet olarak görünür (acil varsa kırmızı), satıra basmak ilgili sayfayı açar. Liste anlık hesaplanır — iş bitince kendiliğinden düşer |
+| **Bekleyen işler zili** | Üst bandın sağı · **B** tuşu | Rozet yalnız **yapılacak işleri** sayar; «bugün giriş yapacak misafir» gibi bilgi satırları panelde ayrı blokta, sayaca girmeden durur (sayaç sıfırlanabilsin diye). Seçili misafirhanede bekleyen bütün işleri tek listede toplar: dekont onayı, süresi dolan / bugün son günü olan kapora, bugünün giriş-çıkışları, üç gün içinde yerleştirilmemiş talepler, adı bildirilmemiş grup yatakları, bekleme listesinde yatak çıkanlar, servis dışı yataklar, çıkış temizliği bekleyen odalar ve bekleyen ay sonu belge talebi. Satır sayısı zilde rozet olarak görünür (acil varsa kırmızı), satıra basmak ilgili sayfayı açar. Liste anlık hesaplanır — iş bitince kendiliğinden düşer |
 | **Geri Al şeridi** | Ekranın altı, işlemden sonra 12 saniye | Tahsis kaldırma, iptal, uzatma, nakil, toplu yerleştirme, servis dışı bırakma ve bloktan yatak serbest bırakma işlemleri geri alınabilir. Şerit `role="status"` taşır, ekran okuyucuya da okunur |
 | **Klavye kısayolları** | Her yerde · **?** listeyi açar | `Ctrl + K` işlem araması, `N` yeni kayıt, `/` sayfadaki arama kutusu, `B` bekleyen işler, `G` ana menü, `R` rehber, `↑ ↓` talep listesinde satır, `↵` manuel yerleştirme, `Esc` açık pencere. Yazı alanında ya da pencere açıkken susar |
 | **Excel/CSV dışa aktarma** | Yatak listesi, talepler, tahsilat, kahvaltı, kat hizmetleri, dönem raporu, denetim izi, bekleme listesi | Ekrandaki süzgeçle sınırlı dosya; UTF-8 BOM + `;` ayracı + CRLF ile Excel'in Türkçe sürümünde doğru açılır |
@@ -90,8 +90,11 @@ Bu öğeler tek bir sayfaya ait değildir; uygulamanın her yerinde aynı biçim
 | **Misafir kartı** | Misafir adına tıklayınca (yatak listesi, talep detayı) | Tc kimlik no (yoksa ad) üzerinden kişinin bütün konaklamaları: kaç kez kaldığı, toplam gecesi, sık kaldığı oda, tahsilat ve iptal geçmişi. «★ Öncelikli misafir», «⛔ Dikkat», oda tercihi ve serbest not kişide saklanır; bir sonraki kayıtta adın yanında işaret olarak görünür |
 | **Grup / blok kaydı** | Yeni kayıt formu · talep detayı | «On kişilik yer tutun, adlar sonra» durumu: yataklar baştan ayrılır, adlar `— AD BİLDİRİLECEK` kalır. Adlar geldikçe «👥 İsim Bildir», grup küçülürse «Yatak Serbest Bırak» kullanılır (kişi sayısı, yatak bedeli ve kapora yeniden hesaplanır) |
 | **Bekleme listesi** | Talepler sayfası | Yer bulunamayan talep «⏳ Bekleme Listesine Al» ile listeye alınır. Kart, o tarihlerde kaç yatağın boş olduğunu sürekli hesaplar; yeter sayıda yatak boşalınca «yatak çıktı» der ve zil sayacına düşer |
+| **Kat görevlisi seçimi** | Kat Hizmetleri | Görevli serbest metinle değil **tanımlı personel listesinden** seçilir; aynı kişi her satırda birebir aynı değerle kaydedilir ve kişi bazlı iş yükü raporu üretilebilir. Liste kurulumda kurum dizininden (AD/LDAP) ve tesis personel tablosundan gelir |
+| **Dekont tutar mutabakatı** | Dekont ve Onay | İstenen kapora ile yatırılan tutarın farkını sistem hesaplar; listede fark rozeti (`Tam` / `−350 ₺`), detayda «İstenen → Yatırılan → Fark» bloğu. Fark varsa onay, farkın bilinçli kabulü işaretlenmeden açılmaz |
 | **Servis dışı yatak** | Oda durumu · yatak listesi | Arıza, tadilat, boya gibi durumlarda yatak tarih aralığı ve gerekçeyle kapatılır; yerleştirme motoru atlar. Kapasiteden düşmez, ayrı sayılır: `dolu + boş + temizlikte + servis dışı = kapasite` |
 | **Giriş / çıkış saati** | Yeni kayıt formu · kayıt özeti | Standart 14:00 / 12:00; erken giriş ve geç çıkış ayrıca işaretlenir (kat hizmetleri planı buna göre yapılır) |
+| **Boş / sonuç yok / hata** | Her liste | Üçü ayrı gösterilir: veri hiç yoksa ne yapılacağı ve birincil aksiyon, süzgeç eledıyse «süzgeci temizle», hata varsa ne olduğu ve yeniden deneme. Kullanıcı «veri mi yok, ben mi yanlış süzdüm?» sorusuyla baş başa kalmaz |
 | **Hata sınırı** | Tüm uygulamayı sarar | Bir ekran beklenmedik biçimde çökerse boş sayfa yerine ne olduğunu, verinin kaybolmadığını ve ne yapılabileceğini anlatan kutu çıkar; teknik ayrıntı katlanmış olarak verilir |
 
 ## Yardım öğeleri
@@ -157,7 +160,7 @@ doğrudan `file://` ile açar):
 
 ```bash
 npm install -D playwright && npx playwright install chromium
-node testler/tumu.mjs          # on sekiz test dosyasının tamamı, sonunda özet tablo
+node testler/tumu.mjs          # on dokuz test dosyasının tamamı, sonunda özet tablo
 node testler/tumu.mjs 05 09    # yalnız numarası verilen dosyalar
 ```
 

@@ -21,9 +21,20 @@ d.bekle(/Bekleyen İşler/.test(pm), 'bekleyen işler penceresi açıldı', pm.s
 const satirlar = pencere.locator('button:has-text("›")');
 const satirSay = await satirlar.count();
 d.bekle(satirSay > 0, 'panelde iş satırları listelendi', satirSay + ' satır');
-const toplam = await satirlar.evaluateAll(xs => xs.reduce((t, x) =>
-  t + Number((x.innerText.match(/^\s*(\d+)/) || [])[1] || 0), 0));
-d.bekle(toplam === zilSayi, 'zildeki sayı panel satırlarının toplamına eşit', `${zilSayi} ≠ ${toplam}`);
+/* Panel ikiye ayrılır: «yapılacak işler» ve «bugünün hareketi». Zildeki sayaç
+   yalnız birincisini sayar — bilgi satırları toplansaydı sayaç hiç sıfırlanmaz,
+   «her zaman 30+» olur ve uyarı işlevini yitirirdi. */
+d.bekle(/YAPILACAK [Iİ]ŞLER/.test(pm), 'panelde «yapılacak işler» bloğu var');
+const isToplam = await pencere.locator('[data-blok="isler"] button').evaluateAll(xs =>
+  xs.reduce((t, x) => t + Number((x.innerText.match(/^\s*(\d+)/) || [])[1] || 0), 0));
+d.bekle(isToplam === zilSayi, 'zildeki sayı yapılacak işlerin toplamına eşit', `zil ${zilSayi} · iş ${isToplam}`);
+const bilgiVar = await pencere.locator('[data-blok="bilgi"]').count();
+if (bilgiVar) {
+  const bilgiToplam = await pencere.locator('[data-blok="bilgi"] button').evaluateAll(xs =>
+    xs.reduce((t, x) => t + Number((x.innerText.match(/^\s*(\d+)/) || [])[1] || 0), 0));
+  d.bekle(bilgiToplam > 0 && zilSayi < bilgiToplam + isToplam,
+    'bilgi satırları sayaca girmiyor', `bilgi ${bilgiToplam} · zil ${zilSayi}`);
+}
 const ilkSatir = await satirlar.first().innerText();
 await satirlar.first().click();
 await p.waitForTimeout(700);

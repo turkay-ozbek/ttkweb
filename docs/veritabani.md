@@ -155,11 +155,24 @@ CREATE TABLE kahvalti_yoklama (
   isleyen varchar(20), islenme timestamptz DEFAULT now(),
   PRIMARY KEY (tarih, konaklama_id)
 );
+CREATE TABLE kat_personeli (                       -- kat hizmetleri görevlileri
+  id         bigserial PRIMARY KEY,
+  tesis_kod  varchar(12) REFERENCES tesis,
+  ad_soyad   varchar(80) NOT NULL,
+  dizin_kodu varchar(64),                            -- AD/LDAP karşılığı (sAMAccountName)
+  gorev      varchar(40) NOT NULL DEFAULT 'Kat görevlisi',
+  aktif      boolean NOT NULL DEFAULT true,
+  UNIQUE (tesis_kod, ad_soyad)
+);
+-- Görevli ataması serbest metin DEĞİL, bu tabloya referanstır: aynı kişinin
+-- «F. Yıldız» / «Fatma Yıldız» / «fatma» diye üç kayda bölünmesi ve kişi bazlı
+-- iş yükü raporunun üretilememesi böyle önlenir.
+
 CREATE TABLE oda_temizlik (                        -- kat hizmetleri (MSFH-W13)
   tesis_kod varchar(12) REFERENCES tesis, tarih date NOT NULL,
   oda_id bigint REFERENCES oda,
   durum varchar(14) NOT NULL,                      -- BEKLIYOR / TEMIZLENIYOR / TAMAM / HAZIR
-  gorevli varchar(80), islem_saati time,
+  gorevli_id bigint REFERENCES kat_personeli, islem_saati time,
   kullanici varchar(20), guncelleme timestamptz DEFAULT now(),
   PRIMARY KEY (tesis_kod, tarih, oda_id)
 );

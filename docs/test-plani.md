@@ -533,6 +533,34 @@ Tarayıcı penceresini sırayla **1280 / 1366 / 1440 / 1600 / 1920** piksel geni
 
 ---
 
+## 15.4 Arayüz iyileştirmeleri (ilk sprint)  `[oto: 19]`
+
+1. **Renk ayrımı.** DEMO rozeti ve «DEMO ARACI» bandı amber kullanmamalı; amber
+   yalnız «bekliyor / dikkat» anlamında geçmeli. Bildirim rozeti dikkatte amber,
+   acilde kırmızı olmalı.
+2. **Bekleyen işler sayacı.** Rozetteki sayı yalnız «yapılacak işler» bloğundaki
+   satırların toplamına eşit olmalı; bilgi satırları panelde görünmeli ama sayaca
+   girmemeli. Bir dekont onaylanınca sayı azalmalı; iş bitince rozet kaybolmalı.
+3. **Dekont tutar mutabakatı.** Listede her satırda `Tam` / `−X ₺` / `+X ₺` rozeti;
+   detayda «İstenen → Yatırılan → Fark» bloğu ve sonucu açıklayan cümle. Fark varsa
+   onay düğmesi kapalı, kabul kutusu işaretlenince açık; kabul kayıt geçmişine yazılı.
+   «Yalnız tutarı tutmayan» süzgeci yalnız farkı olanları bırakmalı.
+4. **Red bildirimi.** Red penceresi gönderilecek metni, hane sayısını ve SMS adedini
+   göstermeli; hazır gerekçe tek tıkla metne girmeli. Reddedilince SMS sayacı bir
+   artmalı ve gönderilen metin önizlemedekiyle birebir aynı olmalı. Telefon yoksa
+   bu açıkça yazılmalı.
+5. **Kat görevlisi.** Serbest metin alanı hiçbir satırda kalmamalı; seçim listesi
+   tesisin personelini getirmeli. Aynı kişi iki satırda birebir aynı değerle
+   kaydedilmeli; CSV görevli kolonu yalnız tanımlı değer içermeli.
+6. **Boş / sonuç yok.** Süzgeç eledıyse «sonuç yok» metni ve «süzgeci temizle»
+   düğmesi; hiç veri yoksa ne yapılacağını söyleyen metin. İkisi aynı görünmemeli.
+7. **Sayaç tutarlılığı.** Ana Menü kartındaki sayı ile sayfanın kendi sayacı aynı
+   olmalı (Kat Hizmetleri ve Denetim İzi).
+8. **KPI alt metni.** Kartın altında formül değil okunur açıklama olmalı; hesabın
+   tamamı ipucunda bulunmalı.
+
+---
+
 ## 16. Kabul ölçütü
 
 Aşağıdakilerin tamamı sağlanıyorsa sürüm kabul edilebilir:
@@ -576,6 +604,7 @@ node testler/tumu.mjs 05 09    # yalnız seçilen dosyalar
 | `16-ariza-temizlik-saat.mjs` | 13.1–13.3 — servis dışı yatak, kat hizmetleri, giriş/çıkış saatleri |
 | `17-uzatma-nakil-grup.mjs` | 14.1–14.4 — grup kaydı, bekleme listesi, misafir kartı, uzatma ve nakil |
 | `18-rapor-denetim-bildirim.mjs` | 15.1–15.3 — bekleyen işler zili, yönetim raporları, denetim izi |
+| `19-arayuz-iyilestirmeleri.mjs` | 15.4 — renk ayrımı, sayaç davranışı, tutar mutabakatı, red bildirimi, görevli listesi, boş durumlar, sayaç tutarlılığı |
 
 ### Elle bakılması gerekenler
 

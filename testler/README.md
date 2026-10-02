@@ -57,6 +57,7 @@ Ekran görüntüleri ve testin ürettiği dosyalar `testler/cikti/` altına yaz�
 | `16-ariza-temizlik-saat.mjs` | «dolu + boş + temizlikte + servis dışı = kapasite» eşitliği, yatağı servis dışı bırakma (gerekçe zorunlu) ve hizmete alma, sayaçların hareketi, kat hizmetleri dört durum çipi ve işlem saati, kat görevlisi kalıcılığı, giriş/çıkış saatlerinin kayda ve detaya işlenmesi |
 | `17-uzatma-nakil-grup.mjs` | Uzatma penceresinin yatak uygunluk denetimi, nakil ve kayıt geçmişi, grup/blok kaydı (boş adlarla kayıt, 👥 işareti, isim bildirimi, kısmi serbest bırakma), bekleme listesi (ekleme, boş yatak sayımı, rozet, çıkarma), misafir kartı (geçmiş özeti, not kaydı, ★ rozeti) |
 | `18-rapor-denetim-bildirim.mjs` | Bekleyen işler zili (rozet sayısı = satır toplamı, satırın sayfaya götürmesi), yönetim raporları (altı KPI, karşılaştırma tablosu ve toplam, dönem kısayolları, kırılım kartları, CSV ve yazdırma), denetim izi (kaynak/kullanıcı/metin süzgeçleri), rapor ve denetim sayfalarının rol sınırları |
+| `19-arayuz-iyilestirmeleri.mjs` | Arayüz iyileştirme planının ilk sprinti: amber'ın yalnız «bekliyor/dikkat» anlamında kalması, zil sayacının yalnız yapılacak işi sayması, dekont tutar farkının hesaplanması ve farklı onayda bilinçli kabul, red gerekçesinin misafire giden metinle birebir aynı olması, kat görevlisi seçim listesinin CSV'ye temiz yansıması, boş/sonuç yok durumları, ana menü ile sayfa sayaçlarının tutması |
 | `tumu.mjs` | Hepsini sırayla koşturur, özet tablo basar |
 
 ## Sürükle-bırak nasıl test ediliyor?

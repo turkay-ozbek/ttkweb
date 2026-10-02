@@ -101,6 +101,12 @@ tailwind.config = {
     /* İkincil sütunlar telefonda gizlenir (geniş referans tabloları) */
     .mobil-gizle { display: none !important; }
   }
+  /* Tablet (≤1200 px): dokunma hedefleri büyüdüğü için yer açmak gerekir.
+     «dar-gizle» yalnız bağlam bilgisi taşıyan sütunlarda kullanılır — satırın
+     işini yapmak için gereken hiçbir sütun bu sınıfı almaz. */
+  @media (max-width: 1200px) {
+    .dar-gizle { display: none !important; }
+  }
   /* Telefon (≤640 px): satır işlemi olan listeler tabloya değil karta dönüşür.
      Sütun başlıkları her hücrenin data-b özniteliğine betikte yazılır. */
   @media (max-width: 640px) {
@@ -174,8 +180,8 @@ const { useState, useMemo, useReducer, useRef, useEffect, useLayoutEffect, useCa
    1) SABİTLER VE YARDIMCILAR
    ══════════════════════════════════════════════════════════════════════════ */
 
-const SURUM = '2.13.0';
-const SURUM_TARIHI = '2026-10-01';
+const SURUM = '2.14.0';
+const SURUM_TARIHI = '2026-10-02';
 
 const GUN_MS = 86400000;
 /* Uygulama, çalıştırıldığı günün tarihini sistem tarihi olarak kullanır;
@@ -313,7 +319,8 @@ const ROLLER = {
   },
   MUHASEBE: {
     ad:'Muhasebe Görevlisi', kisa:'Muhasebe',
-    renk:'bg-amber-100 text-amber-800 border-amber-300',
+    /* Amber «bekleyen iş / dikkat» anlamına ayrıldığı için rol rengi sky oldu. */
+    renk:'bg-sky-100 text-sky-800 border-sky-300',
     aciklama:'Kapora/peşinat tahsilatı, makbuz işlemleri ve süresi dolan taleplerin iptali. Ay sonu hesabını kapatmak için belgeyi resepsiyondan ister. Yatak tahsisi yapamaz, kayıt açamaz, dekont onaylayamaz.',
     izinler:['pano.goruntule','rezervasyon.goruntule','pesinat.goruntule',
              'pesinat.tahsilat','pesinat.toplu_iptal','rezervasyon.dekont','rapor.talep',
@@ -943,6 +950,12 @@ function smsMetni(tur, rz, tesisAd, ek) {
              (ek && ek.oda ? ` Oda ${ek.oda}.` : '') + ' Iyi konaklamalar dileriz. TTK';
     case 'IPTAL':
       return `Sayin ${ad}, ${rz.rez_no} numarali rezervasyonunuz iptal edilmistir${ek && ek.gerekce ? ` (${ek.gerekce})` : ''}. Bilginize. TTK`;
+    case 'RED':
+      /* Red gerekçesi misafire AYNEN iletilir; bu yüzden gerekçeyi yazan kişi
+         gönderilecek metnin tamamını yazarken görür (bkz. RedPenceresi). */
+      return `Sayin ${ad}, ${rz.rez_no} numarali rezervasyonunuzun kapora dekontu kabul edilmedi.` +
+             `${ek && ek.gerekce ? ` Gerekce: ${ek.gerekce}` : ''}` +
+             ` Yeni dekontu ${tesisAd} resepsiyonuna iletiniz. TTK`;
     case 'HATIRLATMA':
       return `Sayin ${ad}, ${rz.rez_no} numarali rezervasyonunuzun kaporasi (${rz.pesinat_tutari.toLocaleString('tr-TR')} TL) icin son odeme tarihi ` +
              `${tr(rz.pesinat_son_odeme_tarihi)}. Odeme yapilmazsa kayit iptal olur. TTK`;
@@ -1309,6 +1322,26 @@ function yerlestirmeMotoru(talepler, yataklar, odalar, dolu, temizlik, secenekle
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* Örnek arıza/servis dışı kayıtları — her tesiste bir yatak, gerçekçi gerekçelerle */
+/* ── Kat hizmetleri personeli ──────────────────────────────────────────────
+   Kurulumda bu liste kurum dizininden (AD/LDAP) ve tesise bağlı personel
+   tablosundan gelir; prototipte örnek veriyle üretilir. Serbest metin yerine
+   listeden seçim yapılmasının nedeni raporlanabilirlik: «F. Yıldız», «Fatma
+   Yıldız» ve «fatma» serbest metinde üç ayrı kişi olur ve kişi bazlı iş yükü
+   bir daha hesaplanamaz.                                                    */
+const KAT_PERSONELI = {
+  ANKARA:   ['Fatma Yıldız', 'Hatice Şahin', 'Ayşe Demirtaş', 'Melek Koç'],
+  YAYLA:    ['Sultan Erdoğan', 'Nurcan Aydın', 'Hülya Çetin'],
+  AMASRA:   ['Şerife Yalçın', 'Gülten Arslan', 'Emine Taş', 'Zehra Polat'],
+  ARMUTCUK: ['Sevim Kaya', 'Nazlı Öztürk', 'Döndü Acar'],
+};
+function personelUret() {
+  const liste = [];
+  TESISLER.forEach(t => (KAT_PERSONELI[t.kod] || []).forEach((ad, i) => liste.push({
+    id: `${t.kod}-KG${i + 1}`, ad, tesis: t.kod, gorev: 'Kat görevlisi', aktif: true,
+  })));
+  return liste;
+}
+
 function arizalariUret(r, yataklar, bugun) {
   const gerekceler = ['Yatak kırığı — marangoz bekleniyor', 'Klima arızası', 'Banyo sızıntısı — tesisat',
                       'Boya-badana', 'Pencere değişimi'];
@@ -1352,6 +1385,7 @@ function baslangicDurumu() {
     kahvalti: {},     /* 'TESIS|YYYY-AA-GG' → { 'rezId|misafirIndex': true }  (kahvaltıya inmeyenler) */
     arizalar,         /* servis dışı yataklar: [{ id, tesis, yatakId, bas, son, gerekce, … }] */
     temizlikDurum: {},/* 'TESIS|YYYY-AA-GG|odaId' → { durum, gorevli, not } (kat hizmetleri) */
+    personel: personelUret(),  /* kat hizmetleri personeli — kurulumda AD/LDAP'tan gelir */
     misafirNotlari: {},/* Tc kimlik no → { vip, kara_liste, tercih, not } (misafir kartı) */
     bekleme: [],      /* bekleme listesi: [{ id, rezId, tesis, bas, son, kisi, not }] */
     raporlar: [],     /* ay sonu belge talepleri */
@@ -1519,8 +1553,11 @@ function indirgeyici(s, a) {
         return rz;
       });
       const kd = rezler.find(x => x.id === a.rezId);
-      return { ...s, rezervasyonlar: rezler, gunluk: [{ tarih: s.bugun, tip: 'uyari',
-        metin: `${kd.rez_no} — ${kd.ad_soyad}: dekont reddedildi (${a.gerekce}); kayıt kapora beklemeye döndü` }, ...s.gunluk] };
+      const smsR = smsUret('RED', kd, (TESISLER.find(t => t.kod === kd.tesis) || {}).ad || '',
+        s.bugun, { gerekce: a.gerekce });
+      return { ...s, rezervasyonlar: rezler, smsler: [smsR, ...s.smsler],
+        gunluk: [{ tarih: s.bugun, tip: 'uyari',
+          metin: `${kd.rez_no} — ${kd.ad_soyad}: dekont reddedildi (${a.gerekce}); kayıt kapora beklemeye döndü` }, ...s.gunluk] };
     }
 
     case 'ATAMA_KALDIR': {
@@ -1935,11 +1972,13 @@ const Kart = ({ baslik, sag, children, className = '', govdeSinif = 'p-3' }) => 
   </section>
 );
 
-const Kpi = ({ etiket, deger, alt, renk = 'text-ttk-700' }) => (
-  <div className="bg-white border border-slate-200 rounded px-3 py-2.5 flex-1 min-w-[142px]">
+/* Kartın altındaki «alt» yazısı kullanıcıya bir şey anlatmalı. Hesabın nasıl
+   yapıldığı gibi teknik açıklama ipucuna (data-ipucu) konur, karta değil. */
+const Kpi = ({ etiket, deger, alt, renk = 'text-ttk-700', ipucu }) => (
+  <div className="bg-white border border-slate-200 rounded px-3 py-2.5 flex-1 min-w-[142px]" data-ipucu={ipucu}>
     <div className="text-2xs uppercase tracking-wide text-slate-600 font-semibold">{etiket}</div>
     <div className={`num text-[26px] font-bold leading-8 ${renk}`}>{deger}</div>
-    {alt && <div className="text-2xs text-slate-500 num">{alt}</div>}
+    {alt && <div className="text-2xs text-slate-600 num">{alt}</div>}
   </div>
 );
 
@@ -2476,9 +2515,28 @@ const SayfaBasligi = ({ ikon, baslik, aciklama, sag, tesis }) => (
   </div>
 );
 
-const BosDurum = ({ metin }) => (
-  <div className="text-center text-slate-400 text-xs py-8 border border-dashed border-slate-300 rounded">{metin}</div>
-);
+/* Üç ayrı «içerik yok» durumu vardır ve kullanıcı için anlamları farklıdır:
+   • bos    — hiç veri yok. Ne yapılacağı söylenir, varsa birincil aksiyon verilir.
+   • sonuc  — veri var ama süzgeç eledi. Süzgeci temizleme yolu gösterilir.
+   • hata   — işlem başarısız. Ne olduğu ve yeniden deneme yolu verilir.
+   Üçünü aynı gri kutuda göstermek kullanıcıyı «veri mi yok, ben mi yanlış süzdüm?»
+   sorusuyla baş başa bırakıyordu. */
+const BOS_DURUM = {
+  bos:   { im: '—', kutu: 'border-slate-300 bg-white',      yazi: 'text-slate-500' },
+  sonuc: { im: '⌕', kutu: 'border-amber-300 bg-amber-50/60', yazi: 'text-amber-900' },
+  hata:  { im: '⛔', kutu: 'border-rose-300 bg-rose-50/60',   yazi: 'text-rose-800' },
+};
+const BosDurum = ({ metin, tur = 'bos', baslik, aksiyon }) => {
+  const v = BOS_DURUM[tur] || BOS_DURUM.bos;
+  return (
+    <div className={`text-center text-xs py-8 px-4 border border-dashed rounded ${v.kutu}`}>
+      <div className="text-xl leading-none mb-1.5 opacity-60" aria-hidden="true">{v.im}</div>
+      {baslik && <div className={`text-sm font-semibold mb-0.5 ${v.yazi}`}>{baslik}</div>}
+      <div className={baslik ? 'text-slate-600 text-2xs' : v.yazi}>{metin}</div>
+      {aksiyon && <div className="mt-2.5 flex items-center justify-center gap-2 flex-wrap">{aksiyon}</div>}
+    </div>
+  );
+};
 
 /* ══════════════════════════════════════════════════════════════════════════
    6) EKRAN 1 — DOLULUK PANOSU
@@ -2690,8 +2748,8 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolu
       {bolum === 'OZET' && (
         <div className="space-y-3">
           {izin('sistem.tarih') && (
-            <div className="flex items-center gap-2 flex-wrap bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs">
-              <span className="px-1.5 py-0.5 rounded bg-amber-400 text-amber-950 font-bold text-2xs">DEMO ARACI</span>
+            <div className="flex items-center gap-2 flex-wrap bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 text-xs">
+              <span className="px-1.5 py-0.5 rounded border border-slate-400 text-slate-600 font-bold text-2xs">DEMO ARACI</span>
               <span className="text-slate-600">Sistem tarihi</span>
               <span className="num font-bold text-ttk-800">{tr(s.bugun)}</span>
               <span className="text-slate-500">— ilerleterek peşinat süresi dolan taleplerin otomatik iptalini görebilirsiniz.</span>
@@ -2710,7 +2768,10 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolu
             <Kpi etiket="Giriş Yapacak" deger={bugunIst.giris} alt={tr(s.bugun)} renk="text-sky-700" />
             <Kpi etiket="Çıkış Yapacak" deger={bugunIst.cikis} alt={tr(s.bugun)} renk="text-orange-600" />
             <Kpi etiket="Temizlikte" deger={bugunIst.temizlik} renk="text-violet-700"
-              alt={`${TEMIZLIK_GUN} gün blok · dolu+boş+temizlik+servis dışı = ${bugunIst.kapasite}`} />
+              alt={`${TEMIZLIK_GUN} gün çıkış temizliği bloğu`}
+              ipucu={`Çıkış yapılan yatak ${TEMIZLIK_GUN} gün temizlik için bloke kalır ve yeni girişe verilmez. ` +
+                     `Sayaçlar her zaman tutar: dolu ${bugunIst.dolu} + boş ${bugunIst.bos} + temizlikte ` +
+                     `${bugunIst.temizlik} + servis dışı ${bugunIst.ariza || 0} = kapasite ${bugunIst.kapasite}.`} />
             <Kpi etiket="Servis Dışı" deger={bugunIst.ariza || 0} renk={bugunIst.ariza ? 'text-slate-700' : 'text-slate-400'}
               alt="arıza / tadilat — yerleştirmeye kapalı" />
             <Kpi etiket="Doluluk" deger={'%' + bugunIst.oran} alt={ayAdi(s.bugun) + ' ' + s.bugun.slice(0, 4)} />
@@ -2753,7 +2814,18 @@ function DolulukPanosu({ s, gonder, dolu, temizlik, acYeniKayit, izin, git, bolu
             </Kart>
           </div>
 
-          <Kart baslik="Son İşlemler" sag={<span className="text-2xs text-slate-500">en son 6 kayıt</span>}>
+          <Kart baslik="Son İşlemler"
+            sag={<>
+              <span className="text-2xs text-slate-500">en son 6 kayıt</span>
+              {izin('sistem.denetim') && s.gunluk.length > 6 &&
+                <Buton tur="sessiz" onClick={() => git('DENETIM')}>Tümü →</Buton>}
+            </>}>
+            {s.gunluk.length <= 2 && (
+              <BosDurum tur="bos" baslik="Bugün henüz işlem yapılmadı"
+                metin="Açılan her kayıt, girilen tahsilat ve verilen onay buraya ve Denetim İzi sayfasına düşer."
+                aksiyon={izin('rezervasyon.olustur') &&
+                  <Buton tur="birincil" onClick={() => acYeniKayit({ tesis: s.tesis })}>+ Yeni Kayıt</Buton>} />
+            )}
             <ul className="text-xs space-y-1">
               {s.gunluk.slice(0, 6).map((g, i) => (
                 <li key={i} className={`flex gap-2 px-2 py-1.5 rounded border
@@ -3267,12 +3339,35 @@ function KaporaMuafiyeti({ rz, gonder, kapat }) {
 }
 
 /* ── Dekont ve onay sayfası (misafirhane müdürü) ──────────────────────────── */
+/* İstenen kapora ile yatırılan tutarın farkı. Önceden iki sayı yan yana
+   yazılıyor, karşılaştırmayı kullanıcı gözüyle yapıyordu; tutarlar birbirine
+   benzediği için (750 / 1.500 / 2.250) onaylarken gözden kaçıyordu. Fark artık
+   tek yerde hesaplanır ve hem listede hem detayda aynı kaynaktan okunur. */
+function kaporaFarki(rz) {
+  const istenen = rz.pesinat_tutari || 0;
+  const yatan = (rz.dekont && rz.dekont.tutar) || 0;
+  const fark = yatan - istenen;
+  return {
+    istenen, yatan, fark,
+    tam: fark === 0,
+    eksik: fark < 0,
+    fazla: fark > 0,
+    /* Listede ve rozette aynı metin kullanılır */
+    etiket: fark === 0 ? 'Tam' : (fark < 0 ? '−' : '+') + para(Math.abs(fark)),
+    sinif: fark === 0 ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+         : fark < 0   ? 'bg-rose-100 text-rose-800 border-rose-300'
+                      : 'bg-amber-100 text-amber-900 border-amber-300',
+  };
+}
+
 function OnayEkrani({ s, gonder, izin, git, acYeniKayit }) {
   const [secili, setSecili] = useState(null);
   const [redAcik, setRedAcik] = useState(false);
   const [gerekce, setGerekce] = useState('');
   const [onayNotu, setOnayNotu] = useState('');
+  const [farkKabul, setFarkKabul] = useState(false);
   const [liste, setListe] = useState('ONAY_BEKLIYOR');
+  const [yalnizFarkli, setYalnizFarkli] = useState(false);   /* yalnız tutarı tutmayan dekontlar */
   const sayfa = sayfaBul('ONAY');
   const tesisAd = (TESISLER.find(t => t.kod === s.tesis) || {}).ad || '';
   const yetkili = izin('rezervasyon.onay');
@@ -3283,13 +3378,16 @@ function OnayEkrani({ s, gonder, izin, git, acYeniKayit }) {
     ONAYLANDI:     kapsam.filter(rz => rz.dekont.durum === 'ONAYLANDI'),
     REDDEDILDI:    kapsam.filter(rz => rz.dekont.durum === 'REDDEDILDI'),
   }), [kapsam]);
-  const kayitlar = (gruplar[liste] || []).slice().sort((a, b) => a.gelis_tarihi < b.gelis_tarihi ? -1 : 1);
+  const kayitlar = (gruplar[liste] || []).slice()
+    .filter(rz => !yalnizFarkli || !kaporaFarki(rz).tam)
+    .sort((a, b) => a.gelis_tarihi < b.gelis_tarihi ? -1 : 1);
 
   const seciliRez = secili ? s.rezervasyonlar.find(r => r.id === secili) : null;
   useEffect(() => { if (!seciliRez && kayitlar.length) setSecili(kayitlar[0].id); }, [liste, kayitlar.length]);
-  useEffect(() => { setRedAcik(false); setGerekce(''); setOnayNotu(''); }, [secili]);
+  useEffect(() => { setRedAcik(false); setGerekce(''); setOnayNotu(''); setFarkKabul(false); }, [secili]);
 
   const bekleyenTutar = gruplar.ONAY_BEKLIYOR.reduce((a, r) => a + (r.dekont.tutar || 0), 0);
+  const farkliSayi = gruplar.ONAY_BEKLIYOR.filter(r => !kaporaFarki(r).tam).length;
 
   return (
     <div>
@@ -3315,24 +3413,39 @@ function OnayEkrani({ s, gonder, izin, git, acYeniKayit }) {
 
       <div className="grid gap-3 items-start"
         style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(24rem, 100%), 1fr))' }}>
-        <Kart baslik={`${STATULER.find(x => x.kod === 'ONAY_BEKLIYOR').ad.replace('Müdür Onayı Bekliyor', 'Dekontlar')} (${kayitlar.length})`} govdeSinif="p-0">
+        <Kart baslik={`Dekontlar (${kayitlar.length})`} govdeSinif="p-0"
+          sag={liste === 'ONAY_BEKLIYOR' && !!farkliSayi && (
+            <label className="flex items-center gap-1.5 text-2xs cursor-pointer"
+              data-ipucu="Yalnız istenen kaporayla yatırılan tutarın tutmadığı dekontlar">
+              <input type="checkbox" checked={yalnizFarkli} onChange={e => setYalnizFarkli(e.target.checked)} />
+              <span className="font-semibold text-rose-700">Yalnız tutarı tutmayan ({farkliSayi})</span>
+            </label>
+          )}>
           <div className="max-h-[60vh] overflow-auto kaydir">
             <table className="veri w-full mobil-kart">
               <thead><tr>
-                <th>Adı Soyadı</th><th>Geliş / Çıkış</th><th className="text-right">Kapora</th><th>Dekont</th><th>Statü</th>
+                <th>Adı Soyadı</th><th>Geliş / Çıkış</th><th className="text-right">İstenen</th>
+                <th className="text-right">Yatırılan</th><th className="text-center">Fark</th>
+                <th className="dar-gizle">Dekont</th>
               </tr></thead>
               <tbody>
-                {kayitlar.map(rz => (
-                  <tr key={rz.id} onClick={() => setSecili(rz.id)}
-                    className={`cursor-pointer ${secili === rz.id ? 'secili' : ''}`}>
-                    <td className="font-semibold text-ttk-900 max-w-[12rem] truncate" title={rz.ad_soyad}>{rz.ad_soyad}</td>
-                    <td className="num">{tr(rz.gelis_tarihi).slice(0, 6)} – {tr(rz.cikis_tarihi)}</td>
-                    <td className="num text-right font-semibold">{para(rz.dekont.tutar)}</td>
-                    <td className="num text-slate-500">{rz.dekont.dekont_no}</td>
-                    <td><StatuRozet kod={rz.statu} kisa /></td>
-                  </tr>
-                ))}
-                {!kayitlar.length && <tr><td colSpan="5" className="text-center text-slate-400 py-6">Bu listede kayıt yok.</td></tr>}
+                {kayitlar.map(rz => {
+                  const f = kaporaFarki(rz);
+                  return (
+                    <tr key={rz.id} onClick={() => setSecili(rz.id)}
+                      className={`cursor-pointer ${secili === rz.id ? 'secili' : ''} ${f.eksik ? 'bg-rose-50/50' : ''}`}>
+                      <td className="font-semibold text-ttk-900 max-w-[12rem] truncate" title={rz.ad_soyad}>{rz.ad_soyad}</td>
+                      <td className="num">{tr(rz.gelis_tarihi).slice(0, 6)} – {tr(rz.cikis_tarihi)}</td>
+                      <td className="num text-right text-slate-600">{para(f.istenen)}</td>
+                      <td className="num text-right font-semibold">{para(f.yatan)}</td>
+                      <td className="text-center"><Rozet sinif={f.sinif}>{f.etiket}</Rozet></td>
+                      <td className="num text-slate-500 dar-gizle">{rz.dekont.dekont_no}</td>
+                    </tr>
+                  );
+                })}
+                {!kayitlar.length && <tr><td colSpan="6" className="text-center text-slate-400 py-6">
+                  {yalnizFarkli ? 'Bu listede tutarı tutmayan dekont yok — süzgeci kaldırın.' : 'Bu listede kayıt yok.'}
+                </td></tr>}
               </tbody>
             </table>
           </div>
@@ -3341,13 +3454,52 @@ function OnayEkrani({ s, gonder, izin, git, acYeniKayit }) {
         <Kart baslik={seciliRez ? `Dekont İncelemesi — ${seciliRez.rez_no}` : 'Dekont İncelemesi'}>
           {!seciliRez ? <BosDurum metin="Listeden bir kayıt seçiniz." /> : (
             <div className="space-y-3">
+              {/* Tutar mutabakatı panelin tepesinde, ayrı blokta: onaylayanın ilk
+                  bakacağı bilgi bu. Önceden sekiz kutuluk ızgaranın 4. ve 5.
+                  hücresiydi ve fark hesaplanmıyordu. */}
+              {(() => {
+                const f = kaporaFarki(seciliRez);
+                return (
+                  <div className={`rounded border-2 px-3 py-2
+                    ${f.tam ? 'bg-emerald-50 border-emerald-300'
+                            : f.eksik ? 'bg-rose-50 border-rose-400' : 'bg-amber-50 border-amber-400'}`}>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div>
+                        <div className="text-2xs uppercase text-slate-600 font-semibold">İstenen Kapora</div>
+                        <div className="num text-[17px] leading-6 text-slate-700">{para(f.istenen)}</div>
+                      </div>
+                      <div>
+                        <div className="text-2xs uppercase text-slate-600 font-semibold">Yatırılan</div>
+                        <div className="num text-[17px] leading-6 text-slate-700">{para(f.yatan)}</div>
+                      </div>
+                      <div>
+                        <div className="text-2xs uppercase text-slate-600 font-semibold">Fark</div>
+                        <div className={`num text-[17px] leading-6 font-bold
+                          ${f.tam ? 'text-emerald-700' : f.eksik ? 'text-rose-700' : 'text-amber-800'}`}>
+                          {f.tam ? 'Tam' : f.etiket}
+                        </div>
+                      </div>
+                    </div>
+                    <p className={`text-2xs mt-1.5 pt-1.5 border-t text-center
+                      ${f.tam ? 'border-emerald-200 text-emerald-800'
+                              : f.eksik ? 'border-rose-200 text-rose-800' : 'border-amber-200 text-amber-900'}`}>
+                      {f.tam
+                        ? '✓ Yatırılan tutar istenen kaporayla birebir aynı.'
+                        : f.eksik
+                          ? `⛔ Eksik ödeme. Onaylarsanız ${para(-f.fark)} kapora alacağı tahsilat listesinde kalır.`
+                          : `⚠ Fazla ödeme. ${para(f.fark)} iade ya da konaklama bedelinden mahsup edilmelidir.`}
+                      {seciliRez.kapora_gece ? ` (Kapora ${seciliRez.kapora_gece} gecelik hesaplandı.)` : ''}
+                    </p>
+                  </div>
+                );
+              })()}
+
               <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(9rem, 100%), 1fr))' }}>
                 {[['Rezerv Eden', seciliRez.ad_soyad],
                   ['Konaklama', `${tr(seciliRez.gelis_tarihi)} – ${tr(seciliRez.cikis_tarihi)} · ${seciliRez.gun_sayisi} gece`],
                   ['Kişi', `${seciliRez.kisi_sayisi} kişi`],
-                  ['İstenen Kapora', para(seciliRez.pesinat_tutari) + (seciliRez.kapora_gece ? ` · ${seciliRez.kapora_gece} gecelik` : '')],
-                  ['Yatırılan', para(seciliRez.dekont.tutar)],
                   ['Banka / Tarih', `${seciliRez.dekont.banka} · ${tr(seciliRez.dekont.odeme_tarihi)}`],
+                  ['Dekont No', seciliRez.dekont.dekont_no],
                   ['Yükleyen', `${seciliRez.dekont.yukleyen} · ${tr(seciliRez.dekont.yuklenme_tarihi)}`],
                   ['Statü', statuAd(seciliRez.statu)]].map(([k, v]) => (
                   <div key={k} className="bg-slate-50 border border-slate-200 rounded px-2 py-1.5 min-w-0">
@@ -3356,12 +3508,6 @@ function OnayEkrani({ s, gonder, izin, git, acYeniKayit }) {
                   </div>
                 ))}
               </div>
-
-              {seciliRez.dekont.tutar < seciliRez.pesinat_tutari && (
-                <div className="px-2 py-1.5 rounded border bg-amber-50 border-amber-300 text-amber-900 text-2xs">
-                  ⚠ Yatırılan tutar istenen kaporanın altında — eksik {para(seciliRez.pesinat_tutari - seciliRez.dekont.tutar)}.
-                </div>
-              )}
               {seciliRez.dekont.durum === 'REDDEDILDI' && (
                 <div className="px-2 py-1.5 rounded border bg-rose-50 border-rose-300 text-rose-800 text-2xs">
                   ⛔ Reddedildi ({tr(seciliRez.dekont.onay_tarihi)} · {seciliRez.dekont.onaylayan}): {seciliRez.dekont.red_gerekcesi}
@@ -3378,10 +3524,49 @@ function OnayEkrani({ s, gonder, izin, git, acYeniKayit }) {
               {seciliRez.dekont.durum === 'YUKLENDI' && (
                 redAcik ? (
                   <div className="space-y-2 border-t border-slate-200 pt-2">
-                    <Alan etiket="Red gerekçesi" zorunlu ipucu="Kayıt kapora beklemeye döner, gerekçe misafire iletilir.">
+                    <Alan etiket="Red gerekçesi" zorunlu
+                      ipucu="Kayıt kapora beklemeye döner; gerekçe misafire AYNEN iletilir.">
                       <input value={gerekce} onChange={e => setGerekce(e.target.value)} className={GIRDI}
                         placeholder="Örn. Dekont tutarı eksik / dekont okunmuyor / farklı hesaba yatırılmış" />
                     </Alan>
+                    {/* Hazır gerekçeler hem hızlandırır hem metni tekilleştirir:
+                        aynı durum her seferinde aynı cümleyle bildirilir. */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-2xs text-slate-500">Hazır gerekçe:</span>
+                      {[`Yatirilan tutar istenen kaporadan ${para(Math.max(0, -kaporaFarki(seciliRez).fark))} eksik`,
+                        'Dekont goruntusu okunmuyor',
+                        'Odeme farkli bir hesaba yapilmis',
+                        'Dekont tarihi rezervasyon tarihiyle uyusmuyor'].map((hazir, i) => (
+                        <button key={i} type="button" onClick={() => setGerekce(hazir)}
+                          className="px-2 py-1 rounded-full border border-slate-300 bg-white text-slate-600
+                                     text-2xs hover:border-ttk-400 hover:text-ttk-700 transition-colors">
+                          {hazir.length > 34 ? hazir.slice(0, 32) + '…' : hazir}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Gönderilecek metnin kendisi — gerçekte giden metinle aynı
+                        işlevden üretilir, böylece önizleme ile gönderim ayrışamaz. */}
+                    {(() => {
+                      const onizleme = smsMetni('RED', seciliRez, tesisAd, { gerekce: gerekce.trim() });
+                      const hane = onizleme.length;
+                      const parca = Math.max(1, Math.ceil(hane / 160));
+                      return (
+                        <div className="rounded border border-slate-300 bg-slate-50 overflow-hidden">
+                          <div className="flex items-center gap-2 px-2.5 py-1 bg-slate-200/70 text-2xs text-slate-600">
+                            <b>✉ Misafire gidecek mesaj</b>
+                            <span className="num ml-auto">{hane} hane · {parca} SMS</span>
+                          </div>
+                          <p className="px-2.5 py-2 text-xs text-slate-800 whitespace-pre-wrap break-words">
+                            {onizleme}
+                          </p>
+                          <p className="px-2.5 pb-2 text-2xs text-slate-500">
+                            {seciliRez.tel_no
+                              ? <>Gönderilecek numara: <b className="num">{seciliRez.tel_no}</b>. Gerekçe metni aynen iletilir.</>
+                              : <b className="text-amber-700">Kayıtta telefon numarası yok — mesaj gönderilemez, yalnız kayda yazılır.</b>}
+                          </p>
+                        </div>
+                      );
+                    })()}
                     <div className="flex gap-2 justify-end">
                       <Buton tur="sessiz" onClick={() => setRedAcik(false)}>Vazgeç</Buton>
                       <Buton tur="tehlike" disabled={!gerekce.trim()}
@@ -3392,15 +3577,43 @@ function OnayEkrani({ s, gonder, izin, git, acYeniKayit }) {
                   </div>
                 ) : (
                   <div className="space-y-2 border-t border-slate-200 pt-2">
-                    <Alan etiket="Onay notu (isteğe bağlı)">
+                    <Alan etiket="Onay notu (isteğe bağlı)"
+                      ipucu="Yalnız kurum içi kayda yazılır; misafire gönderilmez.">
                       <input value={onayNotu} onChange={e => setOnayNotu(e.target.value)} className={GIRDI} />
                     </Alan>
+                    {/* Tutar tutmuyorsa onay bilinçli bir karar olmalı: kutucuk
+                        işaretlenmeden onay düğmesi açılmaz ve birincil görünümünü
+                        kaybeder. */}
+                    {!kaporaFarki(seciliRez).tam && yetkili && (() => {
+                      const f = kaporaFarki(seciliRez);
+                      return (
+                        <label className={`flex items-start gap-2 text-xs cursor-pointer rounded border px-2.5 py-2
+                          ${f.eksik ? 'bg-rose-50 border-rose-300' : 'bg-amber-50 border-amber-300'}`}>
+                          <input type="checkbox" checked={farkKabul} className="mt-0.5"
+                            onChange={e => setFarkKabul(e.target.checked)} aria-label="Tutar farkını kabul ediyorum" />
+                          <span>
+                            <b>{f.eksik ? `Eksik ${para(-f.fark)} tutarı` : `Fazla ${para(f.fark)} tutarı`} kabul ediyorum.</b>
+                            <span className="block text-2xs text-slate-600">
+                              {f.eksik
+                                ? 'Kayıt onaylanır, kalan kapora alacağı tahsilat listesinde izlenir.'
+                                : 'Kayıt onaylanır, fazla tutarın iadesi ya da mahsubu muhasebeye bildirilir.'}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })()}
                     <div className="flex gap-2 justify-end">
                       <Buton tur="tehlike" disabled={!yetkili} onClick={() => setRedAcik(true)}
                         data-ipucu={yetkili ? 'Dekontu reddet — kayıt kapora beklemeye döner, gerekçe kayıt geçmişine yazılır' : yetkiNotu(s.kullanici, 'rezervasyon.onay')}>Reddet</Buton>
-                      <Buton tur="basari" disabled={!yetkili}
-                        data-ipucu={yetkili ? 'Kaydı rezervasyon listesine alır; yatak tahsisi bundan sonra yapılabilir' : yetkiNotu(s.kullanici, 'rezervasyon.onay')}
-                        onClick={() => gonder({ tip: 'DEKONT_ONAY', rezId: seciliRez.id, aciklama: onayNotu.trim() })}>
+                      <Buton tur={kaporaFarki(seciliRez).tam ? 'basari' : 'ikincil'}
+                        disabled={!yetkili || (!kaporaFarki(seciliRez).tam && !farkKabul)}
+                        data-ipucu={!yetkili ? yetkiNotu(s.kullanici, 'rezervasyon.onay')
+                          : (!kaporaFarki(seciliRez).tam && !farkKabul)
+                            ? 'Tutar istenen kaporayla tutmuyor — önce farkı kabul ettiğinizi işaretleyin'
+                            : 'Kaydı rezervasyon listesine alır; yatak tahsisi bundan sonra yapılabilir'}
+                        onClick={() => gonder({ tip: 'DEKONT_ONAY', rezId: seciliRez.id,
+                          aciklama: (onayNotu.trim() + (kaporaFarki(seciliRez).tam ? ''
+                            : ` [tutar farkı kabul edildi: ${kaporaFarki(seciliRez).etiket}]`)).trim() })}>
                         ✓ Onayla ve Rezervasyon Listesine Al
                       </Buton>
                     </div>
@@ -7085,12 +7298,44 @@ function YazdirmaIcerigi({ baslik, altBaslik, sutunlar, satirlar, cizgili, onizl
    temizlik» bekler. Kat görevlisi atanır, iş bitince işaretlenir; liste
    yazdırılıp kat görevlisine verilebilir.
    ══════════════════════════════════════════════════════════════════════════ */
+/* Durumun yanındaki işaret renge ek bilgi taşır: renk körü kullanıcıda emerald
+   ve amber tonları birbirine yakın algılanır, işaret olmadan «Temizlendi» ile
+   «Bekliyor» karışır. Dolu renk yalnız seçili bölmede kullanılır. */
 const TEMIZLIK_DURUMU = {
-  BEKLIYOR:     { ad:'Bekliyor',     kutu:'bg-amber-100 text-amber-900 border-amber-300' },
-  TEMIZLENIYOR: { ad:'Temizleniyor', kutu:'bg-sky-100 text-sky-900 border-sky-300' },
-  TAMAM:        { ad:'Temizlendi',   kutu:'bg-emerald-100 text-emerald-900 border-emerald-300' },
-  HAZIR:        { ad:'Hazır',        kutu:'bg-slate-100 text-slate-600 border-slate-300' },
+  BEKLIYOR:     { ad:'Bekliyor',     im:'⏱', kutu:'bg-amber-100 text-amber-900 border-amber-300',
+                  secili:'bg-amber-500 text-white border-amber-600' },
+  TEMIZLENIYOR: { ad:'Temizleniyor', im:'▸', kutu:'bg-sky-100 text-sky-900 border-sky-300',
+                  secili:'bg-sky-600 text-white border-sky-700' },
+  TAMAM:        { ad:'Temizlendi',   im:'✓', kutu:'bg-emerald-100 text-emerald-900 border-emerald-300',
+                  secili:'bg-emerald-600 text-white border-emerald-700' },
+  HAZIR:        { ad:'Hazır',        im:'·', kutu:'bg-slate-100 text-slate-600 border-slate-300',
+                  secili:'bg-slate-500 text-white border-slate-600' },
 };
+const TEMIZLIK_SIRA = ['BEKLIYOR', 'TEMIZLENIYOR', 'TAMAM', 'HAZIR'];
+
+/* Bir odanın belirli bir gündeki temizlik işi. Üç yerden okunur — Kat Hizmetleri
+   sayfası, ana menü kartı ve bekleyen işler zili — ve üçünün aynı sayıyı vermesi
+   gerekir. Önceden her biri kendi döngüsünü yazıyordu ve ana menü 23, sayfa 22
+   diyordu: odanın bir yatağı arızalıyken diğerleri doluysa sayımlar ayrışıyordu.
+   Kural: odada arızalı yatak varsa oda «Servis dışı» sayılır ve temizlik
+   listesine girmez — arıza kaydından yönetilir. */
+function odaTemizligi(oda, tesisYatak, gun, dolu, temizlik) {
+  const ys = tesisYatak.filter(y => y.odaId === oda.id);
+  let cikisVar = false, doluVar = false, arizaVar = false;
+  const misafirler = [];
+  for (const y of ys) {
+    const d = dolu.get(y.id + '|' + gun);
+    if (d) { doluVar = true; if (d.misafir) misafirler.push(d.misafir.adi_soyadi); }
+    const tz = temizlik.get(y.id + '|' + gun);
+    if (tz && tz.ariza) arizaVar = true;
+    else if (tz) cikisVar = true;
+  }
+  const tur = arizaVar ? 'Servis dışı' : cikisVar ? 'Çıkış temizliği'
+            : doluVar ? 'Günlük temizlik' : 'İş yok';
+  return { ys, tur, misafirler, cikisVar, doluVar, arizaVar,
+           isVar: tur === 'Çıkış temizliği' || tur === 'Günlük temizlik',
+           oncelik: cikisVar && !arizaVar ? 0 : doluVar && !arizaVar ? 1 : 2 };
+}
 
 function KatHizmetleriEkrani({ s, gonder, izin, dolu, temizlik }) {
   const sayfa = sayfaBul('KAT_HIZMETLERI');
@@ -7102,39 +7347,31 @@ function KatHizmetleriEkrani({ s, gonder, izin, dolu, temizlik }) {
   useEffect(() => setTarih(s.bugun), [s.bugun]);
 
   const duzenleyebilir = izin('temizlik.isle');
+  const personel = useMemo(
+    () => (s.personel || []).filter(k => k.tesis === s.tesis && k.aktif).sort((a, b) => a.ad.localeCompare(b.ad, 'tr')),
+    [s.personel, s.tesis]);
   const tesisOda = useMemo(() => s.odalar.filter(o => o.tesis === s.tesis).sort((a, b) => a.oda_no - b.oda_no),
     [s.odalar, s.tesis]);
   const tesisYatak = useMemo(() => s.yataklar.filter(y => y.tesis === s.tesis), [s.yataklar, s.tesis]);
 
   /* Oda başına: iş türü, kalan misafir, kaydedilmiş durum */
   const satirlar = useMemo(() => tesisOda.map(oda => {
-    const ys = tesisYatak.filter(y => y.odaId === oda.id);
-    let cikisVar = false, doluVar = false, arizaVar = false;
-    const misafirler = [];
-    for (const y of ys) {
-      const d = dolu.get(y.id + '|' + tarih);
-      if (d) { doluVar = true; if (d.misafir) misafirler.push(d.misafir.adi_soyadi); }
-      const tz = temizlik.get(y.id + '|' + tarih);
-      if (tz && tz.ariza) arizaVar = true;
-      else if (tz) cikisVar = true;
-    }
-    const tur = arizaVar ? 'Servis dışı' : cikisVar ? 'Çıkış temizliği' : doluVar ? 'Günlük temizlik' : 'İş yok';
+    const t = odaTemizligi(oda, tesisYatak, tarih, dolu, temizlik);
     const kayit = (s.temizlikDurum || {})[`${s.tesis}|${tarih}|${oda.id}`] || {};
-    const durum = kayit.durum || (cikisVar || doluVar ? 'BEKLIYOR' : 'HAZIR');
-    return { oda, ys, tur, misafirler, durum, gorevli: kayit.gorevli || '', saat: kayit.saat || '',
-             oncelik: cikisVar ? 0 : doluVar ? 1 : 2 };
+    return { oda, ...t, durum: kayit.durum || (t.isVar ? 'BEKLIYOR' : 'HAZIR'),
+             gorevli: kayit.gorevli || '', saat: kayit.saat || '' };
   }), [tesisOda, tesisYatak, tarih, dolu, temizlik, s.temizlikDurum, s.tesis]);
 
   const suzulmus = useMemo(() => {
     const q = aramaAnahtari(arama);
     return satirlar
-      .filter(x => !yalnizIs || x.tur === 'Çıkış temizliği' || x.tur === 'Günlük temizlik')
+      .filter(x => !yalnizIs || x.isVar)
       .filter(x => !q || aramaAnahtari(`Oda ${x.oda.oda_no} ${x.misafirler.join(' ')} ${x.gorevli}`).includes(q))
       .sort((a, b) => a.oncelik - b.oncelik || a.oda.oda_no - b.oda.oda_no);
   }, [satirlar, arama, yalnizIs]);
 
   const say = (d) => satirlar.filter(x => x.durum === d).length;
-  const isSayisi = satirlar.filter(x => x.tur === 'Çıkış temizliği' || x.tur === 'Günlük temizlik').length;
+  const isSayisi = satirlar.filter(x => x.isVar).length;
   const yaz = (oda, degisiklik) =>
     gonder({ tip: 'TEMIZLIK_DURUM', tesis: s.tesis, gun: tarih, odaId: oda.id, degisiklik });
 
@@ -7177,8 +7414,8 @@ function KatHizmetleriEkrani({ s, gonder, izin, dolu, temizlik }) {
         <div className="max-h-[58vh] overflow-auto kaydir">
           <table className="veri w-full mobil-kart">
             <thead><tr>
-              <th className="w-20">Oda</th><th className="w-28">İş Türü</th><th className="w-56">Durum</th>
-              <th className="w-40">Kat Görevlisi</th><th className="mobil-gizle">Odadaki Misafirler</th>
+              <th className="w-20">Oda</th><th className="w-28">İş Türü</th><th className="w-[21rem]">Durum</th>
+              <th className="w-40">Kat Görevlisi</th><th className="dar-gizle mobil-gizle">Odadaki Misafirler</th>
               <th className="w-14 mobil-gizle">Saat</th>
             </tr></thead>
             <tbody>
@@ -7188,30 +7425,69 @@ function KatHizmetleriEkrani({ s, gonder, izin, dolu, temizlik }) {
                   <td className="num font-bold text-ttk-900">Oda {x.oda.oda_no}<span className="text-slate-400 font-normal"> · {x.oda.kat}. kat</span></td>
                   <td className="text-slate-600">{x.tur}</td>
                   <td>
-                    <div className="flex items-center gap-1 flex-wrap">
-                      {Object.entries(TEMIZLIK_DURUMU).map(([kod, v]) => (
-                        <button key={kod} disabled={!duzenleyebilir || x.tur === 'Servis dışı'}
-                          onClick={() => yaz(x.oda, { durum: kod })}
-                          data-ipucu={duzenleyebilir ? `Durumu «${v.ad}» yap` : yetkiNotu(s.kullanici, 'temizlik.isle')}
-                          className={`px-2 py-0.5 rounded-full border text-2xs font-semibold transition-colors
-                            disabled:opacity-40 disabled:cursor-not-allowed
-                            ${x.durum === kod ? v.kutu + ' ring-1 ring-ttk-400' : 'bg-white border-slate-300 text-slate-500 hover:border-ttk-400'}`}>
-                          {v.ad}
-                        </button>
-                      ))}
+                    {/* Dört durum tek satırda, bitişik bölmeli segment kontrolü.
+                        Önceki hâlinde çipler ~21 px'ti ve iki satıra sarıyordu;
+                        «Temizleniyor»a basan parmak alt satırdaki «Hazır»a denk
+                        gelebiliyordu. Bölmeler arasında boşluk yok: her dokunuş
+                        bir bölmeye düşer, aradaki boşluğa düşmez. */}
+                    <div role="radiogroup" aria-label={`Oda ${x.oda.oda_no} temizlik durumu`}
+                      className="inline-flex rounded-lg border border-slate-300 overflow-hidden bg-white
+                                 divide-x divide-slate-300 min-w-full">
+                      {TEMIZLIK_SIRA.map(kod => {
+                        const v = TEMIZLIK_DURUMU[kod];
+                        const secili = x.durum === kod;
+                        const kapali = !duzenleyebilir || x.tur === 'Servis dışı';
+                        return (
+                          <button key={kod} role="radio" aria-checked={secili} disabled={kapali}
+                            onClick={() => yaz(x.oda, { durum: kod })}
+                            title={kapali ? undefined : `Durumu «${v.ad}» yap`}
+                            data-ipucu={duzenleyebilir
+                              ? (x.tur === 'Servis dışı' ? 'Servis dışı oda temizlik listesinde işlenmez — arıza kaydından yönetilir'
+                                                         : `Durumu «${v.ad}» yap`)
+                              : yetkiNotu(s.kullanici, 'temizlik.isle')}
+                            className={`flex-1 min-h-[44px] px-1.5 flex flex-col items-center justify-center gap-0.5
+                                        text-[0.65rem] font-semibold leading-none transition-colors
+                                        disabled:opacity-40 disabled:cursor-not-allowed
+                                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ttk-500
+                                        ${secili ? v.secili : 'text-slate-500 hover:bg-slate-50'}`}>
+                            <span aria-hidden="true" className="text-xs leading-none">{v.im}</span>
+                            <span className="whitespace-nowrap">{v.ad}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </td>
                   <td>
-                    <input value={x.gorevli} disabled={!duzenleyebilir}
+                    {/* Serbest metin yerine seçim listesi: aynı kişi her satırda
+                        birebir aynı değerle kaydedilir, kişi bazlı iş yükü raporu
+                        üretilebilir. Liste kurulumda AD/LDAP'tan gelir. */}
+                    <select value={x.gorevli} disabled={!duzenleyebilir || x.tur === 'Servis dışı'}
                       onChange={e => yaz(x.oda, { gorevli: e.target.value })}
-                      placeholder="ad soyad" className={`${GIRDI} !w-36`} aria-label={`Oda ${x.oda.oda_no} kat görevlisi`} />
+                      className={`${GIRDI} !w-36 min-h-[44px]`}
+                      aria-label={`Oda ${x.oda.oda_no} kat görevlisi`}
+                      data-ipucu={duzenleyebilir ? 'Odayı temizleyen kat görevlisi' : yetkiNotu(s.kullanici, 'temizlik.isle')}>
+                      <option value="">— görevli seçiniz —</option>
+                      {personel.map(kisi => <option key={kisi.id} value={kisi.ad}>{kisi.ad}</option>)}
+                      {/* Listede olmayan eski bir kayıt varsa kaybolmasın */}
+                      {x.gorevli && !personel.some(k => k.ad === x.gorevli) &&
+                        <option value={x.gorevli}>{x.gorevli} (listede yok)</option>}
+                    </select>
                   </td>
-                  <td className="mobil-gizle text-slate-600">{x.misafirler.join(', ') || '—'}</td>
+                  <td className="dar-gizle mobil-gizle text-slate-600">{x.misafirler.join(', ') || '—'}</td>
                   <td className="num mobil-gizle text-slate-500">{x.saat || '—'}</td>
                 </tr>
               ))}
-              {!suzulmus.length && <tr><td colSpan="6" className="text-center text-slate-400 py-6">
-                {tr(tarih)} için listelenecek oda yok.</td></tr>}
+              {!suzulmus.length && <tr><td colSpan="6" className="p-3">
+                {(arama || yalnizIs)
+                  ? <BosDurum tur="sonuc" baslik="Süzgeçle eşleşen oda yok"
+                      metin={`${tr(tarih)} tarihinde ${satirlar.length} oda listeleniyor; süzgeç hepsini eledi.`}
+                      aksiyon={<Buton tur="sessiz" onClick={() => { setArama(''); setYalnizIs(false); }}>
+                        Süzgeci temizle</Buton>} />
+                  : <BosDurum tur="bos" baslik="Bu tarihte temizlik işi yok"
+                      metin={`${tr(tarih)} ${hg(tarih)} günü çıkış yapan ya da konaklama süren oda bulunmuyor.`}
+                      aksiyon={tarih !== s.bugun &&
+                        <Buton tur="sessiz" onClick={() => setTarih(s.bugun)}>Bugüne dön</Buton>} />}
+              </td></tr>}
             </tbody>
           </table>
         </div>
@@ -7915,7 +8191,16 @@ function DenetimEkrani({ s, izin }) {
           </span>
         </>}>
         {!gosterilen.length ? (
-          <BosDurum metin="Seçilen aralık ve süzgeçlerle eşleşen işlem kaydı yok." />
+          (kaynak !== 'HEPSI' || kullanici !== 'HEPSI' || arama.trim() || !yalnizTesis)
+            ? <BosDurum tur="sonuc" baslik="Süzgeçle eşleşen işlem yok"
+                metin={`${hepsi.length} kayıt arasından bu aralık ve süzgeçlerle eşleşen bulunamadı.`}
+                aksiyon={<Buton tur="sessiz" onClick={() => {
+                  setKaynak('HEPSI'); setKullanici('HEPSI'); setArama(''); setYalnizTesis(true);
+                }}>Süzgeçleri temizle</Buton>} />
+            : <BosDurum tur="bos" baslik="Bu aralıkta işlem kaydı yok"
+                metin={`${tr(bas)} – ${tr(son)} arasında kayıt hareketi ya da sistem günlüğü bulunmuyor.`}
+                aksiyon={<Buton tur="sessiz" onClick={() => { setBas(ekle(s.bugun, -89)); setSon(s.bugun); }}>
+                  Son 90 güne bak</Buton>} />
         ) : (
           <div className="kaydir-x kaydir max-h-[62vh] overflow-y-auto">
             <table className="veri w-full mobil-kart">
@@ -8637,13 +8922,8 @@ function gorevleriHesapla(s, dolu, temizlik, izin) {
     const tesisOda = s.odalar.filter(o => o.tesis === s.tesis);
     let temizlenecek = 0;
     for (const oda of tesisOda) {
-      const ys = tesisYatak.filter(y => y.odaId === oda.id);
-      let cikisVar = false;
-      for (const y of ys) {
-        const tz = temizlik.get(y.id + '|' + bugun);
-        if (tz && !tz.ariza) { cikisVar = true; break; }
-      }
-      if (!cikisVar) continue;
+      const t = odaTemizligi(oda, tesisYatak, bugun, dolu, temizlik);
+      if (t.tur !== 'Çıkış temizliği') continue;
       const kayit = (s.temizlikDurum || {})[`${s.tesis}|${bugun}|${oda.id}`] || {};
       const durum = kayit.durum || 'BEKLIYOR';
       if (durum === 'BEKLIYOR' || durum === 'TEMIZLENIYOR') temizlenecek++;
@@ -8664,6 +8944,11 @@ function gorevleriHesapla(s, dolu, temizlik, izin) {
   return g.sort((a, b) => sira[a.onem] - sira[b.onem] || b.sayi - a.sayi);
 }
 
+/* Zildeki sayaç yalnız «yapılacak iş»i sayar. Bugün giriş/çıkış yapacak misafir
+   sayısı gibi bilgi satırları toplama girmez; girseydi sayaç hiç sıfırlanmaz,
+   «her zaman 30+» olur ve uyarı işlevini yitirirdi. */
+const isGorevi = (x) => x.onem === 'acil' || x.onem === 'uyari';
+
 const GOREV_RENGI = {
   acil:  { kutu: 'bg-rose-50 border-rose-300 hover:bg-rose-100',      rozet: 'bg-rose-600 text-white',      yazi: 'text-rose-700' },
   uyari: { kutu: 'bg-amber-50 border-amber-300 hover:bg-amber-100',   rozet: 'bg-amber-500 text-white',     yazi: 'text-amber-800' },
@@ -8671,7 +8956,29 @@ const GOREV_RENGI = {
 };
 
 function BildirimPaneli({ gorevler, tesisAdi, git, kapat }) {
-  const acil = gorevler.filter(x => x.onem === 'acil').reduce((t, x) => t + x.sayi, 0);
+  /* «Yapılacak iş» ile «bugünün hareketi» ayrı listelerdir: zildeki sayacın
+     sıfırlanabilmesi için yalnız birincisi sayılır (bkz. isGorevi). */
+  const isler = gorevler.filter(isGorevi);
+  const bilgiler = gorevler.filter(x => !isGorevi(x));
+  const acil = isler.filter(x => x.onem === 'acil').reduce((t, x) => t + x.sayi, 0);
+
+  const satir = (x) => {
+    const r = GOREV_RENGI[x.onem];
+    return (
+      <button key={x.kod} onClick={() => { git(x.sayfa); kapat(); }}
+        className={`w-full flex items-center gap-3 px-3 py-2 rounded border text-left transition-colors ${r.kutu}`}>
+        <span className={`num w-8 h-8 rounded-full shrink-0 flex items-center justify-center font-bold text-sm ${r.rozet}`}>
+          {x.sayi}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className={`block text-xs font-bold ${r.yazi}`}>{x.baslik}</span>
+          <span className="block text-2xs text-slate-500">{x.aciklama}</span>
+        </span>
+        <span className="text-2xs text-slate-500 shrink-0">{(sayfaBul(x.sayfa) || {}).kisa} ›</span>
+      </button>
+    );
+  };
+
   return (
     <Modal baslik={`Bekleyen İşler — ${tesisAdi}`} genislik="max-w-lg" kapat={kapat}
       altlik={<>
@@ -8680,37 +8987,39 @@ function BildirimPaneli({ gorevler, tesisAdi, git, kapat }) {
         </span>
         <Buton tur="sessiz" onClick={kapat}>Kapat</Buton>
       </>}>
-      {!gorevler.length ? (
-        <div className="text-center py-8">
-          <div className="text-3xl">✓</div>
-          <p className="text-sm font-semibold text-emerald-700 mt-1">Bekleyen iş yok.</p>
-          <p className="text-2xs text-slate-500">Bugün için onay, tahsilat, yerleştirme ve temizlik listeleri temiz.</p>
-        </div>
-      ) : (
-        <div className="space-y-1.5">
-          {!!acil && (
-            <p className="text-2xs text-rose-700 font-semibold">
-              {acil} kayıt acil — süresi dolan kapora ve yerleştirilmemiş yakın tarihli talepler önce gelir.
-            </p>
+      <div className="space-y-3">
+        <div>
+          <h4 className="text-2xs uppercase font-bold text-slate-500 mb-1.5">
+            Yapılacak işler{isler.length ? ` (${isler.length})` : ''}
+          </h4>
+          {!isler.length ? (
+            <div data-blok="isler-bos"
+              className="text-center py-6 border border-dashed border-emerald-300 bg-emerald-50/50 rounded">
+              <div className="text-2xl">✓</div>
+              <p className="text-sm font-semibold text-emerald-700 mt-1">Bekleyen iş yok.</p>
+              <p className="text-2xs text-slate-600">Onay, tahsilat, yerleştirme ve temizlik listeleri temiz.</p>
+            </div>
+          ) : (
+            <div data-blok="isler" className="space-y-1.5">
+              {!!acil && (
+                <p className="text-2xs text-rose-700 font-semibold">
+                  {acil} kayıt acil — süresi dolan kapora ve yerleştirilmemiş yakın tarihli talepler önce gelir.
+                </p>
+              )}
+              {isler.map(satir)}
+            </div>
           )}
-          {gorevler.map(x => {
-            const r = GOREV_RENGI[x.onem];
-            return (
-              <button key={x.kod} onClick={() => { git(x.sayfa); kapat(); }}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded border text-left transition-colors ${r.kutu}`}>
-                <span className={`num w-8 h-8 rounded-full shrink-0 flex items-center justify-center font-bold text-sm ${r.rozet}`}>
-                  {x.sayi}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className={`block text-xs font-bold ${r.yazi}`}>{x.baslik}</span>
-                  <span className="block text-2xs text-slate-500">{x.aciklama}</span>
-                </span>
-                <span className="text-2xs text-slate-500 shrink-0">{(sayfaBul(x.sayfa) || {}).kisa} ›</span>
-              </button>
-            );
-          })}
         </div>
-      )}
+
+        {!!bilgiler.length && (
+          <div className="pt-2 border-t border-slate-200">
+            <h4 className="text-2xs uppercase font-bold text-slate-500 mb-1.5">
+              Bugünün hareketi <span className="font-normal normal-case">— bilgi, yapılacak iş değil</span>
+            </h4>
+            <div data-blok="bilgi" className="space-y-1.5">{bilgiler.map(satir)}</div>
+          </div>
+        )}
+      </div>
     </Modal>
   );
 }
@@ -8885,6 +9194,14 @@ function Uygulama() {
       (r.pesinat_tutari || 0) > (r.tahsil_edilen || 0)).length;
     const konaklayan = kapsam.filter(r => r.statu === 'KONAKLIYOR').length;
     const onayBekleyen = kapsam.filter(r => r.dekont && r.dekont.durum === 'YUKLENDI').length;
+    /* Kat hizmetleri: Kat Hizmetleri sayfasındaki «Temizlenecek Oda» sayacıyla
+       aynı işlevden (odaTemizligi) hesaplanır — iki ekran aynı sayıyı verir. */
+    const temizlenecek = s.odalar.filter(o => o.tesis === s.tesis)
+      .filter(oda => odaTemizligi(oda, tesisYatak, s.bugun, dolu, temizlik).isVar).length;
+    /* Denetim izi: sayfa kayıt hareketlerini de sayar, ana menü yalnız sistem
+       günlüğünü sayıyordu — aynı veri için iki farklı sayı çıkıyordu. */
+    const denetimSatiri = s.rezervasyonlar.reduce((t, rz) => t + (rz.hareketler || []).length, 0)
+      + (s.gunluk || []).length;
     const oran = tesisYatak.length ? Math.round(doluSayi / tesisYatak.length * 100) : 0;
     return {
       OZET:          { deger: '%' + oran, etiket: 'bugünkü doluluk' },
@@ -8900,16 +9217,18 @@ function Uygulama() {
       AY_SONU:       { deger: (s.raporlar || []).filter(r => r.tesis === s.tesis && r.durum === 'TALEP').length,
                        etiket: 'bekleyen belge talebi', renk: 'text-amber-600' },
       RAPORLAR:      { deger: '%' + oran, etiket: 'bu ayın doluluk oranı', renk: 'text-ttk-700' },
-      DENETIM:       { deger: s.gunluk.length, etiket: 'işlem günlüğü kaydı', renk: 'text-slate-500' },
+      KAT_HIZMETLERI:{ deger: temizlenecek, etiket: 'oda temizlenecek',
+                       renk: temizlenecek ? 'text-amber-700' : 'text-slate-400' },
+      DENETIM:       { deger: denetimSatiri, etiket: 'işlem kaydı', renk: 'text-slate-500' },
       KULLANICILAR:  { deger: s.kullanicilar.length, etiket: 'tanımlı kullanıcı' },
       REHBER:        { deger: REHBER_KONULARI.length, etiket: 'anlatım başlığı', renk: 'text-slate-500' },
     };
-  }, [s.rezervasyonlar, s.yataklar, s.tesis, s.bugun, dolu, s.kullanicilar.length]);
+  }, [s.rezervasyonlar, s.yataklar, s.odalar, s.tesis, s.bugun, s.gunluk, dolu, temizlik, s.kullanicilar.length]);
 
   /* Üst banttaki zil — bekleyen işlerin sayısı */
   const gorevler = useMemo(() => k ? gorevleriHesapla(s, dolu, temizlik, izin) : [],
     [s, dolu, temizlik, k]);
-  const gorevSayisi = gorevler.reduce((t, x) => t + x.sayi, 0);
+  const gorevSayisi = gorevler.filter(isGorevi).reduce((t, x) => t + x.sayi, 0);
   const gorevAcil = gorevler.some(x => x.onem === 'acil');
 
   if (!k) return <GirisEkrani kullanicilar={s.kullanicilar} gonder={gonder} />;
@@ -8932,7 +9251,9 @@ function Uygulama() {
           </button>
 
           <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end text-xs">
-            <span className="px-2 py-1 rounded bg-amber-400 text-amber-950 font-bold text-2xs"
+            {/* Sarı yalnız «bekleyen iş / dikkat» anlamına ayrıldı; DEMO etiketi bir
+                durum değil, bir künye. Lacivert bandın üzerinde çerçeveli nötr etiket. */}
+            <span className="px-2 py-1 rounded border border-ttk-300 text-ttk-100 font-bold text-2xs tracking-wide"
               data-ipucu="Bu bir demo prototiptir; gerçek misafir verisi kullanılmaz">DEMO</span>
             <button onClick={() => setBildirimAcik(true)} aria-label={`Bekleyen işler (${gorevSayisi})`}
               data-ipucu={gorevSayisi

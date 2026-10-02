@@ -90,14 +90,48 @@ try {
   const satir = await taleplerdeAra(p, 'MOBIL KAYIT');
   d.bekle(await satir.count() === 1, 'telefondan açılan kayıt listeye düştü');
 
-  /* Dokunma hedefleri yeterince büyük olmalı */
-  const kucukDugme = await p.evaluate(() => {
-    const kucukler = [...document.querySelectorAll('nav button, main button')]
-      .map(el => ({ ad: (el.innerText || el.ariaLabel || '').slice(0, 24), r: el.getBoundingClientRect() }))
-      .filter(x => x.r.width > 0 && x.r.height > 0 && x.r.height < 26);
-    return kucukler.slice(0, 3).map(x => `${x.ad} (${Math.round(x.r.height)}px)`);
+  /* Dokunma hedefleri — WCAG 2.5.8 (AA) asgari 24x24 px ister. Eşik önceden
+     26 px'ti ve denetim yalnız tek sayfada koşuyordu; 21 px'lik kat hizmetleri
+     çipleri hiç ölçülmemişti. Artık bütün sayfalarda koşar. */
+  const olcKucuk = (esik) => p.evaluate((e) => {
+    const kucukler = [...document.querySelectorAll('nav button, main button, main [role="radio"]')]
+      .map(el => ({ ad: (el.innerText || el.ariaLabel || '').replace(/\s+/g, ' ').slice(0, 24),
+                    r: el.getBoundingClientRect() }))
+      .filter(x => x.r.width > 0 && x.r.height > 0 && (x.r.height < e || x.r.width < e));
+    return kucukler.slice(0, 4).map(x => `${x.ad} (${Math.round(x.r.width)}×${Math.round(x.r.height)}px)`);
+  }, esik);
+
+  for (const ad of [...TUM_SAYFALAR, 'Kat Hizmetleri']) {
+    if (!(await sayfaVar(p, ad))) continue;      /* rolün yetkisi yoksa atla */
+    await sayfa(p, ad);
+    await p.waitForTimeout(300);
+    const kucuk = await olcKucuk(24);
+    d.bekle(kucuk.length === 0, `${ad}: dokunma hedefleri 24 px altına düşmüyor`, kucuk.join(' · '));
+  }
+
+  /* Kat Hizmetleri sahada tablette, ayakta, çoğu zaman eldivenli elle kullanılır:
+     TABLONUN KENDİ denetimleri (durum bölmeleri, görevli seçimi) 44 px olmalı —
+     WCAG 2.5.5 (AAA). Üst bant ve gezinme 30 px'tir; AA sınırını (24 px) geçer,
+     AAA'ya çıkarmak yoğunluk anahtarı gerektirir (plan: P2-4) ve bu denetimin
+     kapsamı dışındadır. */
+  await sayfa(p, 'Kat Hizmetleri');
+  await p.waitForTimeout(400);
+  const katKucuk = await p.evaluate(() => {
+    const hedefler = [...document.querySelectorAll('main table button, main table select, main table [role="radio"]')]
+      .map(el => ({ ad: (el.innerText || el.ariaLabel || '').replace(/\s+/g, ' ').slice(0, 24),
+                    r: el.getBoundingClientRect() }))
+      .filter(x => x.r.width > 0 && x.r.height > 0 && (x.r.height < 44 || x.r.width < 44));
+    return hedefler.slice(0, 4).map(x => `${x.ad} (${Math.round(x.r.width)}×${Math.round(x.r.height)}px)`);
   });
-  d.bekle(kucukDugme.length === 0, 'dokunma hedefleri yeterince yüksek', kucukDugme.join(' · '));
+  d.bekle(katKucuk.length === 0, 'Kat Hizmetleri tablosundaki denetimler 44 px', katKucuk.join(' · '));
+  const segmentSatirlari = await p.evaluate(() => {
+    const g = document.querySelector('main [role="radiogroup"]');
+    if (!g) return null;
+    const ustler = [...g.querySelectorAll('[role="radio"]')].map(x => Math.round(x.getBoundingClientRect().top));
+    return { bolme: ustler.length, satir: new Set(ustler).size };
+  });
+  d.bekle(segmentSatirlari && segmentSatirlari.bolme === 4 && segmentSatirlari.satir === 1,
+    'temizlik durum kontrolü dört bölme ve tek satır', JSON.stringify(segmentSatirlari));
 
   /* Yardımcı telefonda ekranı taşırmamalı */
   await p.locator('button[aria-label="Yardımcıyı aç"]').click(); await p.waitForTimeout(500);

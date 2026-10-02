@@ -10,6 +10,11 @@ ekranda görülen değer verilmiştir. Doğrulanamayan şeyler açıkça **(vars
 olarak işaretlidir. Ekran görüntüleri üç ön teşhişi değiştirdi; bunlar
 «**düzeltme**» etiketiyle işaretlenmiştir.
 
+> **Uygulama durumu (02.10.2026, v2.14.0).** İlk sprint tamamlandı:
+> **P0-1, P0-2, P0-3, P0-4, P0-5, P0-7** ve **P1-8, P1-10, P1-11, P1-12, P1-13**
+> kodda. Soru 1, 2, 3 ve 5 yanıtlandı (bkz. bölüm 0). Kalan maddeler sırada;
+> yapılanlar tabloda ✅ ile işaretlidir.
+
 **Kısıt:** Köklü yeniden yazım önerilmez. Her aşama tek başına yayına alınabilir.
 Kurumsal lacivert (`ttk-*`) kimliği korunur, yeni marka rengi önerilmez. Veri
 yoğunluğu düşürülmez — ferahlık, kolon/rozet/yoğunluk stratejisiyle sağlanır.
@@ -21,9 +26,20 @@ yoğunluğu düşürülmez — ferahlık, kolon/rozet/yoğunluk stratejisiyle sa
 Bunlar olmadan ilerleyen bölümlerdeki bazı kararlar varsayıma dayanır. Yanıt
 beklerken etkilenmeyen bölümler tamdır ve uygulanabilir.
 
+**Yanıtlananlar (02.10.2026):**
+
+| # | Yanıt | Sonuç |
+|---|---|---|
+| 1 | Liste **AD/LDAP ve tesise bağlı personel tablosundan** gelecek | P0-2 uygulandı: görevli alanı seçim listesi oldu; prototipte örnek personel, kurulumda dizinden |
+| 2 | **Standart tablet** varsayılacak | Yoğunluk eşiği 1200 px; bu genişlikten dar ekranlarda yalnız bağlam sütunları gizlenir (`dar-gizle`), işi yapmak için gereken hiçbir sütun gizlenmez |
+| 3 | Red gerekçesi misafire **aynen** iletiliyor | P1-10 uygulandı: red penceresi gönderilecek metnin tamamını gösteriyor; önizleme ile gönderim aynı işlevden üretiliyor |
+| 5 | «Süper yönetici» = mevcut **Admin** rolü | Rol matrisindeki **S** sütunu ayrı bir rol değil, Admin'dir — kurum düzeyinde yeni bir rol gerekmiyor |
+
+**Hâlâ açık:**
+
 | # | Soru | Neyi belirler |
 |---|---|---|
-| 1 | **Kat görevlisi listesi nereden gelecek?** Uygulamada tanımlı dört rol var (Admin, Müdür, Resepsiyon, Muhasebe) — **kat görevlisi / kat şefi rolü yok**. Görevli adları AD/LDAP'tan mı, tesise bağlı bir personel tablosundan mı, yoksa elle yönetilen bir listeden mi gelecek? | P0-2 (serbest metin → seçim listesi) ve P0-6 (yeni rol) veri modeli |
+| 1 | ~~**Kat görevlisi listesi nereden gelecek?**~~ *(yanıtlandı)* Uygulamada tanımlı dört rol var (Admin, Müdür, Resepsiyon, Muhasebe) — **kat görevlisi / kat şefi rolü yok**. Görevli adları AD/LDAP'tan mı, tesise bağlı bir personel tablosundan mı, yoksa elle yönetilen bir listeden mi gelecek? | P0-2 (serbest metin → seçim listesi) ve P0-6 (yeni rol) veri modeli |
 | 2 | **Sahadaki tablet nedir?** Model/OS/çözünürlük (örn. iPad 10.2″ yatay 1080×810, Android 10″ 1280×800). Eldivenle mi kullanılıyor? | Dokunma hedefi boyutu, yoğunluk eşiği, kırpılma noktası |
 | 3 | **Dekont reddinde misafire bildirim gidiyor mu?** Gidiyorsa metni kim onaylıyor, gerekçe aynen mi iletiliyor? | Red akışındaki mesaj önizlemesinin tasarımı |
 | 4 | **Denetim izinde «önceki değer» tutulacak mı?** `docs/veritabani.md` içindeki `hareket` tablosunda `eski_deger`/`yeni_deger` (jsonb) alanları tanımlı ama prototipte doldurulmuyor. Gerçek kurulumda zorunlu mu? | Denetim ekranındaki diff görünümünün yapılabilirliği |
@@ -102,13 +118,34 @@ Her madde tek başına yayına alınabilir.
 
 | # | Sorun | Çözüm | Gerekçe | Efor |
 |---|---|---|---|---|
-| **P0-1** | Kat hizmetleri çipleri 21 px, yanlış dokunma riski (K1/C4) | Durum kontrolünü **segment kontrolüne** çevir: tek satır, 44 px yüksek, dört bölme, aktif bölme dolu renk. Çipler arası boşluk 0 (yanlışlıkla aradaki boşluğa basmak yerine her dokunuş bir bölmeye düşer). "Temizlendi"ye geçiş tek dokunuşla değil, **ileri yönlü akış** düğmesiyle ("▸ Temizliğe Başla" → "✓ Temizlendi") — geri alma için "Geri Al" şeridi zaten var | Misafire kirli oda verilmesi bu ekranın en pahalı hatası. 44 px, WCAG 2.5.5 AAA'yı da karşılar | **S** |
-| **P0-2** | Kat görevlisi serbest metin → veri kirliliği (K2) | Serbest metni **seçim listesine** çevir (`<select>` + arama). Liste kaynağı soru 1'e bağlı. Geçiş döneminde: mevcut serbest metinleri normalleştirip öneri listesi kur, yeni giriş yalnız listeden; "listede yok" için ayrı bir "yeni görevli ekle" yetkisi | Rapor üretilemezliğin kökü burada. Her gün biraz daha kirleniyor — ne kadar beklenirse göç o kadar pahalı | **M** |
-| **P0-3** | Fark hesaplanmıyor; iki tutar gözle karşılaştırılıyor (D1) | **Farkı sistem hesaplasın.** Listeye fark kolonu + rozeti (`Tam` / `−350 ₺ eksik` / `+200 ₺ fazla`); detayda "İstenen / Yatırılan / **Fark**" üçlüsü sekiz kutuluk ızgaradan çıkıp panelin tepesinde ayrı bir blok olsun. Fark varsa **"Onayla" düğmesi ikincil hâle gelsin**, onaylamak için bilinçli kabul istensin (onay kutusu: "Eksik tutarı kabul ediyorum") | Gözle sayı eşleştirmek 16 kayıtlık kuyrukta kaçınılmaz olarak atlanır. Tutarlar birbirine benzer (750/1.500/2.250), hata olasılığı yüksek. Veri zaten var, yalnız çıkarma işlemi ve yerleşim eksik | **M** |
-| **P0-4** | Zil sayacı iş + bilgiyi karıştırıyor (C3) | Rozet **yalnız `acil` + `uyari`** satırlarını saysın. Bilgi satırları panelde ayrı bir "Bugünün hareketi" bloğunda, sayaca girmeden dursun. Bekleyen iş yoksa rozet kaybolsun | Sıfırlanabilen sayaç anlam taşır; sıfırlanmayan sayaç gürültüdür | **S** |
-| **P0-5** | Amber üç anlamda; DEMO ve bildirim rozeti aynı token (C2) | DEMO rozetini ve "DEMO ARACI" bandını amber'dan çıkar: lacivert üzerinde **çerçeveli nötr etiket** (`border-ttk-300 text-ttk-100`, dolgusuz); Özet'teki demo bandı slate zemine geçsin. Giriş ekranındaki **Muhasebe rol rozeti** amber'dan çıkıp nötr/sky olsun. Amber bundan sonra **yalnız "bekliyor / dikkat"** | Çakışma sakin günde — uyarının en çok fark edilmesi gereken günde — ortaya çıkıyor. Üç bileşen, yarım günlük iş | **S** |
+| ✅ **P0-1** | Kat hizmetleri çipleri 21 px, yanlış dokunma riski (K1/C4) | Durum kontrolünü **segment kontrolüne** çevir: tek satır, 44 px yüksek, dört bölme, aktif bölme dolu renk. Çipler arası boşluk 0 (yanlışlıkla aradaki boşluğa basmak yerine her dokunuş bir bölmeye düşer). "Temizlendi"ye geçiş tek dokunuşla değil, **ileri yönlü akış** düğmesiyle ("▸ Temizliğe Başla" → "✓ Temizlendi") — geri alma için "Geri Al" şeridi zaten var | Misafire kirli oda verilmesi bu ekranın en pahalı hatası. 44 px, WCAG 2.5.5 AAA'yı da karşılar | **S** |
+| ✅ **P0-2** | Kat görevlisi serbest metin → veri kirliliği (K2) | Serbest metni **seçim listesine** çevir (`<select>` + arama). Liste kaynağı soru 1'e bağlı. Geçiş döneminde: mevcut serbest metinleri normalleştirip öneri listesi kur, yeni giriş yalnız listeden; "listede yok" için ayrı bir "yeni görevli ekle" yetkisi | Rapor üretilemezliğin kökü burada. Her gün biraz daha kirleniyor — ne kadar beklenirse göç o kadar pahalı | **M** |
+| ✅ **P0-3** | Fark hesaplanmıyor; iki tutar gözle karşılaştırılıyor (D1) | **Farkı sistem hesaplasın.** Listeye fark kolonu + rozeti (`Tam` / `−350 ₺ eksik` / `+200 ₺ fazla`); detayda "İstenen / Yatırılan / **Fark**" üçlüsü sekiz kutuluk ızgaradan çıkıp panelin tepesinde ayrı bir blok olsun. Fark varsa **"Onayla" düğmesi ikincil hâle gelsin**, onaylamak için bilinçli kabul istensin (onay kutusu: "Eksik tutarı kabul ediyorum") | Gözle sayı eşleştirmek 16 kayıtlık kuyrukta kaçınılmaz olarak atlanır. Tutarlar birbirine benzer (750/1.500/2.250), hata olasılığı yüksek. Veri zaten var, yalnız çıkarma işlemi ve yerleşim eksik | **M** |
+| ✅ **P0-4** | Zil sayacı iş + bilgiyi karıştırıyor (C3) | Rozet **yalnız `acil` + `uyari`** satırlarını saysın. Bilgi satırları panelde ayrı bir "Bugünün hareketi" bloğunda, sayaca girmeden dursun. Bekleyen iş yoksa rozet kaybolsun | Sıfırlanabilen sayaç anlam taşır; sıfırlanmayan sayaç gürültüdür | **S** |
+| ✅ **P0-5** | Amber üç anlamda; DEMO ve bildirim rozeti aynı token (C2) | DEMO rozetini ve "DEMO ARACI" bandını amber'dan çıkar: lacivert üzerinde **çerçeveli nötr etiket** (`border-ttk-300 text-ttk-100`, dolgusuz); Özet'teki demo bandı slate zemine geçsin. Giriş ekranındaki **Muhasebe rol rozeti** amber'dan çıkıp nötr/sky olsun. Amber bundan sonra **yalnız "bekliyor / dikkat"** | Çakışma sakin günde — uyarının en çok fark edilmesi gereken günde — ortaya çıkıyor. Üç bileşen, yarım günlük iş | **S** |
 | **P0-6** | Sahadaki kullanıcının rolü yok (C1) | **Kat Görevlisi rolü** ekle: yalnız `pano.goruntule` + `temizlik.isle`; giriş yaptığında doğrudan Kat Hizmetleri açılsın, rezervasyon/tahsilat/Tc kimlik verisi hiç görünmesin. Kat Şefi rolü ek olarak toplu atama yetkisi alsın | KVKK gereklilik ilkesi ve denetim izinin doğruluğu. Mevcut yetki altyapısı hazır — yeni rol eklemek veri modeli değişikliği gerektirmiyor | **M** |
-| **P0-7** | Dokunma hedefi regresyon koruması yok (C5) | `12-mobil.mjs` eşiğini **24 px (WCAG AA)**'ya çek, kontrolü **bütün sayfalarda** koştur; Kat Hizmetleri için ayrıca 44 px eşiği uygula | Düzeltme kalıcı olmazsa P0-1 boşa gider | **S** |
+| ✅ **P0-7** | Dokunma hedefi regresyon koruması yok (C5) | `12-mobil.mjs` eşiğini **24 px (WCAG AA)**'ya çek, kontrolü **bütün sayfalarda** koştur; Kat Hizmetleri için ayrıca 44 px eşiği uygula | Düzeltme kalıcı olmazsa P0-1 boşa gider | **S** |
+
+#### Uygulamada plandan ayrılan iki nokta
+
+**1. P0-1'de «ileri yönlü akış» düğmesi yapılmadı.** Plan, dört bölmeli segmentin
+yanına ayrıca «▸ Temizliğe Başla → ✓ Temizlendi» akış düğmesi öneriyordu.
+Uygulamada yalnız segment yapıldı, dört durum bir dokunuş uzaklıkta kaldı.
+Gerekçe: akış düğmesi hedef sayısını dörtten bire indirir ama **«odayı başlamadan
+bitirdim» durumunu iki dokunuşa çıkarır** — ki bu kat hizmetlerinde sık karşılaşılan
+bir durum. Dokunma güvenliği sorunu zaten 44 px + bitişik bölme + tek satırla
+çözüldüğü için, akışı dayatmanın ek faydası maliyetini karşılamıyor. Kullanımda
+«yanlışlıkla Temizlendi işaretlendi» şikâyeti sürerse akış düğmesi tekrar
+değerlendirilmeli.
+
+**2. Rol rozetleri durum paletinin dışındadır.** Muhasebe rol rozeti amber'dan
+çıkarılıp sky'a alındı; sky durum paletinde «aktif» anlamına geliyor. Bu bir
+çakışma değil, çünkü **rol rozetleri ayrı bir anlam ailesidir**: yalnız giriş
+ekranında ve kullanıcı yönetiminde görünür, durum rozetleriyle aynı görsel alanda
+hiç bulunmaz. Dört rol rengi (violet / lacivert / emerald / sky) bu ailede
+birbirinden ayrışmak için seçilmiştir. Kural olarak bölüm 4.1'e eklenmelidir:
+*durum renkleri tek anlamlıdır; rol renkleri ayrı ailedir ve durum rozetiyle aynı
+kapsayıcıda kullanılmaz.*
 
 ### P1 — yüksek etki, biraz daha iş
 
@@ -121,12 +158,12 @@ Her madde tek başına yayına alınabilir.
 | P1-5 | Denetimde sayfalama yok (N3) | Sayfalama + "toplam 207 satırın 1–100'ü" + CSV'nin **tamamını** aktardığını açıkça yaz | Eksik veriyle denetim | S |
 | P1-6 | Dekont kuyruğunda klavye yok (D3) | **J/K/A/R** kuyruk kısayolları + "3 / 16" konum göstergesi + onaydan sonra otomatik sıradaki. Bölüm 6'da ayrıntı | 16 dekontluk kuyrukta ciddi zaman | M |
 | P1-7 | Dashboard hiyerarşisiz (Ö1/Ö2) | KPI'ları **1 birincil + 3 operasyonel + 3 ikincil** olarak ayır; eşik aşıldığında kart durum rengi alsın; **her kart tıklanabilir** olup ilgili süzgeçli listeyi açsın | "Bugün neye bakmalıyım" tek bakışta | M |
-| P1-8 | Boş / sonuç yok / hata durumları tanımsız (Ö3) | Üç durumu **standartlaştır**: boş (hiç veri yok — ne yapılacağını söyleyen metin + birincil aksiyon), sonuç yok (süzgeç eledi — "süzgeci temizle" düğmesi), hata (ne oldu + yeniden dene). `BosDurum` bileşenini üç varyanta çıkar | Her listede tekrar eden belirsizlik | S |
+| ✅ P1-8 | Boş / sonuç yok / hata durumları tanımsız (Ö3) | Üç durumu **standartlaştır**: boş (hiç veri yok — ne yapılacağını söyleyen metin + birincil aksiyon), sonuç yok (süzgeç eledi — "süzgeci temizle" düğmesi), hata (ne oldu + yeniden dene). `BosDurum` bileşenini üç varyanta çıkar | Her listede tekrar eden belirsizlik | S |
 | P1-9 | "Bekliyor 23" ≠ "Temizlenecek 22" (K4) | İki sayacı aynı kümeden üret; servis dışı odaları her ikisinden de çıkar, ayrı sayaçta göster | Sayıya güven | S |
-| P1-10 | Onay notu alanının kime gittiği belirsiz (D4) | Onay notu ile red gerekçesini **ayır**; red penceresinde **misafire gidecek mesajın önizlemesi**, gitmiyorsa "Bu gerekçe yalnız kurum içi kayda yazılır" açıkça yazılsın | Yazanın ne yazdığını bilmesi *(soru 3)* | S |
-| P1-11 | Ana Menü ile Denetim ekranı farklı sayı veriyor (C7) | Her sayaç için **tek kaynak**: ana menü kartı ile sayfanın kendi sayacı aynı işlevi çağırsın. Ana menü sayaçlarının neyi saydığı kart altında yazsın ("son 30 günde 207 işlem") | Sayıya güven; raporlanan rakamların savunulabilirliği | S |
-| P1-12 | Ana Menü'de Kat Hizmetleri kartı sayısız (C8) | Karta "22 oda temizlenecek" sayacı ekle | On üç kartın biri eksik; tutarlılık | S |
-| P1-13 | KPI alt metni geliştirici notu (Ö4) | `dolu+boş+temizlik+servis dışı = 51` formülünü karttan çıkar, ipucuna ve Rehber'e taşı; kart altında "1 gün temizlik bloğu" kalsın | Kurumsal ton; müdür ekranında denklem durmaz | S |
+| ✅ P1-10 | Onay notu alanının kime gittiği belirsiz (D4) | Onay notu ile red gerekçesini **ayır**; red penceresinde **misafire gidecek mesajın önizlemesi**, gitmiyorsa "Bu gerekçe yalnız kurum içi kayda yazılır" açıkça yazılsın | Yazanın ne yazdığını bilmesi *(soru 3)* | S |
+| ✅ P1-11 | Ana Menü ile Denetim ekranı farklı sayı veriyor (C7) | Her sayaç için **tek kaynak**: ana menü kartı ile sayfanın kendi sayacı aynı işlevi çağırsın. Ana menü sayaçlarının neyi saydığı kart altında yazsın ("son 30 günde 207 işlem") | Sayıya güven; raporlanan rakamların savunulabilirliği | S |
+| ✅ P1-12 | Ana Menü'de Kat Hizmetleri kartı sayısız (C8) | Karta "22 oda temizlenecek" sayacı ekle | On üç kartın biri eksik; tutarlılık | S |
+| ✅ P1-13 | KPI alt metni geliştirici notu (Ö4) | `dolu+boş+temizlik+servis dışı = 51` formülünü karttan çıkar, ipucuna ve Rehber'e taşı; kart altında "1 gün temizlik bloğu" kalsın | Kurumsal ton; müdür ekranında denklem durmaz | S |
 | P1-14 | "Karşılaştırma" kartı tek satır (Ö5) | Tek tesisli kullanıcıda kartı **gizle**, yerine o tesisin 7 günlük doluluk eğilimini koy. Çok tesisli kullanıcıda bugünkü hâli kalsın | Resepsiyonun tamamı ve müdürlerin çoğu tek tesisli — ekranın yarısı boşa gidiyor | M |
 | P1-15 | "Bugünün İşleri" iş değil, kısayol (Ö6) | Kartı **zil panelinin aynı veri kaynağına** bağla: gerçek bekleyen işler, sayılarıyla. Sayfa kısayolları zaten şeritte ve ana menüde var | İki ayrı "bugün ne var" kaynağı ortadan kalkar | M |
 | P1-16 | Denetimde "Saat" yok, satırlar ayrışmıyor (N4) | Tarihe saat ekle, gün başlığıyla grupla | Kronolojik iz | S |
@@ -242,6 +279,10 @@ anlam taşır.** Lacivert kurumsal kimliktir, durum rengi değildir.
 | **Kapalı / kullanım dışı** | `#64748b` slate-500 | `#ffffff` | `#475569` slate-600 | "Servis Dışı" — dolu renk, çünkü "yok sayılacak" demek |
 | **Kurumsal** | `#122f56` ttk-800 / `#0d2340` ttk-900 | `#ffffff` | — | **Yalnız** navigasyon, başlık, birincil düğme. Durum anlamı yoktur |
 | **Konaklıyor** | `#d9e6f6` ttk-100 | `#173c6d` ttk-700 | `#b3cdec` ttk-200 | Tek istisna: "Konaklıyor" kurumsal tonun açık varyantını kullanır (normal, olağan durum) |
+
+> **Rol renkleri ayrı ailedir.** Admin violet, Müdür lacivert, Resepsiyon emerald,
+> Muhasebe sky — bunlar durum değil kimlik taşır ve durum rozetiyle aynı
+> kapsayıcıda kullanılmaz (yalnız giriş ekranı ve kullanıcı yönetimi).
 
 Kaldırılacak çakışmalar:
 - `DEMO` rozeti amber-400'den çıkar → lacivert üzerinde `border-ttk-300 / text-ttk-100`, dolgusuz.

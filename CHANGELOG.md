@@ -8,6 +8,86 @@ Biçim: `ANA.ÖZELLİK.DÜZELTME` — ANA: ekran/veri modeli değişikliği,
 
 ---
 
+## [2.14.0] — 02.10.2026
+### Değişti — arayüz iyileştirme planının ilk sprinti
+
+`docs/arayuz-iyilestirme-plani.md` belgesindeki P0 ve seçilmiş P1 maddeleri
+uygulandı. Hepsi mevcut yapı üzerinde, ayrı ayrı geri alınabilir değişikliklerdir.
+
+**Kat Hizmetleri — dokunma güvenliği (P0-1).** Dört durum çipi (~21 px, iki satıra
+sarıyordu) **tek satırlık, 44 px yüksek, bitişik bölmeli segment kontrolüne**
+dönüştü. Bölmeler arasında tıklanamayan boşluk yok: her dokunuş bir bölmeye düşer.
+Kontrol `role="radiogroup"` / `aria-checked` taşır, her durumun renge ek bir
+işareti vardır (⏱ ▸ ✓ ·) — renk körü kullanıcıda «Temizlendi» ile «Bekliyor»
+karışmaz. Sahada tablette, ayakta kullanılan bu ekranda yanlış çipe basıp odayı
+«Temizlendi» işaretlemek bu üründeki en pahalı kullanıcı hatasıydı.
+
+**Kat görevlisi artık seçim listesinden (P0-2).** Serbest metin alanı kaldırıldı;
+görevli tesise bağlı personel listesinden seçilir. «F. Yıldız», «Fatma Yıldız» ve
+«fatma» artık üç ayrı kişi olmuyor — kişi bazlı iş yükü raporu üretilebilir.
+Liste kurulumda kurum dizininden (AD/LDAP) ve tesis personel tablosundan gelir;
+prototipte örnek veriyle üretilir. Listede olmayan eski bir değer varsa kaybolmaz,
+«(listede yok)» etiketiyle korunur.
+
+**Dekont tutar mutabakatı (P0-3).** İstenen kapora ile yatırılan tutarın farkı
+artık **sistem tarafından hesaplanıyor**; önceden iki sayı yan yana duruyor ve
+karşılaştırmayı kullanıcı gözüyle yapıyordu. Liste her satırda fark rozeti
+gösteriyor (`Tam` / `−350 ₺` / `+200 ₺`), detayda «İstenen → Yatırılan → Fark»
+üçlüsü sekiz kutuluk ızgaradan çıkıp panelin tepesine ayrı bir blok olarak taşındı
+ve sonucu cümleyle açıklıyor. **Fark varsa onay düğmesi birincil görünümünü
+kaybediyor** ve farkın bilinçli kabulü işaretlenmeden açılmıyor; kabul kayıt
+geçmişine yazılıyor. «Yalnız tutarı tutmayan» süzgeci eklendi.
+
+**Bekleyen işler sayacı artık sıfırlanabiliyor (P0-4).** Zildeki rozet yalnız
+**yapılacak işleri** sayıyor; «bugün giriş yapacak misafir» gibi bilgi satırları
+panelde ayrı bir blokta, sayaca girmeden duruyor. Önceki hâlinde sayı hiç
+sıfırlanmıyordu ve «her zaman 30+» olduğu için uyarı işlevini yitiriyordu.
+
+**Renk anlamı ayrıldı (P0-5).** DEMO rozeti ile bildirim rozeti kodda birebir aynı
+tokenı (`bg-amber-400 text-amber-950`) kullanıyordu ve aynı başlıkta yan yana
+duruyordu; çakışma en sakin günde, yani uyarının en çok fark edilmesi gereken günde
+ortaya çıkıyordu. DEMO rozeti ve «DEMO ARACI» bandı nötr çerçeveli etikete,
+Muhasebe rol rozeti sky tonuna geçti. **Amber bundan sonra yalnız «bekliyor /
+dikkat» anlamında kullanılır.**
+
+**Red gerekçesi misafire aynen gidiyor, yazan da bunu görüyor (P1-10).** Dekont
+reddinde misafire bilgilendirme mesajı gönderiliyor (önceden hiç gönderilmiyordu).
+Red penceresi **gönderilecek metnin tamamını, hane sayısını ve kaç SMS olacağını**
+gösteriyor; önizleme ile gönderim aynı işlevden üretildiği için ayrışamaz. Dört
+hazır gerekçe çipi eklendi — aynı durum her seferinde aynı cümleyle bildiriliyor.
+Telefon numarası yoksa bu açıkça yazılıyor.
+
+**Boş / sonuç yok / hata durumları ayrıştı (P1-8).** `BosDurum` üç varyanta çıktı:
+*bos* (hiç veri yok — ne yapılacağı ve birincil aksiyon), *sonuç yok* (süzgeç eledi
+— süzgeci temizleme düğmesi), *hata*. Özet «Son İşlemler», Kat Hizmetleri ve
+Denetim İzi bu varyantları kullanıyor; kullanıcı artık «veri mi yok, ben mi yanlış
+süzdüm?» sorusuyla baş başa kalmıyor.
+
+**Sayaçlar artık tutuyor (P1-11, P1-12).** Ana Menü «Denetim İzi» kartı yalnız
+sistem günlüğünü sayıyordu ve **1** diyordu; aynı oturumda sayfa **207 satır**
+gösteriyordu. Kart artık kayıt hareketlerini de sayıyor. Oda temizlik durumu üç
+ayrı yerde (sayfa, ana menü kartı, zil) ayrı ayrı hesaplanıyordu ve ana menü 23,
+sayfa 22 diyordu; hesap `odaTemizligi()` içinde **tek kaynağa** indirildi. Ana
+Menü'de sayısı olmayan tek kart olan Kat Hizmetleri'ne sayaç eklendi.
+
+**KPI alt metni kullanıcı bilgisi oldu (P1-13).** «Temizlikte» kartının altındaki
+`1 gün blok · dolu+boş+temizlik+servis dışı = 51` denklemi karttan çıkarıldı;
+yerine «1 gün çıkış temizliği bloğu» yazıyor, hesabın tamamı ipucunda duruyor.
+
+### Testler
+- Yeni dosya `19-arayuz-iyilestirmeleri.mjs` (33 denetim): renk ayrımı, sayaç
+  davranışı, tutar mutabakatı ve bilinçli kabul, red bildiriminin önizlemeyle
+  birebir aynı olması, görevli listesinin CSV'ye temiz yansıması, boş/sonuç yok
+  durumları, sayaç tutarlılığı.
+- `12-mobil.mjs`: dokunma hedefi eşiği **26 px'ten 24 px'e** (WCAG 2.5.8 AA)
+  indirildi ve denetim **tek sayfa yerine bütün sayfalarda** koşuyor — 21 px'lik
+  çipler önceki eşikle hiç ölçülmemişti. Kat Hizmetleri tablosunun kendi
+  denetimleri ayrıca 44 px (WCAG 2.5.5) sınırıyla ve segment kontrolünün tek
+  satırda durduğu denetleniyor. Üst bant ve gezinme 30 px'tir: AA sınırını geçer,
+  AAA'ya çıkarmak yoğunluk anahtarı gerektirir (plan: P2-4).
+- `16-ariza-temizlik-saat.mjs` segment kontrolüne ve görevli seçim listesine
+  uyarlandı; `18-rapor-denetim-bildirim.mjs` sayacın yeni davranışını doğruluyor.
+
 ## [2.13.0] — 01.10.2026
 ### Eklendi — kullanıcı deneyimi ve endüstri standardı paketi (öneri listesinin ilk 15 maddesi)
 
